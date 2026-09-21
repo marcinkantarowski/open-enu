@@ -59,9 +59,9 @@ the server); `landing` renders on the server from `@nuxt/content` markdown in bo
 Each frontend module is a Nuxt layer discovered from the directory, contributing its own
 pages, menu entries, settings tabs and translations with no central file edited.
 
-`make e2e` drives eleven specs through a real browser against the real stack: cookie login,
-session restore, tenant switch, impersonation handoff, SSE arrival, upload, and the 409
-conflict bar. It runs in `make ci`, never in `make check`.
+`make e2e` drives twelve tests in five specs through a real browser against the real stack:
+cookie login, session restore, tenant switch, impersonation handoff, SSE arrival, upload, the
+409 conflict bar, and a feature flag switched on by an operator starting a job with progress. It runs in `make ci`, never in `make check`.
 
 **`Example` is the module to read and to copy.** One entity, `Project`, carrying exactly one
 of every platform concern - tenant scoping, optimistic locking, an encrypted column, JSONB
@@ -152,7 +152,9 @@ exist yet is still not to be improvised. Say so instead.
 - **Never commit, push, merge or open a pull request.** Every commit and every push is made
   by the user and only the user. An agent edits the working tree, runs the checks, reports
   what changed, and stops there - even when a commit looks like the obvious next step.
-  Denied for agents in `.claude/settings.json`.
+  Not enforceable from the repository: GitHub cannot tell an agent's push from its user's.
+  Enforce it in the agent's own settings - for Claude Code, a `permissions.deny` list for
+  `git commit`, `git push` and `gh pr` in `.claude/settings.json`.
 - **Never rename the kernel.** `open-enu/kernel`, `OpenEnu\Kernel\` and `@open-enu/ui-kit`
   are the framework's identity and are independent of the project's name. `make init`
   masks them deliberately. Breaking this silently destroys the upgrade path for every

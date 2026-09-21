@@ -41,7 +41,16 @@ log_step "Node dependencies (npm workspaces)"
 # containers have no `nuxt` binary yet, so there is nothing to exec into. The
 # image entrypoint installs on first boot anyway; this target is the explicit
 # re-install after a package.json change.
-if quiet "${CO[@]}" run --rm --no-deps --entrypoint sh frontend -c 'npm install --no-audit --no-fund'; then
+#
+# Under the entrypoint's own lock. `up` has just started the three Nuxt
+# containers, and on a fresh checkout their entrypoints are installing into
+# this same node_modules right now; `--entrypoint sh` bypasses that lock, so two
+# installs wrote one tree at once and left it half-deleted (ENOTEMPTY, then a
+# postinstall that cannot find a package's own files). Waiting on the lock makes
+# this install run after theirs, and the stamp stops them repeating it.
+INSTALL='mkdir -p /app/node_modules \
+  && flock /app/node_modules/.install.lock sh -c "cd /app && npm install --no-audit --no-fund && touch /app/node_modules/.install-stamp"'
+if quiet "${CO[@]}" run --rm --no-deps --entrypoint sh frontend -c "$INSTALL"; then
   log_ok "npm install (root workspace)"
 else
   log_fail "npm install failed" "inspect: make logs-ui"; exit 1
