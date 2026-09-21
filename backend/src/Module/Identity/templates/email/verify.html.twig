@@ -1,0 +1,7 @@
+{# Deliberately plain HTML: an email client is not a browser, and the less
+   markup a transactional email carries the more reliably it renders. #}
+<p>{{ 'identity.email.verify.body'|trans({}, null, locale) }}</p>
+
+<p><a href="{{ url }}">{{ url }}</a></p>
+
+<p><small>{{ 'identity.email.expires'|trans({'%hours%': expiresInHours}, null, locale) }}</small></p>

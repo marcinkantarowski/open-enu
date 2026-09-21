@@ -1,0 +1,50 @@
+# Dependency updates, weekly, grouped.
+#
+# Grouped deliberately: twenty single-dependency pull requests a week is a
+# notification stream people mute, and a muted update stream is how a project
+# ends up three majors behind on the thing with the CVE. One PR per ecosystem
+# per week is a thing somebody actually reviews.
+#
+# Every one of them runs `make ci`, which is what makes accepting them cheap.
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      symfony:
+        patterns: ['symfony/*']
+      backend:
+        patterns: ['*']
+        exclude-patterns: ['symfony/*']
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      nuxt:
+        patterns: ['nuxt', '@nuxt/*', '@nuxtjs/*', 'vue', 'vue-router']
+      frontend:
+        patterns: ['*']
+        exclude-patterns: ['nuxt', '@nuxt/*', '@nuxtjs/*', 'vue', 'vue-router']
+
+  # Base images: the ones a `docker compose build` pulls, and the ones the
+  # production stack pins. An unpinned image is already a build failure here
+  # (`make prod-check`), so these updates are the only way they move.
+  - package-ecosystem: docker
+    directories:
+      - /docker/api
+      - /docker/node
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2

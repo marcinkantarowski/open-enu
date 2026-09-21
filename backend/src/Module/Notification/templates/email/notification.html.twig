@@ -1,0 +1,5 @@
+{# Deliberately plain HTML: an email client is not a browser, and the less
+   markup a transactional email carries the more reliably it renders. #}
+<p>{{ bodyKey|trans(arguments, null, locale) }}</p>
+
+<p><a href="{{ url }}">{{ url }}</a></p>

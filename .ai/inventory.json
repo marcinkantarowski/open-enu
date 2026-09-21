@@ -1,0 +1,388 @@
+{
+    "modules": {
+        "ApiKey": {
+            "description": "Machine credentials - scoped, revocable keys for clients that are not browsers.",
+            "slug": "api_key",
+            "depends": [
+                "Tenant"
+            ],
+            "entities": [
+                "ApiKey"
+            ],
+            "commands": [
+                "CreateApiKey",
+                "RevokeApiKey"
+            ],
+            "repositories": [
+                "ApiKeyRepository"
+            ],
+            "console": [
+                "CreateApiKeyCommand"
+            ],
+            "permissions": [
+                "api_key.manage",
+                "api_key.view"
+            ],
+            "routes": [
+                "DELETE /api/api-keys/{id} (api_key_revoke)",
+                "GET /api/api-keys (api_key_index)",
+                "POST /api/api-keys (api_key_create)"
+            ]
+        },
+        "Attachment": {
+            "description": "Files any module can attach to its records, stored per tenant and served by expiring URL.",
+            "slug": "attachment",
+            "depends": [
+                "Tenant"
+            ],
+            "entities": [
+                "Attachment"
+            ],
+            "commands": [
+                "UploadAttachment"
+            ],
+            "repositories": [
+                "AttachmentRepository"
+            ],
+            "console": [
+                "SweepOrphanAttachmentsCommand"
+            ],
+            "permissions": [
+                "attachment.manage",
+                "attachment.view"
+            ],
+            "routes": [
+                "GET /api/attachments/{id} (attachment_show)",
+                "POST /api/attachments (attachment_upload)"
+            ]
+        },
+        "Audit": {
+            "description": "The durable record of every change - who, what, when, and what it looked like before.",
+            "slug": "audit",
+            "depends": [
+                "Tenant"
+            ],
+            "contracts": [
+                "AuditReaderInterface"
+            ],
+            "entities": [
+                "AuditEntry"
+            ],
+            "services": [
+                "AuditGdprSubject",
+                "AuditReader",
+                "PersistentAuditLogger"
+            ],
+            "repositories": [
+                "AuditEntryRepository"
+            ],
+            "permissions": [
+                "audit.view"
+            ],
+            "routes": [
+                "GET /api/audit (audit_index)"
+            ]
+        },
+        "Example": {
+            "description": "The reference module - one of every platform concern, and nothing else.",
+            "slug": "example",
+            "depends": [],
+            "entities": [
+                "Project"
+            ],
+            "commands": [
+                "ArchiveProjects",
+                "CreateProject",
+                "RenameProject"
+            ],
+            "events": [
+                "ProjectCreated"
+            ],
+            "services": [
+                "ExampleFlags"
+            ],
+            "repositories": [
+                "ProjectRepository"
+            ],
+            "messages": [
+                "ArchiveProjectsJob"
+            ],
+            "permissions": [
+                "example.manage",
+                "example.view"
+            ],
+            "routes": [
+                "GET /api/projects (example_project_index)",
+                "GET /api/projects/{id} (example_project_show)",
+                "PATCH /api/projects/{id} (example_project_rename)",
+                "POST /api/projects (example_project_create)",
+                "POST /api/projects/archive (example_project_archive)"
+            ],
+            "searchable": [
+                {
+                    "entity": "App\\Module\\Example\\Entity\\Project",
+                    "fields": [
+                        "name",
+                        "description"
+                    ],
+                    "permission": "example.view"
+                }
+            ]
+        },
+        "Identity": {
+            "description": "Users, their memberships of tenants, and everything that authenticates one.",
+            "slug": "identity",
+            "depends": [
+                "Tenant"
+            ],
+            "contracts": [
+                "SessionMinterInterface",
+                "UserDirectoryInterface"
+            ],
+            "entities": [
+                "Membership",
+                "RefreshToken",
+                "SecurityToken",
+                "User"
+            ],
+            "commands": [
+                "RegisterUser",
+                "RequestPasswordReset",
+                "ResetPassword",
+                "UpdateProfile",
+                "VerifyEmail"
+            ],
+            "services": [
+                "IdentityGdprSubject",
+                "IdentityMailer",
+                "LoginService",
+                "PermissionResolver",
+                "SecurityTokenIssuer",
+                "SessionIssuer",
+                "SessionMinter",
+                "SessionPayload",
+                "UserDirectory",
+                "UserLocaleProvider"
+            ],
+            "repositories": [
+                "MembershipRepository",
+                "RefreshTokenRepository",
+                "SecurityTokenRepository",
+                "UserRepository"
+            ],
+            "console": [
+                "CreateUserCommand"
+            ],
+            "permissions": [
+                "identity.member.invite",
+                "identity.member.manage",
+                "identity.member.view",
+                "identity.profile.manage"
+            ],
+            "routes": [
+                "GET /api/profile (profile_show)",
+                "PATCH /api/profile (profile_update)",
+                "POST /api/auth/forgot-password (auth_forgot_password)",
+                "POST /api/auth/login (auth_login)",
+                "POST /api/auth/logout (auth_logout)",
+                "POST /api/auth/refresh (auth_refresh)",
+                "POST /api/auth/register (auth_register)",
+                "POST /api/auth/reset-password (auth_reset_password)",
+                "POST /api/auth/switch-tenant (auth_switch_tenant)",
+                "POST /api/auth/verify (auth_verify)"
+            ]
+        },
+        "Manager": {
+            "description": "The platform-operator realm - a separate identity, a separate firewall, a separate app.",
+            "slug": "manager",
+            "depends": [
+                "Tenant",
+                "Identity",
+                "Audit"
+            ],
+            "entities": [
+                "PlatformManager"
+            ],
+            "commands": [
+                "StartImpersonation",
+                "SuspendTenant"
+            ],
+            "services": [
+                "OperatorLogin"
+            ],
+            "repositories": [
+                "PlatformManagerRepository",
+                "WorkerQueueRepository"
+            ],
+            "console": [
+                "CreatePlatformManagerCommand"
+            ],
+            "routes": [
+                "GET /api/manager/audit (manager_audit_index)",
+                "GET /api/manager/tenants (manager_tenant_index)",
+                "GET /api/manager/tenants/{id} (manager_tenant_show)",
+                "GET /api/manager/workers (manager_worker_status)",
+                "POST /api/manager/login (manager_login)",
+                "POST /api/manager/tenants/{id}/suspend (manager_tenant_suspend)",
+                "POST /api/manager/tenants/{tenantId}/users/{userId}/impersonate (manager_impersonate)"
+            ]
+        },
+        "Notification": {
+            "description": "The in-app feed and the mail behind it - one registry of types, per-user read state.",
+            "slug": "notification",
+            "depends": [
+                "Identity"
+            ],
+            "entities": [
+                "Notification"
+            ],
+            "services": [
+                "FeedReadState",
+                "NotificationCatalogue",
+                "NotificationGdprSubject",
+                "NotificationMailer",
+                "PersistentNotifier"
+            ],
+            "repositories": [
+                "NotificationRepository"
+            ],
+            "permissions": [
+                "notification.view"
+            ],
+            "routes": [
+                "GET /api/notifications (notification_index)",
+                "POST /api/notifications/read-all (notification_read_all)",
+                "POST /api/notifications/{id}/read (notification_read)"
+            ]
+        },
+        "Progress": {
+            "description": "Long-running operations, tracked and streamed to whoever started them.",
+            "slug": "progress",
+            "depends": [
+                "Tenant"
+            ],
+            "entities": [
+                "ProgressJob"
+            ],
+            "services": [
+                "PersistentProgressReporter"
+            ],
+            "repositories": [
+                "ProgressJobRepository"
+            ],
+            "permissions": [
+                "progress.view"
+            ],
+            "routes": [
+                "GET /api/progress/{id} (progress_show)"
+            ]
+        },
+        "Settings": {
+            "description": "Runtime configuration and kill switches - global defaults with per-tenant overrides.",
+            "slug": "settings",
+            "depends": [
+                "Tenant"
+            ],
+            "entities": [
+                "Setting",
+                "SettingOverride"
+            ],
+            "commands": [
+                "SetTenantFlag"
+            ],
+            "services": [
+                "FlagCatalogue",
+                "PersistentFlags"
+            ],
+            "repositories": [
+                "SettingOverrideRepository",
+                "SettingRepository"
+            ],
+            "console": [
+                "SyncFlagsCommand"
+            ],
+            "permissions": [
+                "settings.manage",
+                "settings.view"
+            ],
+            "routes": [
+                "GET /api/manager/settings (manager_settings_index)",
+                "GET /api/settings (settings_index)",
+                "PUT /api/manager/tenants/{tenantId}/settings/{identifier} (manager_settings_set)",
+                "PUT /api/settings/{identifier} (settings_set)"
+            ]
+        },
+        "Tenant": {
+            "description": "Tenants, the scope every other module's data hangs off, and their lifecycle.",
+            "slug": "tenant",
+            "depends": [],
+            "contracts": [
+                "TenantProvisionerInterface",
+                "TenantReaderInterface"
+            ],
+            "entities": [
+                "Tenant"
+            ],
+            "commands": [
+                "CreateTenant",
+                "DeleteTenant"
+            ],
+            "events": [
+                "TenantCreated",
+                "TenantDeleted"
+            ],
+            "services": [
+                "TenantProvisioner",
+                "TenantReader"
+            ],
+            "repositories": [
+                "TenantRepository"
+            ],
+            "console": [
+                "PurgeUnverifiedTenantsCommand"
+            ],
+            "permissions": [
+                "tenant.manage",
+                "tenant.view"
+            ]
+        },
+        "Webhook": {
+            "description": "Outbound webhooks - per-tenant endpoints subscribed to domain events, signed and retried.",
+            "slug": "webhook",
+            "depends": [],
+            "entities": [
+                "WebhookDelivery",
+                "WebhookEndpoint"
+            ],
+            "commands": [
+                "CreateWebhookEndpoint",
+                "DeactivateWebhookEndpoint",
+                "RedeliverWebhook"
+            ],
+            "services": [
+                "WebhookDeliveryFailed",
+                "WebhookNotifications",
+                "WebhookPublisher",
+                "WebhookSigner"
+            ],
+            "repositories": [
+                "WebhookDeliveryRepository",
+                "WebhookEndpointRepository"
+            ],
+            "messages": [
+                "DeliverWebhook"
+            ],
+            "permissions": [
+                "webhook.manage",
+                "webhook.view"
+            ],
+            "routes": [
+                "DELETE /api/webhooks/{id} (webhook_deactivate)",
+                "GET /api/webhooks (webhook_index)",
+                "GET /api/webhooks/deliveries (webhook_deliveries)",
+                "POST /api/webhooks (webhook_create)",
+                "POST /api/webhooks/deliveries/{id}/redeliver (webhook_redeliver)"
+            ]
+        }
+    }
+}

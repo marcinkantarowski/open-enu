@@ -1,0 +1,29 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: OpenEnu API
+            description: |
+                Two realms share this API and one signing key. A token carries an
+                `aud` claim (`app`, `manager` or `api_key`) and is refused by any
+                firewall it does not name - see ADR-0007.
+            version: 0.1.0
+        components:
+            securitySchemes:
+                bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+                    description: |
+                        A JWT from /api/auth/login (tenant) or /api/manager/login
+                        (operator), or an API key (`sk_…`).
+        security:
+            - bearer: []
+
+    areas:
+        default:
+            path_patterns: ['^/api(?!/doc)']
+
+# This file exists so `openapi.json` can be generated, committed and diffed
+# (ADR-0012). A spec that is not checked drifts within a week, and it is the
+# source of the frontend's TypeScript types - so drift becomes a type error
+# rather than a runtime surprise.

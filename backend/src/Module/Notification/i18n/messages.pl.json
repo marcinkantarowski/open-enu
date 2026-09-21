@@ -1,0 +1,5 @@
+{
+  "notification.title": "Powiadomienia",
+  "notification.webhook.delivery_failed.body": "Dostarczenie %event% do %url% nie powiodło się po %attempts% próbach. Sprawdź endpoint i wyślij ponownie z ustawień webhooków.",
+  "notification.webhook.delivery_failed.title": "Endpoint webhooka przestał odpowiadać"
+}

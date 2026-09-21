@@ -1,0 +1,13 @@
+# Outside ^/api, so it is readable without a token.
+#
+# A spec describes endpoints that exist whether or not it is published, and
+# every consumer of it - the type generator, an MCP client, an agent reading the
+# repository - needs it before authenticating. A project that wants it private
+# adds a firewall for ^/doc; the default is the one that makes the API usable.
+#
+# JSON only. No Swagger UI: another asset bundle to secure and update, when the
+# spec itself is what tooling consumes.
+app.openapi:
+    path: /doc.json
+    methods: GET
+    defaults: { _controller: nelmio_api_doc.controller.swagger }

@@ -1,0 +1,4 @@
+name: Tenant
+description: Tenants, the scope every other module's data hangs off, and their lifecycle.
+depends: []
+enabled: true

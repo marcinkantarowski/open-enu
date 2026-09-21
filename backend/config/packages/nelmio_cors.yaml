@@ -1,0 +1,44 @@
+# =============================================================================
+#  Cross-origin access to the API.
+# =============================================================================
+#  The three apps are on three hosts - app., manager. and the API's own - so
+#  every call the browser makes is cross-origin by construction. That is a
+#  deliberate consequence of the subdomain layout (.ai/platform/PLAN.md §5), and this file is
+#  where it is paid for.
+#
+#  `allow_credentials: true` is what lets the refresh cookie travel at all, and
+#  it is also why the origin list must be EXACT. The browser refuses a wildcard
+#  origin together with credentials, and a regex here would be worse than a
+#  wildcard: a stray unescaped dot turns `app.open-enu.local` into a pattern that
+#  also matches `appXopen-enu.local`, which someone can register.
+# =============================================================================
+
+nelmio_cors:
+    defaults:
+        # The two origins by name, rather than one comma-separated variable.
+        # The bundle reads this list at COMPILE time to decide whether it must
+        # handle wildcards, so an `env(csv:)` placeholder - still a string at
+        # that point - makes the container fail to build.
+        origin_regex: false
+        allow_origin: ['%env(APP_URL)%', '%env(MANAGER_URL)%']
+        allow_credentials: true
+
+        allow_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+
+        # If-Match carries the version a write is based on (ADR-0019); without it
+        # the browser strips the header and every conflict check silently passes.
+        allow_headers: ['Accept', 'Authorization', 'Content-Type', 'If-Match', 'X-Requested-With']
+
+        # Response headers JavaScript may read. Everything else is invisible to
+        # it, however present it is on the wire:
+        #   ETag           the version to send back on the next write
+        #   X-Request-Id   what a user quotes when reporting a problem
+        expose_headers: ['ETag', 'X-Request-Id', 'Retry-After']
+
+        max_age: 3600
+
+    paths:
+        # Only the API. Signed storage URLs are fetched by the browser directly
+        # and carry no credentials, so they need no CORS headers - and adding
+        # them would only widen the surface.
+        '^/api/': ~

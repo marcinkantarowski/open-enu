@@ -1,0 +1,21 @@
+{
+  "name": "landing",
+  "private": true,
+  "type": "module",
+  "description": "Marketing site - ${DOMAIN}",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@nuxt/content": "^3.0.0",
+    "@open-enu/ui-kit": "*",
+    "better-sqlite3": "^13.0.3",
+    "nuxt": "^4.0.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0"
+  }
+}

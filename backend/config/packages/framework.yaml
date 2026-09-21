@@ -1,0 +1,86 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    # Sessions are deliberately absent: the API is stateless and authenticates
+    # with a JWT plus an httpOnly refresh cookie (ADR-0006). A session here
+    # would be an accident waiting to become a cross-tenant bug.
+    session: false
+
+    http_method_override: false
+    trusted_hosts: ~
+
+    # Behind Traefik. Without this, generated URLs are http:// and the client IP
+    # is the proxy's - which would silently break rate limiting in Phase 3.
+    trusted_proxies: 'private_ranges'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
+
+    php_errors:
+        log: true
+
+    # Every public endpoint is limited. The strictest is manager login (Phase 4):
+    # it is the crown jewel, so it gets the tightest budget rather than an
+    # afterthought.
+    rate_limiter:
+        authLimiter:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
+        registrationLimiter:
+            # Also covers forgot-password: both are address oracles if they can
+            # be called freely, and both send mail on someone else's behalf.
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'
+        refreshLimiter:
+            policy: sliding_window
+            limit: 60
+            interval: '1 hour'
+        managerLoginLimiter:
+            # The strictest budget in the system. One operator account reaches
+            # every tenant's data, so this gets the tightest limit rather than
+            # being treated like any other login.
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+        apiKeyLimiter:
+            policy: sliding_window
+            limit: 1000
+            interval: '1 minute'
+
+when@dev:
+    framework:
+        # Every developer, every browser tab and the whole end-to-end suite
+        # arrive from ONE address here - the machine, or the Docker network. The
+        # production budgets are per attacker; applied to that single shared
+        # address they become "the eleventh sign-in of the afternoon fails",
+        # which is a limit on the developer rather than on anyone hostile.
+        #
+        # Raised, never removed: the limiters stay in the path, so a change that
+        # breaks them still breaks here. The real thresholds are asserted by the
+        # security suite, at the values production actually uses.
+        rate_limiter:
+            authLimiter:
+                limit: 200
+            registrationLimiter:
+                limit: 100
+            refreshLimiter:
+                limit: 600
+            managerLoginLimiter:
+                limit: 100
+
+when@test:
+    framework:
+        test: true
+
+        # Limiters keyed by client IP make tests order-dependent: the fourth
+        # login test fails because the first three spent the budget. Raised, not
+        # disabled - a dedicated test still asserts a 429 at the real threshold.
+        rate_limiter:
+            authLimiter:
+                limit: 10000
+            registrationLimiter:
+                limit: 10000
+            refreshLimiter:
+                limit: 10000
+            managerLoginLimiter:
+                limit: 10000

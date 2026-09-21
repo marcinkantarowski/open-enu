@@ -1,0 +1,4 @@
+name: Progress
+description: Long-running operations, tracked and streamed to whoever started them.
+depends: [Tenant]
+enabled: true

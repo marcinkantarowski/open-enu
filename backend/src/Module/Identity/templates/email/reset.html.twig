@@ -1,0 +1,9 @@
+<p>{{ 'identity.email.reset.body'|trans({}, null, locale) }}</p>
+
+<p><a href="{{ url }}">{{ url }}</a></p>
+
+<p><small>{{ 'identity.email.expires'|trans({'%hours%': expiresInHours}, null, locale) }}</small></p>
+
+{# Always say this: a reset email the recipient did not request is the first
+   signal they get that someone is trying to take their account. #}
+<p><small>{{ 'identity.email.reset.ignore'|trans({}, null, locale) }}</small></p>

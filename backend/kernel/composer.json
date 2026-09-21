@@ -1,0 +1,30 @@
+{
+  "name": "open-enu/kernel",
+  "description": "OpenEnu kernel - the framework layer: module system, tenancy, command bus, and the platform contracts every module builds on.",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.4",
+    "symfony/config": "^7.4",
+    "symfony/dependency-injection": "^7.4",
+    "symfony/http-kernel": "^7.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "OpenEnu\\Kernel\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "OpenEnu\\Kernel\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

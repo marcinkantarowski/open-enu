@@ -1,0 +1,103 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    providers:
+        # Users are looked up by UUID, never by email: the email column is
+        # encrypted, so it cannot be queried, and a decrypted address has no
+        # business being in a token (ADR-0018).
+        identity_users:
+            id: App\Module\Identity\Security\UserProvider
+
+        # A SEPARATE provider over a SEPARATE table. That separation is what
+        # makes realm isolation possible at all - but not sufficient on its own:
+        # both firewalls verify against the same signing key, so the `aud` claim
+        # is what actually closes it (ADR-0007).
+        platform_managers:
+            id: App\Module\Manager\Security\ManagerProvider
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        # Liveness must answer without authentication, or a dependency failure
+        # and an auth failure become indistinguishable to the load balancer.
+        health:
+            pattern: ^/health
+            security: false
+
+        # Signed storage URLs authenticate themselves; the signature IS the
+        # credential, because the browser may fetch them without cookies.
+        storage:
+            pattern: ^/storage/
+            security: false
+
+        # Operator login. Public by necessity, and the most tightly
+        # rate-limited endpoint in the system - one operator account reaches
+        # every tenant's data.
+        manager_login:
+            pattern: ^/api/manager/login$
+            stateless: true
+            security: false
+
+        # The operator realm. MUST be declared before the `api` firewall below,
+        # or pattern matching falls through to it and operator requests get
+        # resolved against the tenant provider.
+        manager_api:
+            pattern: ^/api/manager
+            stateless: true
+            provider: platform_managers
+            jwt: ~
+
+        # Everything that establishes a tenant session is necessarily public,
+        # and is therefore rate-limited in the controller.
+        auth:
+            pattern: ^/api/auth/(register|verify|login|refresh|logout|forgot-password|reset-password|switch-tenant)$
+            stateless: true
+            security: false
+
+        # The tenant realm, reachable two ways.
+        #
+        # The API-key authenticator runs FIRST and claims only bearers carrying
+        # the sk_ prefix, so the two never fight over a token. A key establishes
+        # its own tenant scope - it is the tenant claim, there being no session
+        # to read one from.
+        #
+        # `aud: app` on JWTs is enforced by the kernel's AudienceListener: two
+        # firewalls sharing a signing key are NOT isolated on their own
+        # (ADR-0007).
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: identity_users
+            custom_authenticators:
+                - App\Module\ApiKey\Security\ApiKeyAuthenticator
+            jwt: ~
+
+        main:
+            lazy: true
+
+    access_control:
+        - { path: ^/health, roles: PUBLIC_ACCESS }
+        - { path: ^/storage/, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/, roles: PUBLIC_ACCESS }
+        - { path: ^/api/manager/login$, roles: PUBLIC_ACCESS }
+        # Belt to the firewall's braces: even if a route slipped past the
+        # manager firewall's pattern, it still requires an operator role.
+        - { path: ^/api/manager, roles: ROLE_PLATFORM_MANAGER }
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                # Argon2 is deliberately slow. In a suite that hashes a password
+                # per fixture that is minutes of pure waiting, so tests use the
+                # cheapest work factor the hasher allows.
+                algorithm: auto
+                cost: 4
+                # 3 is Argon2's floor - anything lower is rejected outright, and
+                # the error names an internal parameter rather than this setting.
+                time_cost: 3
+                memory_cost: 8192

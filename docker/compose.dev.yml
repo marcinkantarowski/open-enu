@@ -1,0 +1,435 @@
+# =============================================================================
+#  Development stack - bind-mounted source, hot reload everywhere.
+# =============================================================================
+#  Brought up by `make builddev`. Every host is derived from ${DOMAIN}, so this
+#  file never names a domain literally (.ai/platform/PLAN.md §5).
+#
+#  Also the STAGING stack on a server, with compose.staging.yml on top: staging
+#  is where you vibe code, so it has everything this has - hot reload, Mailpit,
+#  the profiler. The override is what makes that safe to run on the internet.
+#  Everything is named after ${STACK}, so staging and production can share a box.
+# =============================================================================
+
+name: ${STACK:-open-enu}
+
+services:
+
+  # No Traefik here. Routing and TLS belong to the edge - one Traefik shared by
+  # every project on this Docker host (docker/edge/, `make edge`). Two projects
+  # each starting their own would fight over ports 80 and 443.
+  #
+  # So every router and service below is prefixed with the stack name (the
+  # edge sees all projects' labels at once), and every routed container names
+  # the network the edge reaches it on.
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  PostgreSQL - pgvector image so a vector search driver stays a class
+  #  and a migration later, not an infrastructure change (ADR-0021).
+  # ───────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ${STACK:-open-enu}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports: ["${DB_PORT:-5432}:5432"]     # exposed in dev for TablePlus/psql; never in prod
+    networks: [net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Redis - cache and the `jobs` message transport (never domain events)
+  # ───────────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:8-alpine
+    container_name: ${STACK:-open-enu}-redis
+    restart: unless-stopped
+    command: >
+      redis-server --appendonly yes --maxmemory 256mb
+      --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    volumes: [redisdata:/data]
+    networks: [net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Mercure - SSE hub. Anonymous subscribers are allowed in DEV ONLY; in
+  #  production every subscriber token is scoped to /tenants/{tid}/** (PLAN §6.5).
+  # ───────────────────────────────────────────────────────────────────────────
+  # Served at api.${DOMAIN}/.well-known/mercure, not on a host of its own, so the
+  # subscriber cookie can be host-only (see RealtimeTokenController). Traefik
+  # ranks rules by length, so this beats the API's bare Host() rule.
+  mercure:
+    image: dunglas/mercure:v0.16
+    container_name: ${STACK:-open-enu}-mercure
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_JWT_SECRET}
+      MERCURE_EXTRA_DIRECTIVES: |
+        anonymous
+        subscriptions
+        cors_origins https://app.${DOMAIN} https://manager.${DOMAIN}
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-mercure.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/.well-known/mercure`)
+      - traefik.http.routers.${STACK:-open-enu}-mercure.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-mercure.tls=true
+      - traefik.http.services.${STACK:-open-enu}-mercure.loadbalancer.server.port=80
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Symfony API
+  # ───────────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: dev
+      args:
+        # So files the container writes into the bind mount belong to you.
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+    container_name: ${STACK:-open-enu}-api
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      APP_DEBUG: ${APP_DEBUG:-1}
+    volumes:
+      - ./backend:/app
+      - apivendor:/app/vendor          # named volumes: container-owned, and keep
+      - apivar:/app/var                # WSL2 filesystem performance sane
+      # The dev CA, so the API and its workers can reach https://*.${DOMAIN}.
+      # A webhook aimed at this machine fails at the TLS handshake otherwise,
+      # with an error that names a certificate rather than the missing trust.
+      #
+      # The DIRECTORY, not the file: bind-mounting a path that does not exist
+      # makes Docker create a directory there, and a directory named
+      # `rootCA.pem` is worse than an absent one.
+      - ./docker/certs:/etc/open-enu/certs:ro
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-api.rule=Host(`api.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-api.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-api.tls=true
+      - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.server.port=80
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Workers
+  #
+  #  Two, because the transports differ in kind (ADR-0009). Events are
+  #  transactional and must not be starved behind a slow third-party call;
+  #  jobs are fire-and-forget and may take as long as they take.
+  # ───────────────────────────────────────────────────────────────────────────
+  worker-events:
+    build: { context: ., dockerfile: docker/api/Dockerfile, target: dev, args: { UID: "${HOST_UID:-1000}", GID: "${HOST_GID:-1000}" } }
+    container_name: ${STACK:-open-enu}-worker-events
+    restart: unless-stopped
+    # --time-limit recycles the process so a slow leak in a handler cannot grow
+    # unbounded; supervisor restarts it immediately.
+    command: php bin/console messenger:consume outbox --time-limit=3600 --memory-limit=256M -v
+    entrypoint: ["/usr/local/bin/entrypoint"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      APP_DEBUG: ${APP_DEBUG:-1}
+    volumes:
+      - ./backend:/app
+      - apivendor:/app/vendor
+      - apivar:/app/var
+      - ./docker/certs:/etc/open-enu/certs:ro
+    networks: [net]
+
+  worker-jobs:
+    build: { context: ., dockerfile: docker/api/Dockerfile, target: dev, args: { UID: "${HOST_UID:-1000}", GID: "${HOST_GID:-1000}" } }
+    container_name: ${STACK:-open-enu}-worker-jobs
+    restart: unless-stopped
+    command: php bin/console messenger:consume jobs --time-limit=3600 --memory-limit=256M -v
+    entrypoint: ["/usr/local/bin/entrypoint"]
+    # Let an in-flight job finish on restart. At the 10s default, restarting the
+    # worker after a code change SIGKILLs a handler mid-write, which is how a
+    # row ends up stuck in a "processing" state forever.
+    stop_grace_period: 120s
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      APP_DEBUG: ${APP_DEBUG:-1}
+    volumes:
+      - ./backend:/app
+      - apivendor:/app/vendor
+      - apivar:/app/var
+      - ./docker/certs:/etc/open-enu/certs:ro
+    networks: [net]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Nuxt apps - one image, three containers, driven by npm workspaces.
+  #
+  #  The whole repo is mounted at /app so `@open-enu/ui-kit` resolves as a real
+  #  workspace dependency (npm symlinks it into node_modules) rather than by a
+  #  relative path. node_modules lives in a named volume shared by all three:
+  #  installed once by `make builddev`, read-only in practice afterwards.
+  # ───────────────────────────────────────────────────────────────────────────
+  frontend:
+    build: { context: ., dockerfile: docker/node/Dockerfile, target: dev }
+    container_name: ${STACK:-open-enu}-frontend
+    restart: unless-stopped
+    command: npm run dev -w frontend
+    environment: &nuxt_env
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: "3000"
+      NUXT_PUBLIC_DOMAIN: ${DOMAIN}
+      # Vite's HMR websocket is proxied through Traefik over TLS. Without these
+      # the client dials ws://host:3000 directly, which never connects, and
+      # hot reload fails silently - the page just stops updating.
+      VITE_HMR_PROTOCOL: wss
+      VITE_HMR_PORT: "443"
+      VITE_HMR_HOST: app.${DOMAIN}
+    volumes: &nuxt_volumes
+      - .:/app
+      - node_modules:/app/node_modules
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-frontend.rule=Host(`app.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-frontend.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-frontend.tls=true
+      - traefik.http.services.${STACK:-open-enu}-frontend.loadbalancer.server.port=3000
+    healthcheck:
+      # Nuxt's dev server takes 10-20s to compile on boot. Without this, a step
+      # that runs straight after a restart cannot distinguish "still starting"
+      # from "broken" - and `make builddev` raced it into a 502.
+      #
+      # 127.0.0.1, not localhost: in the container localhost resolves to ::1
+      # first, Nuxt binds IPv4 0.0.0.0, and the check gets "connection refused"
+      # from a server that is serving perfectly well.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  manager:
+    build: { context: ., dockerfile: docker/node/Dockerfile, target: dev }
+    container_name: ${STACK:-open-enu}-manager
+    restart: unless-stopped
+    command: npm run dev -w manager
+    environment:
+      <<: *nuxt_env
+      VITE_HMR_HOST: manager.${DOMAIN}
+    volumes: *nuxt_volumes
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-manager.rule=Host(`manager.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-manager.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-manager.tls=true
+      - traefik.http.services.${STACK:-open-enu}-manager.loadbalancer.server.port=3000
+    healthcheck:
+      # Nuxt's dev server takes 10-20s to compile on boot. Without this, a step
+      # that runs straight after a restart cannot distinguish "still starting"
+      # from "broken" - and `make builddev` raced it into a 502.
+      #
+      # 127.0.0.1, not localhost: in the container localhost resolves to ::1
+      # first, Nuxt binds IPv4 0.0.0.0, and the check gets "connection refused"
+      # from a server that is serving perfectly well.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  landing:
+    build: { context: ., dockerfile: docker/node/Dockerfile, target: dev }
+    container_name: ${STACK:-open-enu}-landing
+    restart: unless-stopped
+    command: npm run dev -w landing
+    environment:
+      <<: *nuxt_env
+      VITE_HMR_HOST: ${DOMAIN}
+    volumes: *nuxt_volumes
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-landing.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-landing.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-landing.tls=true
+      - traefik.http.services.${STACK:-open-enu}-landing.loadbalancer.server.port=3000
+    healthcheck:
+      # Nuxt's dev server takes 10-20s to compile on boot. Without this, a step
+      # that runs straight after a restart cannot distinguish "still starting"
+      # from "broken" - and `make builddev` raced it into a 502.
+      #
+      # 127.0.0.1, not localhost: in the container localhost resolves to ::1
+      # first, Nuxt binds IPv4 0.0.0.0, and the check gets "connection refused"
+      # from a server that is serving perfectly well.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Scheduler - the tasks that run on a clock: purging unverified tenants and
+  #  sweeping uploads nobody attached to anything.
+  #
+  #  Hourly in dev rather than daily, so the tasks are observable in a working
+  #  session instead of only at 3am. They are idempotent, so running them often
+  #  costs nothing but log lines.
+  # ───────────────────────────────────────────────────────────────────────────
+  scheduler:
+    build: { context: ., dockerfile: docker/api/Dockerfile, target: dev, args: { UID: "${HOST_UID:-1000}", GID: "${HOST_GID:-1000}" } }
+    container_name: ${STACK:-open-enu}-scheduler
+    restart: unless-stopped
+    user: www-data
+    entrypoint: ["/usr/local/bin/entrypoint"]
+    command: sh /scheduler.sh
+    environment:
+      SCHEDULER_INTERVAL_SECONDS: "3600"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./backend:/app
+      - ./docker/api/scheduler.sh:/scheduler.sh:ro
+      - apivendor:/app/vendor
+      - apivar:/app/var
+      - ./docker/certs:/etc/open-enu/certs:ro
+    networks: [net]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Mailpit - catches every outbound mail in dev. Nothing leaves the machine.
+  # ───────────────────────────────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: ${STACK:-open-enu}-mailpit
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-mailpit.rule=Host(`mail.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-mailpit.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-mailpit.tls=true
+      - traefik.http.services.${STACK:-open-enu}-mailpit.loadbalancer.server.port=8025
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  A webhook receiver, so outbound deliveries have somewhere real to land.
+  #
+  #  Behind the same profile as the test runner: it is test infrastructure, not
+  #  part of the stack. `POST /` records and answers 200, `POST /fail` answers
+  #  500, `GET /last` hands back what it saw - which is how the suite verifies a
+  #  signature with its own HMAC rather than with ours.
+  # ───────────────────────────────────────────────────────────────────────────
+  webhook-echo:
+    image: python:3.13-alpine
+    container_name: ${STACK:-open-enu}-webhook-echo
+    profiles: [e2e]
+    command: python /receiver.py
+    volumes:
+      - ./docker/webhook-echo/receiver.py:/receiver.py:ro
+    networks: [net]
+    # Behind Traefik with TLS, so it is reachable as https://. That matters:
+    # a webhook endpoint must be https:// (the payload is signed, not
+    # encrypted), and a local receiver on plain http would mean carving an
+    # exception into that rule for testing - which is how the rule stops being
+    # one.
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-webhook-echo.rule=Host(`webhook-echo.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-webhook-echo.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-webhook-echo.tls=true
+      - traefik.http.services.${STACK:-open-enu}-webhook-echo.loadbalancer.server.port=9000
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:9000/')\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ───────────────────────────────────────────────────────────────────────────
+  #  Playwright - browser tests against this very stack.
+  #
+  #  Behind a profile, so `docker compose up` never starts it: it is a one-shot
+  #  runner, not a service, and it is invoked by `make e2e`.
+  #
+  #  PLAYWRIGHT_VERSION must match the @playwright/test version in e2e/package.json.
+  #  The image ships the browsers and the package drives them; a mismatch fails
+  #  at startup with a version banner rather than with a confusing test error.
+  # ───────────────────────────────────────────────────────────────────────────
+  e2e:
+    image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION:-1.50.1}-noble
+    container_name: ${STACK:-open-enu}-e2e
+    profiles: [e2e]
+    working_dir: /app/e2e
+    command: npx playwright test
+    # As the host user, like every other container that writes into the bind
+    # mount. The image runs as root by default, and a root-owned trace directory
+    # in the working tree is a file the developer cannot delete.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      CI: "1"
+      # npx and the browser both want somewhere writable; the remapped user has
+      # no home directory inside the image.
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
+      E2E_APP_URL: https://app.${DOMAIN}
+      E2E_MANAGER_URL: https://manager.${DOMAIN}
+      E2E_API_BASE: https://api.${DOMAIN}
+      E2E_SITE_URL: https://${DOMAIN}
+      # The image runs as root by default and then refuses to launch Chromium
+      # without a sandbox; this is the supported way to say "that is expected".
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    networks: [net]
+    depends_on:
+      frontend: { condition: service_healthy }
+      manager: { condition: service_healthy }
+      api: { condition: service_healthy }
+      webhook-echo: { condition: service_healthy }
+
+networks:
+  net:
+    name: ${STACK:-open-enu}-net
+
+volumes:
+  pgdata:
+  redisdata:
+  apivendor:
+  apivar:
+  node_modules:

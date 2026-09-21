@@ -1,0 +1,11 @@
+{
+  "identity.title": "Tożsamość",
+  "identity.email.verify.subject": "Potwierdź swój adres e-mail",
+  "identity.email.verify.body": "Potwierdź adres, aby dokończyć zakładanie konta.",
+  "identity.email.reset.subject": "Zresetuj hasło",
+  "identity.email.reset.body": "Użyj poniższego linku, aby ustawić nowe hasło.",
+  "identity.email.reset.ignore": "Jeśli to nie Ty prosiłeś o zmianę, zignoruj tę wiadomość - hasło pozostaje bez zmian.",
+  "identity.email.invite.subject": "Zaproszenie do %tenant%",
+  "identity.email.invite.body": "Otrzymujesz zaproszenie do dołączenia do %tenant%.",
+  "identity.email.expires": "Link wygasa za %hours% godz."
+}

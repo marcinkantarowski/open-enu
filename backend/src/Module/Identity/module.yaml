@@ -1,0 +1,4 @@
+name: Identity
+description: Users, their memberships of tenants, and everything that authenticates one.
+depends: [Tenant]
+enabled: true

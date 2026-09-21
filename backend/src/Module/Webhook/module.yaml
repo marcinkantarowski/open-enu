@@ -1,0 +1,6 @@
+# Read by the kernel at container-compile time. The name MUST match the
+# directory name - it is the PSR-4 namespace segment.
+name: Webhook
+description: Outbound webhooks - per-tenant endpoints subscribed to domain events, signed and retried.
+depends: []
+enabled: true

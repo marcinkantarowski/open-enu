@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Fast pre-commit gate. Installed by `make builddev`:
+#   git config core.hooksPath .githooks
+# Bypass with --no-verify when you genuinely need to; it is not a moral failing.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+fail=0
+
+# ── secrets ─────────────────────────────────────────────────────────────────
+# Blocked: the root .env (every credential), any *.local override, private keys
+# and certificates.
+#
+# Allowed: backend/.env - Symfony's COMMITTED defaults file. It holds no
+# secrets; the real values live in the generated backend/.env.local. An earlier
+# version of this hook matched it and would have blocked every commit that
+# touched framework configuration.
+secrets="$(git diff --cached --name-only | grep -E \
+  '^\.env$|^\.env\.[^e]|\.env\.local$|\.env\..*\.local$|\.pem$|\.key$|^docker/certs/' || true)"
+
+if [ -n "$secrets" ]; then
+  echo "✗ refusing to commit secrets or credentials:" >&2
+  sed 's/^/    /' <<<"$secrets" >&2
+  fail=1
+fi
+
+# ── fast checks ─────────────────────────────────────────────────────────────
+# Deliberately the host-side subset: a pre-commit hook that needs Docker running
+# is a hook people disable.
+for check in agents-budget check-modules check-docs check-i18n; do
+  if ! "./scripts/dev/$check.sh" >/dev/null 2>&1; then
+    echo "✗ $check failed - run: ./scripts/dev/$check.sh" >&2
+    fail=1
+  fi
+done
+
+[ $fail -eq 0 ] || echo "  (bypass with: git commit --no-verify)" >&2
+exit $fail

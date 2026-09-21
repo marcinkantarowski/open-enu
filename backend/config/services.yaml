@@ -1,0 +1,22 @@
+# Application service wiring.
+#
+# Module services are NOT registered here: the kernel discovers every enabled
+# module under src/Module/ and registers its Service/, Repository/, Listener/,
+# Handler/, Command/, Security/Voter/ and Controller/ directories itself.
+# Adding a module means adding a directory - never editing this file.
+#
+# @see \OpenEnu\Kernel\DependencyInjection\OpenEnuKernelExtension
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            # Owned by the kernel's discovery pass. Registering them here too
+            # would define every module service twice, with the last definition
+            # silently winning.
+            - '../src/Module/'

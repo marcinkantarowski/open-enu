@@ -1,0 +1,17 @@
+# Application-level controllers (rare - features belong in modules).
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+
+# Every enabled module's Controller/ directory. A glob would not respect
+# `enabled: false`, which must remove a module's routes along with its services.
+modules:
+    resource: .
+    type: open_enu_modules
+
+# Kernel-provided endpoints (health today).
+kernel:
+    resource: ../kernel/src/Http/Controller/
+    type: attribute

@@ -1,0 +1,8 @@
+{
+  "$comment": "Identity of THIS project. Rewritten by `make init NAME=...`. The kernel package (open-enu/kernel, OpenEnu\\Kernel\\, @open-enu/ui-kit) is deliberately NOT listed here - it is the framework's name and never changes, which is what lets a project pull kernel updates later. See .ai/platform/PLAN.md §2 and .ai/platform/adr/0016-kernel-packaging.md.",
+  "initialized": false,
+  "slug": "open-enu",
+  "name": "OpenEnu",
+  "domain": "open-enu.local",
+  "db": "open_enu"
+}

@@ -1,0 +1,4 @@
+name: Audit
+description: The durable record of every change - who, what, when, and what it looked like before.
+depends: [Tenant]
+enabled: true

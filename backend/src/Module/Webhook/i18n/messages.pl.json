@@ -1,0 +1,5 @@
+{
+  "webhook.title": "Webhooki",
+  "webhook.delivery.failed": "Dostarczenie do %url% nie powiodło się po %attempts% próbach.",
+  "webhook.endpoint.created": "Endpoint webhooka utworzony."
+}

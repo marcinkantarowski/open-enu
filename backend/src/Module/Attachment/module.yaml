@@ -1,0 +1,4 @@
+name: Attachment
+description: Files any module can attach to its records, stored per tenant and served by expiring URL.
+depends: [Tenant]
+enabled: true

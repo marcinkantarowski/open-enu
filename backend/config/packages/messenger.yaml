@@ -1,0 +1,76 @@
+framework:
+    messenger:
+        # ─────────────────────────────────────────────────────────────────────
+        #  Transports. The split is the whole point (ADR-0009).
+        # ─────────────────────────────────────────────────────────────────────
+        transports:
+            # Domain events. Doctrine, NOT Redis - the row that queues the event
+            # is written in the same database transaction as the entity change
+            # that raised it. A rollback takes the event with it; a commit
+            # guarantees delivery. A Redis send cannot participate in that
+            # transaction, so an event on Redis can survive a rolled-back write.
+            outbox:
+                dsn: '%env(MESSENGER_TRANSPORT_OUTBOX)%'
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 3
+
+            # Fire-and-forget work with no transactional relationship to a write:
+            # sending email, rendering a PDF, calling a third party.
+            jobs:
+                dsn: '%env(MESSENGER_TRANSPORT_JOBS)%'
+                retry_strategy:
+                    max_retries: 5
+                    delay: 2000
+                    multiplier: 3
+
+            # Dead letters on Doctrine so a failure is an inspectable row you can
+            # read with psql and replay, rather than an opaque blob in Redis.
+            failed: '%env(MESSENGER_TRANSPORT_FAILED)%'
+
+        failure_transport: failed
+
+        buses:
+            messenger.bus.default:
+                middleware:
+                    # Correlation id out to the worker and back into its logs.
+                    - OpenEnu\Kernel\Messenger\RequestIdMiddleware
+
+                    # Tenant scope out to the worker. Without it a handler runs
+                    # unscoped, and the fail-closed filter turns that into a job
+                    # that silently does nothing.
+                    - OpenEnu\Kernel\Messenger\TenantScopeMiddleware
+
+                    # Messages dispatched inside a handler are sent only once
+                    # that handler has finished, so a handler cannot observe a
+                    # half-applied state or emit an event for work that then
+                    # rolls back.
+                    - dispatch_after_current_bus
+
+                    # Wraps handling in a transaction. Combined with the Doctrine
+                    # transport above, this is what makes the outbox atomic.
+                    - doctrine_transaction
+
+        routing:
+            # Every DomainEvent goes to the outbox. Messenger matches parent
+            # classes, so one line covers every event any module ever defines.
+            #
+            # This also removes a sharp edge: on the synchronous bus a message
+            # with no handler is an ERROR, so announcing something nobody
+            # happens to be listening for yet would fail the request that
+            # announced it. An event is a statement of fact - whether anyone
+            # cares is not the publisher's problem.
+            OpenEnu\Kernel\Event\DomainEvent: outbox
+
+            # Background work, by the same mechanism: one line covers every job
+            # any module ever defines. Redis rather than Doctrine, because a job
+            # has no transactional relationship to the write that asked for it -
+            # it is dispatched by a handler once that write has committed.
+            OpenEnu\Kernel\Message\JobInterface: jobs
+
+            # Mail goes to the same queue, for the same reason: an SMTP timeout
+            # must not fail a registration that has already been committed. The
+            # mailer calls are written as if they send inline; this line is what
+            # makes them not.
+            Symfony\Component\Mailer\Messenger\SendEmailMessage: jobs

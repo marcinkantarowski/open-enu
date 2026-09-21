@@ -1,0 +1,13 @@
+{
+  "name": "e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests against the running dev stack. Runs in `make ci`, never in `make check`.",
+  "scripts": {
+    "test": "playwright test",
+    "//": "The @playwright/test version MUST match PLAYWRIGHT_VERSION in docker/compose.dev.yml: the image ships the browsers, this package drives them."
+  },
+  "devDependencies": {
+    "@playwright/test": "1.50.1"
+  }
+}

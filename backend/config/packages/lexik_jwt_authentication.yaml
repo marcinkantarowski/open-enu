@@ -1,0 +1,12 @@
+lexik_jwt_authentication:
+    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
+    public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
+    pass_phrase: '%env(JWT_PASSPHRASE)%'
+
+    # 15 minutes. Short because the token is a bearer credential the browser
+    # holds in memory; the refresh cookie carries the long-lived half (ADR-0006).
+    token_ttl: 900
+
+    # The subject claim holds the UUID. Not the email: it is encrypted, so it
+    # cannot be queried, and a decrypted address has no business in a token.
+    user_id_claim: sub

@@ -1,0 +1,26 @@
+{
+  "name": "open-enu",
+  "private": true,
+  "description": "OpenEnu - Symfony API + three Nuxt apps, designed to be read and extended by AI agents.",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "ui-kit",
+    "frontend",
+    "manager",
+    "landing",
+    "e2e"
+  ],
+  "scripts": {
+    "//": "Entry points are Make targets, not npm scripts. These exist so tooling that expects npm scripts finds something sensible.",
+    "check": "make check",
+    "ci": "make ci"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "knip": "^5.42.0",
+    "typescript": "^5.7.0",
+    "vue-tsc": "^3.0.0"
+  }
+}

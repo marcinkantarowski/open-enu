@@ -1,0 +1,88 @@
+name: CI
+
+# A clean clone, the whole gate, nothing skipped. `make ci` is the same command
+# a developer runs locally - if CI needed its own variant of it, the local one
+# would stop being the truth within a month.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # A second push supersedes the first: the older run's verdict is about code
+  # nobody will merge.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: make ci
+    runs-on: ubuntu-latest
+    # The browser suite waits on a real stack coming up; the rest is minutes.
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mkcert
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/mkcert \
+            https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64
+          sudo install -m 0755 /tmp/mkcert /usr/local/bin/mkcert
+          sudo apt-get update -qq && sudo apt-get install -y -qq libnss3-tools dnsutils
+          mkcert -install
+
+      - name: Toolchain
+        run: make check-tools
+
+      # Every per-app env file is DERIVED from .env, which is created from
+      # .env.example on first run. Nothing here is configured a second time.
+      - name: Derive every env file
+        run: make env
+
+      # `make builddev` writes these itself; doing it here first means a
+      # failure in the hosts step is reported as a hosts problem rather than as
+      # an unexplained connection refused twenty lines later.
+      - name: Map the hosts
+        run: make hosts
+
+      - name: Bring the stack up
+        run: make builddev
+
+      - name: The gate
+        run: make ci
+
+      # Only on failure, and only what a human would actually open: traces and
+      # the report. A green run uploading artefacts nobody looks at is minutes
+      # added to every merge.
+      - name: Browser suite artefacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            e2e/.report
+            e2e/.results
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: What the containers said
+        if: failure()
+        run: docker compose --env-file .env -f docker/compose.dev.yml logs --tail=200
+
+  guardrails:
+    name: make selftest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Deliberately its own job, and deliberately not needing the stack: it
+    # copies the tree, BREAKS each guardrail in the copy, and asserts that the
+    # check fails. A guardrail nobody has ever seen fail is a guardrail nobody
+    # can trust - and this is the cheapest job here, so it reports first.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prove every guardrail fails when broken
+        run: make selftest

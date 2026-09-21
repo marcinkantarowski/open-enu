@@ -1,0 +1,12 @@
+mercure:
+    hubs:
+        default:
+            # The URL the BACKEND publishes to (container-internal), and the one
+            # the BROWSER subscribes to. They differ, and using the public URL
+            # for publishing makes every publish take a round trip through
+            # Traefik for no reason.
+            url: '%env(MERCURE_URL)%'
+            public_url: '%env(MERCURE_PUBLIC_URL)%'
+            jwt:
+                secret: '%env(MERCURE_JWT_SECRET)%'
+                publish: ['*']

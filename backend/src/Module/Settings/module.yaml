@@ -1,0 +1,4 @@
+name: Settings
+description: Runtime configuration and kill switches - global defaults with per-tenant overrides.
+depends: [Tenant]
+enabled: true

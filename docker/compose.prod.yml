@@ -1,0 +1,261 @@
+# =============================================================================
+#  Production stack - immutable images. Staging is NOT this file: staging is the
+#  dev stack plus compose.staging.yml, because staging is where you vibe code.
+# =============================================================================
+#  What is deliberately ABSENT compared with compose.dev.yml, and why:
+#
+#    no source bind-mounts   images are immutable, so a deploy replaces a
+#                            container rather than the files inside a running one
+#    no exposed DB port      the database is reachable from the app network only
+#    no Traefik              routing and Let's Encrypt belong to the edge, one per
+#                            server (docker/edge/), so staging and production can
+#                            share a box without fighting over ports 80 and 443
+#    no Mailpit              real mail goes through a real provider
+#    no mkcert               certificates come from Let's Encrypt
+#
+#  Every image is pinned to a version tag. `latest` means a `docker compose pull`
+#  six months from now silently deploys a different system than the one tested.
+# =============================================================================
+
+name: ${STACK:-open-enu}
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  # Bounded at the container, not only on the daemon: a box provisioned by hand
+  # or by an older script still cannot fill its disk with one service's logs.
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ${STACK:-open-enu}-postgres
+    <<: [*restart, *logging]
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    # No `ports:`. In dev the port is published for TablePlus; here the only way
+    # in is `make tunnel`, which forwards it over SSH for one session.
+    networks: [net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: ${STACK:-open-enu}-redis
+    <<: [*restart, *logging]
+    command: >
+      redis-server --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes: [redisdata:/data]
+    networks: [net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mercure:
+    image: dunglas/mercure:v0.16
+    container_name: ${STACK:-open-enu}-mercure
+    <<: [*restart, *logging]
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_JWT_SECRET}
+      # cors_origins, not a wildcard: the subscriber token is a cookie, and a
+      # wildcard origin with credentials is refused by browsers anyway.
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins https://app.${DOMAIN} https://manager.${DOMAIN}
+        anonymous 0
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-mercure.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/.well-known/mercure`)
+      - traefik.http.routers.${STACK:-open-enu}-mercure.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-mercure.tls.certresolver=letsencrypt
+      - traefik.http.services.${STACK:-open-enu}-mercure.loadbalancer.server.port=80
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: prod
+    image: ${STACK:-open-enu}-api:${RELEASE:-latest}
+    container_name: ${STACK:-open-enu}-api
+    <<: [*restart, *logging]
+    env_file: [./backend/.env.local]
+    volumes:
+      # The only writable paths. Everything else in the image is immutable,
+      # which is what makes opcache.validate_timestamps=0 safe.
+      - apivar:/app/var
+      - storage:/app/var/storage
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-api.rule=Host(`api.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-api.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-api.tls.certresolver=letsencrypt
+      - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.server.port=80
+      # Traefik polls the SHALLOW check. The deep one touches the database and
+      # Redis, and putting that on a 10-second loop turns a slow query into a
+      # load-balancer flap.
+      - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.healthcheck.path=/health
+      - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.healthcheck.interval=10s
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits: { memory: 768m }
+
+  worker-events:
+    build: { context: ., dockerfile: docker/api/Dockerfile, target: prod }
+    image: ${STACK:-open-enu}-api:${RELEASE:-latest}
+    container_name: ${STACK:-open-enu}-worker-events
+    <<: [*restart, *logging]
+    env_file: [./backend/.env.local]
+    # --time-limit recycles the process so a slow leak cannot grow unbounded;
+    # `restart: unless-stopped` brings it straight back.
+    command: php bin/console messenger:consume outbox --time-limit=3600 --memory-limit=192M
+    volumes: [apivar:/app/var, storage:/app/var/storage]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [net]
+    deploy:
+      resources:
+        limits: { memory: 384m }
+
+  worker-jobs:
+    build: { context: ., dockerfile: docker/api/Dockerfile, target: prod }
+    image: ${STACK:-open-enu}-api:${RELEASE:-latest}
+    container_name: ${STACK:-open-enu}-worker-jobs
+    <<: [*restart, *logging]
+    env_file: [./backend/.env.local]
+    command: php bin/console messenger:consume jobs --time-limit=3600 --memory-limit=192M
+    volumes: [apivar:/app/var, storage:/app/var/storage]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [net]
+    deploy:
+      resources:
+        limits: { memory: 384m }
+
+  scheduler:
+    build: { context: ., dockerfile: docker/api/Dockerfile, target: prod }
+    image: ${STACK:-open-enu}-api:${RELEASE:-latest}
+    container_name: ${STACK:-open-enu}-scheduler
+    <<: [*restart, *logging]
+    env_file: [./backend/.env.local]
+    command: sh /scheduler.sh
+    volumes:
+      - ./docker/api/scheduler.sh:/scheduler.sh:ro
+      - apivar:/app/var
+      - storage:/app/var/storage
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [net]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+      target: prod
+      args: { APP: frontend }
+    image: ${STACK:-open-enu}-frontend:${RELEASE:-latest}
+    container_name: ${STACK:-open-enu}-frontend
+    <<: [*restart, *logging]
+    env_file: [./frontend/.env]
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-frontend.rule=Host(`app.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-frontend.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-frontend.tls.certresolver=letsencrypt
+      - traefik.http.services.${STACK:-open-enu}-frontend.loadbalancer.server.port=3000
+    deploy:
+      resources:
+        limits: { memory: 384m }
+
+  manager:
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+      target: prod
+      args: { APP: manager }
+    image: ${STACK:-open-enu}-manager:${RELEASE:-latest}
+    container_name: ${STACK:-open-enu}-manager
+    <<: [*restart, *logging]
+    env_file: [./manager/.env]
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-manager.rule=Host(`manager.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-manager.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-manager.tls.certresolver=letsencrypt
+      - traefik.http.services.${STACK:-open-enu}-manager.loadbalancer.server.port=3000
+    deploy:
+      resources:
+        limits: { memory: 384m }
+
+  landing:
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+      target: prod
+      args: { APP: landing }
+    image: ${STACK:-open-enu}-landing:${RELEASE:-latest}
+    container_name: ${STACK:-open-enu}-landing
+    <<: [*restart, *logging]
+    env_file: [./landing/.env]
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK:-open-enu}-net
+      - traefik.http.routers.${STACK:-open-enu}-landing.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)
+      - traefik.http.routers.${STACK:-open-enu}-landing.entrypoints=websecure
+      - traefik.http.routers.${STACK:-open-enu}-landing.tls.certresolver=letsencrypt
+      - traefik.http.services.${STACK:-open-enu}-landing.loadbalancer.server.port=3000
+    deploy:
+      resources:
+        limits: { memory: 384m }
+
+networks:
+  # One network, joined by the edge (`edge.sh attach`). The database and Redis
+  # have no router, so the edge has no route to them - being on the segment is
+  # not the same as being reachable from the internet.
+  net:
+    name: ${STACK:-open-enu}-net
+
+volumes:
+  pgdata:
+  redisdata:
+  apivar:
+  storage:

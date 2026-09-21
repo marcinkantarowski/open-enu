@@ -1,0 +1,55 @@
+# ── secrets & generated env ────────────────────────────────────────────────
+# Root .env holds every credential. backend/.env is Symfony's committed
+# DEFAULTS file (no secrets); backend/.env.local is the generated one.
+/.env
+/.env.*
+!/.env.example
+backend/.env.local
+backend/.env.*.local
+frontend/.env
+manager/.env
+landing/.env
+e2e/.env
+
+# ── credentials & certificates ─────────────────────────────────────────────
+backend/config/jwt/
+docker/certs/
+
+# ── generated output (never committed) ─────────────────────────────────────
+.out/
+
+# ── dependencies ───────────────────────────────────────────────────────────
+vendor/
+node_modules/
+.pnp.*
+
+# ── build & framework caches ───────────────────────────────────────────────
+backend/var/
+backend/public/bundles/
+.nuxt/
+.output/
+.data/
+dist/
+*.tsbuildinfo
+
+# ── test artifacts ─────────────────────────────────────────────────────────
+backend/.phpunit.cache/
+coverage/
+e2e/test-results/
+e2e/playwright-report/
+e2e/.cache/
+# Where playwright.config.ts actually puts them: traces, screenshots, the report.
+e2e/.results/
+e2e/.report/
+
+# ── editors & OS ───────────────────────────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ── deployment artefacts ───────────────────────────────────────────────────
+# Local dumps taken by scripts/remote/backup.sh when run against this checkout.
+# (.out/ is already ignored above - that is where DNS remediation is written.)
+backups/

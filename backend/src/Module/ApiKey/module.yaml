@@ -1,0 +1,4 @@
+name: ApiKey
+description: Machine credentials - scoped, revocable keys for clients that are not browsers.
+depends: [Tenant]
+enabled: true

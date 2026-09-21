@@ -1,0 +1,6 @@
+# Read by the kernel at container-compile time. The name MUST match the
+# directory name - it is the PSR-4 namespace segment.
+name: Notification
+description: The in-app feed and the mail behind it - one registry of types, per-user read state.
+depends: [Identity]
+enabled: true

@@ -1,0 +1,4 @@
+name: Manager
+description: The platform-operator realm - a separate identity, a separate firewall, a separate app.
+depends: [Tenant, Identity, Audit]
+enabled: true

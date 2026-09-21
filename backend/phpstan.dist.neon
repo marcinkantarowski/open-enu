@@ -1,0 +1,59 @@
+# Static analysis and the architecture rules.
+#
+# Level 8 is the type-safety baseline. The rules under `services:` are the part
+# that matters most here: they are ADR-0002 and ADR-0016 made executable, so a
+# boundary violation is a build failure rather than a review comment somebody
+# might make.
+#
+# Run with `make stan` (types only) or `make arch` (everything).
+
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+
+parameters:
+    level: 8
+
+    paths:
+        - src
+        - kernel/src
+        - kernel/tests
+
+    excludePaths:
+        analyseAndScan:
+            # Fixtures are deliberately-broken code used to prove the rules fire.
+            - kernel/tests/PHPStan/data/*
+
+    # Lets phpstan-symfony understand the container and the router.
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+
+    # Generated migrations are Doctrine's output, not our code.
+    scanDirectories:
+        - vendor
+
+    treatPhpDocTypesAsCertain: false
+
+services:
+    -
+        class: OpenEnu\Kernel\PHPStan\ModuleBoundaryRule
+        tags: [phpstan.rules.rule]
+    -
+        class: OpenEnu\Kernel\PHPStan\KernelPurityRule
+        tags: [phpstan.rules.rule]
+    -
+        class: OpenEnu\Kernel\PHPStan\ThinControllerRule
+        tags: [phpstan.rules.rule]
+    -
+        class: OpenEnu\Kernel\PHPStan\RawSqlRule
+        tags: [phpstan.rules.rule]
+    -
+        class: OpenEnu\Kernel\PHPStan\PersistenceBoundaryRule
+        tags: [phpstan.rules.rule]
+    -
+        class: OpenEnu\Kernel\PHPStan\PlatformServiceRule
+        tags: [phpstan.rules.rule]
+    -
+        class: OpenEnu\Kernel\PHPStan\FilesystemAccessRule
+        tags: [phpstan.rules.rule]
