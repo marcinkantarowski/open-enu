@@ -1,9 +1,11 @@
-# Dependency updates, weekly, grouped.
+# Dependency updates, monthly, grouped.
 #
 # Grouped deliberately: twenty single-dependency pull requests a week is a
 # notification stream people mute, and a muted update stream is how a project
 # ends up three majors behind on the thing with the CVE. One PR per ecosystem
-# per week is a thing somebody actually reviews.
+# per month is a thing somebody actually reviews - and each one is a full CI
+# run. Security updates do not wait for the schedule: Dependabot opens those
+# as soon as an advisory lands, whatever the interval says.
 #
 # Every one of them runs `make ci`, which is what makes accepting them cheap.
 version: 2
@@ -11,7 +13,7 @@ updates:
   - package-ecosystem: composer
     directory: /backend
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 3
     groups:
       symfony:
@@ -23,7 +25,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 3
     ignore:
       # 13.x publishes no prebuilt binaries, so `npm install` compiles it with
@@ -46,11 +48,11 @@ updates:
       - /docker/api
       - /docker/node
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 2
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 2
