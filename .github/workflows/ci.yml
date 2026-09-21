@@ -3,6 +3,12 @@ name: CI
 # A clean clone, the whole gate, nothing skipped. `make ci` is the same command
 # a developer runs locally - if CI needed its own variant of it, the local one
 # would stop being the truth within a month.
+#
+# A push to main does NOT run the gate again. The ruleset only merges a branch
+# that is up to date with main and green, so the merged tree is the tree the
+# pull request already tested. What main does run is `cache`: it builds the
+# images and stores their layers, because the Actions cache written on the
+# default branch is the only one every pull request can read.
 on:
   push:
     branches: [main]
@@ -23,6 +29,7 @@ concurrency:
 jobs:
   gate:
     name: make ci
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     # The browser suite waits on a real stack coming up; the rest is minutes.
     timeout-minutes: 40
@@ -46,6 +53,22 @@ jobs:
       # .env.example on first run. Nothing here is configured a second time.
       - name: Derive every env file
         run: make env
+
+      # The builds read their layers from the Actions cache (docker/compose.ci.yml).
+      # COMPOSE_FILE is how every script and target picks the files up.
+      - name: Use the CI compose override
+        run: sed -i 's|^COMPOSE_FILE=.*|COMPOSE_FILE=docker/compose.dev.yml:docker/compose.ci.yml|' .env
+
+      # The gha cache backend is spoken by buildx, not by the docker driver, and
+      # it authenticates with the runtime token that only JavaScript actions see.
+      - uses: docker/setup-buildx-action@v3
+      - name: Expose the Actions cache to buildx
+        uses: actions/github-script@v7
+        with:
+          script: |
+            for (const k of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
+              if (process.env[k]) core.exportVariable(k, process.env[k])
+            }
 
       # `make builddev` writes these itself; doing it here first means a
       # failure in the hosts step is reported as a hosts problem rather than as
@@ -75,10 +98,13 @@ jobs:
 
       - name: What the containers said
         if: failure()
-        run: docker compose --env-file .env -f docker/compose.dev.yml logs --tail=200
+        # COMPOSE_FILE comes from .env, like everywhere else. --project-directory
+        # keeps paths relative to the checkout rather than to docker/.
+        run: docker compose --project-directory . logs --tail=200
 
   guardrails:
     name: make selftest
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -91,3 +117,32 @@ jobs:
 
       - name: Prove every guardrail fails when broken
         run: make selftest
+
+  cache:
+    name: warm the image cache
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Same steps as the gate up to the build, so the layers it stores are the
+    # layers the gate asks for: same Dockerfiles, same args, same runner uid.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Derive every env file
+        run: make env
+
+      - name: Use the CI compose override
+        run: sed -i 's|^COMPOSE_FILE=.*|COMPOSE_FILE=docker/compose.dev.yml:docker/compose.ci.yml|' .env
+
+      - uses: docker/setup-buildx-action@v3
+      - name: Expose the Actions cache to buildx
+        uses: actions/github-script@v7
+        with:
+          script: |
+            for (const k of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
+              if (process.env[k]) core.exportVariable(k, process.env[k])
+            }
+
+      - name: Build every image and store its layers
+        run: docker compose --project-directory . build

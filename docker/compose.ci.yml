@@ -1,0 +1,45 @@
+# =============================================================================
+#  CI override - the dev stack, with its image builds cached between runs.
+# =============================================================================
+#  Used as: -f compose.dev.yml -f compose.ci.yml  (COMPOSE_FILE in .env, set by
+#  .github/workflows/ci.yml - never on a developer's machine or a server)
+#
+#  A clean runner builds every image from nothing, and most of that is PHP
+#  extensions compiling from source - about two and a half minutes of every
+#  run, for a Dockerfile that almost never changes. This file stores the build
+#  layers in the GitHub Actions cache and reads them back.
+#
+#  One scope per Dockerfile, not per service: api, both workers and the
+#  scheduler are the same image, and so are the three Nuxt apps. One writer per
+#  scope - the others only read, so four identical exports do not race.
+#
+#  Needs a buildx builder with the docker-container driver and the Actions
+#  runtime token exported to the step; the workflow sets up both.
+# =============================================================================
+
+x-api-cache: &api-cache
+  cache_from: ["type=gha,scope=api"]
+
+x-node-cache: &node-cache
+  cache_from: ["type=gha,scope=node"]
+
+services:
+  api:
+    build:
+      <<: *api-cache
+      cache_to: ["type=gha,scope=api,mode=max"]
+  worker-events:
+    build: *api-cache
+  worker-jobs:
+    build: *api-cache
+  scheduler:
+    build: *api-cache
+
+  frontend:
+    build:
+      <<: *node-cache
+      cache_to: ["type=gha,scope=node,mode=max"]
+  manager:
+    build: *node-cache
+  landing:
+    build: *node-cache
