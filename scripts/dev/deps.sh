@@ -8,12 +8,25 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 . "$ROOT/scripts/lib/compose.sh"; compose_init "$ROOT"
 CO=("${COMPOSE[@]}")
 
+# Runs a command quietly: the last few lines when it succeeds, the last forty
+# when it fails. A bare `| tail -4` cut the actual error off and left only
+# "A complete log of this run can be found in..." - a path inside a container
+# that `run --rm` has already deleted.
+quiet() {
+  local out rc
+  out="$(mktemp)"
+  "$@" >"$out" 2>&1; rc=$?
+  if [ "$rc" -eq 0 ]; then tail -4 "$out"; else tail -40 "$out"; fi
+  rm -f "$out"
+  return "$rc"
+}
+
 log_step "PHP dependencies (in the api container)"
 # As www-data (remapped to the host uid), not root - otherwise every install
 # leaves root-owned files in the bind-mounted source. COMPOSER_HOME must be
 # writable for that user.
-if "${CO[@]}" exec -T -u www-data -e COMPOSER_HOME=/tmp/composer api \
-     composer install --no-interaction --no-progress 2>&1 | tail -3; then
+if quiet "${CO[@]}" exec -T -u www-data -e COMPOSER_HOME=/tmp/composer api \
+     composer install --no-interaction --no-progress; then
   log_ok "composer install"
 else
   log_fail "composer install failed" "inspect: make logs-api"; exit 1
@@ -28,7 +41,7 @@ log_step "Node dependencies (npm workspaces)"
 # containers have no `nuxt` binary yet, so there is nothing to exec into. The
 # image entrypoint installs on first boot anyway; this target is the explicit
 # re-install after a package.json change.
-if "${CO[@]}" run --rm --no-deps --entrypoint sh frontend -c 'npm install --no-audit --no-fund' 2>&1 | tail -4; then
+if quiet "${CO[@]}" run --rm --no-deps --entrypoint sh frontend -c 'npm install --no-audit --no-fund'; then
   log_ok "npm install (root workspace)"
 else
   log_fail "npm install failed" "inspect: make logs-ui"; exit 1
