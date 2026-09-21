@@ -81,7 +81,7 @@ generated types and MCP input schemas are free-form. See
 
 ```bash
 make builddev      # the whole stack, from nothing, locally
-make check         # the inner loop - run after every edit (~6s)
+make check         # the inner loop - run after every edit (~5s)
 make ci            # everything: guardrails, tests, types, browser suite
 make smoke         # every host answers, with the right body
 make module NAME=X # a feature, scaffolded across backend, frontend and docs
@@ -138,6 +138,40 @@ them. That invariant is the most important one here, so it is guarded by `make s
 and the guard has been verified to fail when the protection is removed.
 See [ADR-0016](.ai/platform/adr/0016-kernel-packaging.md).
 
+## Changing it
+
+`main` is protected: nothing is pushed to it directly, nothing is force-pushed, and nothing
+merges until CI is green on a branch that is up to date with it.
+
+```bash
+git switch -c my-change
+make check                  # after every edit
+make ci                     # before opening the pull request - the same gate CI runs
+git push -u origin my-change   # then open a pull request
+```
+
+A pull request runs two required checks in GitHub Actions
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+
+- **`make selftest`** - about twenty seconds: breaks every guardrail in a throwaway copy
+  and proves each one fails.
+- **`make ci`** - about seven minutes from a cold cache: brings the whole stack up from
+  nothing on a clean runner, then guardrails, PHP suites, smoke, type-check and the browser
+  suite. Image layers are cached (`docker/compose.ci.yml`), so a run whose Dockerfiles did
+  not change skips most of the build.
+
+A push to `main` does not run the gate again - the merged tree is the one the pull request
+tested. It only rebuilds the images to refresh that cache. A pull request from a fork waits
+for a maintainer to approve its run, and the workflow's token can read the repository and
+nothing else.
+
+Dependabot opens grouped updates once a month per ecosystem - composer, npm, Docker images
+and GitHub Actions - and security fixes as soon as an advisory lands. Each is an ordinary
+pull request through the same gate.
+
+An AI agent working in this repository edits, runs the checks and stops there: commits,
+pushes and merges are made by a person ([AGENTS.md](AGENTS.md)).
+
 ## Layout
 
 ```
@@ -150,8 +184,13 @@ landing/          ${DOMAIN}           marketing site
 e2e/              Playwright - what functional tests cannot see
 docker/           compose files, Traefik, Postgres init
 scripts/          lib/ shared shell · dev/ local · remote/ provisioning
-.ai/              docs, specs, ADRs, lessons, skills
+.ai/              this project's ADRs, specs, lessons, analyses - never touched by an update
+.ai/platform/     the platform's docs, specs, ADRs, lessons, skills - replaced by an update
 ```
+
+Which side a record belongs to is decided by `.project.json`, not by judgement - see
+[`.ai/README.md`](.ai/README.md) and
+[ADR-0023](.ai/platform/adr/0023-platform-and-project-knowledge-are-separate-trees.md).
 
 ## Configuration
 
@@ -176,4 +215,4 @@ on Windows, so `make builddev` reaches across that boundary for the hosts file a
 
 ## License
 
-MIT.
+MIT - see [LICENSE](LICENSE).
