@@ -9,6 +9,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# The token can read the code and nothing else. A pull request from a fork runs
+# this workflow; what it cannot write, it cannot vandalise.
+permissions:
+  contents: read
+
 concurrency:
   # A second push supersedes the first: the older run's verdict is about code
   # nobody will merge.
