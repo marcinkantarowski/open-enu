@@ -13,7 +13,7 @@
   "dependencies": {
     "@nuxt/content": "^3.0.0",
     "@open-enu/ui-kit": "*",
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "^12.11.1",
     "nuxt": "^4.0.0",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
