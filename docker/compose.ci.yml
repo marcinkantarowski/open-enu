@@ -15,19 +15,23 @@
 #
 #  Needs a buildx builder with the docker-container driver and the Actions
 #  runtime token exported to the step; the workflow sets up both.
+#
+#  version=2 pins the current cache API rather than trusting the environment
+#  to select it. ignore-error on the export: a cache outage makes a run slower,
+#  never red - the cache is an optimisation, not part of the gate.
 # =============================================================================
 
 x-api-cache: &api-cache
-  cache_from: ["type=gha,scope=api"]
+  cache_from: ["type=gha,version=2,scope=api"]
 
 x-node-cache: &node-cache
-  cache_from: ["type=gha,scope=node"]
+  cache_from: ["type=gha,version=2,scope=node"]
 
 services:
   api:
     build:
       <<: *api-cache
-      cache_to: ["type=gha,scope=api,mode=max"]
+      cache_to: ["type=gha,version=2,scope=api,mode=max,ignore-error=true"]
   worker-events:
     build: *api-cache
   worker-jobs:
@@ -38,7 +42,7 @@ services:
   frontend:
     build:
       <<: *node-cache
-      cache_to: ["type=gha,scope=node,mode=max"]
+      cache_to: ["type=gha,version=2,scope=node,mode=max,ignore-error=true"]
   manager:
     build: *node-cache
   landing:
