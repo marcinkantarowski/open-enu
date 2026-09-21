@@ -171,7 +171,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module AGENTS.md docker/compose.prod.yml docker/compose.staging.yml scripts/dev .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module backend/composer.json backend/composer.lock AGENTS.md docker/compose.prod.yml docker/compose.staging.yml scripts/dev .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -266,6 +266,14 @@ fails_when "seo-check catches a second h1 in a page body" \
   "$WORK/scripts/dev/check-landing-seo.sh" \
   "printf '\\n# Another title\\n' >> '$WORK/landing/content/pl/privacy.md'"
 
+fails_when "symfony-check catches a component on the next major" \
+  "$WORK/scripts/dev/check-symfony-line.sh" \
+  "sed -i '0,/\"name\": \"symfony\/var-exporter\"/{n;s/\"version\": \"v7\.4\.[0-9]*\"/\"version\": \"v8.0.16\"/}' '$WORK/backend/composer.lock'"
+
+fails_when "symfony-check catches a component with no conflict fence" \
+  "$WORK/scripts/dev/check-symfony-line.sh" \
+  "sed -i '/\"symfony\/var-exporter\": \">=8.0\",/d' '$WORK/backend/composer.json'"
+
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.
 fails_when "typography-check catches a long dash" \
@@ -306,7 +314,7 @@ fails_when "agents-budget catches an oversized MODULE.md" \
 
 # And the clean tree must still pass - a check that fails on everything is no
 # more useful than one that fails on nothing.
-for c in check-modules check-docs check-i18n check-typography check-landing-seo agents-budget check-prod-compose; do
+for c in check-modules check-docs check-i18n check-typography check-landing-seo check-symfony-line agents-budget check-prod-compose; do
   if "$WORK/scripts/dev/$c.sh" >/dev/null 2>&1; then
     ok "$c passes on a clean tree"
   else

@@ -15,6 +15,18 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 3
+    ignore:
+      # The app is on Symfony 7.4 (LTS) - composer.json pins it with Flex's
+      # `extra.symfony.require: 7.4.*`. Dependabot runs composer without
+      # plugins, so it never sees that pin: it once bumped monolog-bundle to 4
+      # and phpunit-bridge to 8.1 and dragged var-exporter, http-foundation and
+      # six other components to 8.0 beside a 7.4 kernel. Doctrine's lazy ghosts
+      # were gone and the first migration failed. The real fence is the
+      # `conflict` list in backend/composer.json (make symfony-check); this
+      # only spares us pull requests for a major that cannot resolve. Moving to
+      # 8 is a deliberate upgrade of the whole framework, not a monthly bump.
+      - dependency-name: 'symfony/*'
+        update-types: ['version-update:semver-major']
     groups:
       symfony:
         patterns: ['symfony/*']
