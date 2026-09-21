@@ -25,6 +25,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      # 13.x publishes no prebuilt binaries, so `npm install` compiles it with
+      # node-gyp - and node:22-alpine has no python, make or g++. Lift this once
+      # a 13.x release carries `node-v127-linuxmusl-x64` again.
+      - dependency-name: better-sqlite3
+        versions: ['>=13']
     groups:
       nuxt:
         patterns: ['nuxt', '@nuxt/*', '@nuxtjs/*', 'vue', 'vue-router']

@@ -149,6 +149,10 @@ exist yet is still not to be improvised. Say so instead.
 
 ## Never
 
+- **Never commit, push, merge or open a pull request.** Every commit and every push is made
+  by the user and only the user. An agent edits the working tree, runs the checks, reports
+  what changed, and stops there - even when a commit looks like the obvious next step.
+  Denied for agents in `.claude/settings.json`.
 - **Never rename the kernel.** `open-enu/kernel`, `OpenEnu\Kernel\` and `@open-enu/ui-kit`
   are the framework's identity and are independent of the project's name. `make init`
   masks them deliberately. Breaking this silently destroys the upgrade path for every
