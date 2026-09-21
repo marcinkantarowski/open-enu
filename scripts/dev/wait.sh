@@ -29,6 +29,34 @@ wait_healthy() {
   return 1
 }
 
+# wait_routed <service> <host> <seconds>
+#
+# Healthy is not reachable. The edge adds a container's route only once Docker
+# reports it healthy, and it applies provider changes in batches (Traefik's
+# providersThrottleDuration, 2s by default) - until then the EDGE answers, with
+# its own plain-text "404 page not found". The smoke test once ran 1.2s after
+# landing turned healthy and got exactly that, six times.
+#
+# Only a persistent edge 404 is a failure. An edge this machine cannot reach at
+# all (a server that cannot resolve its own name) is left to the smoke test.
+wait_routed() {
+  local svc="$1" host="$2" limit="${3:-30}" i=0 body=""
+  while [ "$i" -lt "$limit" ]; do
+    body="$(curl -sk --max-time 5 "https://$host/" 2>/dev/null | head -c 64)"
+    if [ -n "$body" ] && [ "$body" != "404 page not found" ]; then
+      log_ok "$svc routed at $host"; return 0
+    fi
+    sleep 1; i=$((i + 1))
+  done
+  if [ -z "$body" ]; then
+    log_warn "$svc: https://$host/ did not answer from here - leaving it to the smoke test"
+    return 0
+  fi
+  log_fail "the edge has no route to $svc after ${limit}s (https://$host/ answers \"404 page not found\")" \
+    "inspect the router labels on $svc, then: make logs-traefik"
+  return 1
+}
+
 rc=0
 log_step "Waiting for infrastructure"
 wait_healthy postgres 90 || rc=1
@@ -43,4 +71,11 @@ wait_healthy api      120 || rc=1
 wait_healthy frontend 180 || rc=1
 wait_healthy manager  180 || rc=1
 wait_healthy landing  180 || rc=1
+
+log_step "Waiting for the edge to route them"
+DOMAIN="$(sed -n 's/^DOMAIN=//p' "$ROOT/.env" | head -1)"
+wait_routed api      "api.$DOMAIN"     || rc=1
+wait_routed frontend "app.$DOMAIN"     || rc=1
+wait_routed manager  "manager.$DOMAIN" || rc=1
+wait_routed landing  "$DOMAIN"         || rc=1
 exit $rc
