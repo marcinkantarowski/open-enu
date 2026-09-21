@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 40
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install mkcert
         run: |
@@ -87,7 +87,7 @@ jobs:
     # check fails. A guardrail nobody has ever seen fail is a guardrail nobody
     # can trust - and this is the cheapest job here, so it reports first.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Prove every guardrail fails when broken
         run: make selftest
