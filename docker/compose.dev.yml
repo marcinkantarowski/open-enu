@@ -71,7 +71,7 @@ services:
   # subscriber cookie can be host-only (see RealtimeTokenController). Traefik
   # ranks rules by length, so this beats the API's bare Host() rule.
   mercure:
-    image: dunglas/mercure:v0.16
+    image: dunglas/mercure:v0.24
     container_name: ${STACK:-open-enu}-mercure
     restart: unless-stopped
     environment:

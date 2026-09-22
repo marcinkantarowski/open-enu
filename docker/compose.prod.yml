@@ -71,7 +71,7 @@ services:
       retries: 10
 
   mercure:
-    image: dunglas/mercure:v0.16
+    image: dunglas/mercure:v0.24
     container_name: ${STACK:-open-enu}-mercure
     <<: [*restart, *logging]
     environment:
