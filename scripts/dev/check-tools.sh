@@ -67,10 +67,14 @@ fi
 # Node/PHP on the host are a convenience (IDE, quick scripts); the containers
 # carry the versions that matter. Report, never fail.
 log_step "Host runtimes (optional - containers carry the real versions)"
+# The containers' Node major is read from the image, not written here: a copy
+# written here said "22 LTS" long after the image moved to 26.
+want="$(sed -n 's/^FROM node:\([0-9][0-9]*\).*/\1/p' "$HERE/../../docker/node/Dockerfile" | head -1)"
 if command -v node >/dev/null 2>&1; then
   nv="$(node -v)"; major="${nv#v}"; major="${major%%.*}"
-  if [ "$major" -ge 22 ] 2>/dev/null; then log_ok "node $nv"
-  else log_warn "node $nv on host; containers use 22 LTS - IDE type-checking may differ"; fi
+  if [ -z "$want" ]; then log_ok "node $nv (could not read the containers' version from docker/node/Dockerfile)"
+  elif [ "$major" = "$want" ]; then log_ok "node $nv"
+  else log_warn "node $nv on host; containers use $want - IDE type-checking may differ"; fi
 else
   log_skip "node not installed on host"
 fi
