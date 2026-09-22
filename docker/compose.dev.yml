@@ -132,7 +132,8 @@ services:
       - traefik.http.routers.${STACK:-open-enu}-api.tls=true
       - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.server.port=80
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost/health || exit 1"]
+      # The body, not only the status: a crashed kernel still answers something.
+      test: ["CMD-SHELL", "curl -fsS http://localhost/health | grep -q '\"status\":\"ok\"' || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 12
