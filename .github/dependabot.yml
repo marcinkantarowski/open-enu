@@ -70,6 +70,27 @@ updates:
       interval: monthly
     open-pull-requests-limit: 2
 
+  # The images compose pulls directly - Postgres, Redis, Mercure, Mailpit, the
+  # edge's Traefik. The `docker` entry above reads Dockerfiles only, so these
+  # sat still: Mailpit ten minors behind, Traefik four patches, and Redis on 8
+  # in dev but 7.4 in prod without anyone deciding that. The Playwright image
+  # is tagged from a variable (make e2e) and is moved by the npm update.
+  - package-ecosystem: docker-compose
+    directories:
+      - /docker
+      - /docker/edge
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    ignore:
+      # A Postgres major needs a dump and restore of every database; Mercure
+      # 1.0 changed the protocol (URL Pattern topics). Both are deliberate
+      # migrations, not monthly bumps.
+      - dependency-name: 'pgvector/pgvector'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'dunglas/mercure'
+        update-types: ['version-update:semver-major']
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

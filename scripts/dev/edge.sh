@@ -152,13 +152,31 @@ cmd_up() {
     touch "$EDGE_HOME/acme/acme.json" && chmod 600 "$EDGE_HOME/acme/acme.json"
   fi
 
+  # The image the compose file pins, against the one the running edge was made
+  # from. `running` used to mean "leave it": a Traefik bump in the repo then
+  # never reached a host that already had an edge - a server included, where a
+  # patch release is usually a security fix.
+  local want_image have_image
+  want_image="$(docker compose -f "$ROOT/docker/edge/compose.yml" config --images 2>/dev/null | head -1)"
+  have_image="$(docker inspect -f '{{.Config.Image}}' "$EDGE" 2>/dev/null)"
+
   case "$(edge_state)" in
     running)
-      if [ "$static_changed" -eq 1 ]; then
+      if [ -n "$want_image" ] && [ "$want_image" != "$have_image" ]; then
+        log_warn "the edge runs $have_image, the repo pins $want_image - recreating it (every stack on this host blinks)"
+        # A new container keeps none of the old one's network attachments, and
+        # each stack attached itself with its own aliases (cmd_attach). Without
+        # this, every stack on the host answers 000 until its next `make up`.
+        local saved
+        saved="$(docker inspect -f '{{range $n, $v := .NetworkSettings.Networks}}{{$n}}{{range $v.Aliases}} {{.}}{{end}}{{println}}{{end}}' "$EDGE")"
+        docker compose -f "$ROOT/docker/edge/compose.yml" up -d >/dev/null 2>&1 \
+          || die "could not recreate $EDGE on $want_image" "run: EDGE_HOME=$EDGE_HOME docker compose -f docker/edge/compose.yml up -d"
+        reattach "$saved"
+      elif [ "$static_changed" -eq 1 ]; then
         log_warn "the edge's static config changed - restarting it (every stack on this host blinks)"
         docker restart "$EDGE" >/dev/null || die "could not restart $EDGE"
       else
-        log_skip "$EDGE already running"
+        log_skip "$EDGE already running ($have_image)"
       fi
       ;;
     *)
@@ -184,6 +202,25 @@ cmd_up() {
     sleep 1; i=$((i + 1))
   done
   die "$EDGE did not become healthy within 60s (last state: ${state:-unknown})" "inspect: docker logs $EDGE"
+}
+
+# reattach <saved> - reconnect the edge to every network in <saved>, one line
+# per network: "<network> <alias> <alias>...", as read from the old container.
+reattach() {
+  local net rest a args attached
+  attached="$(docker inspect -f '{{range $n, $v := .NetworkSettings.Networks}}{{$n}} {{end}}' "$EDGE")"
+  while read -r net rest; do
+    [ -n "$net" ] || continue
+    case " $attached " in *" $net "*) continue ;; esac   # compose re-created its own
+    docker network inspect "$net" >/dev/null 2>&1 || { log_warn "network $net is gone - not reattaching"; continue; }
+    args=()
+    for a in $rest; do args+=(--alias "$a"); done
+    if docker network connect "${args[@]}" "$net" "$EDGE" >/dev/null 2>&1; then
+      log_ok "reattached $EDGE to $net"
+    else
+      log_warn "could not reattach $EDGE to $net - run \`make up\` in that stack"
+    fi
+  done <<<"$1"
 }
 
 # ── attach ──────────────────────────────────────────────────────────────────
