@@ -56,7 +56,6 @@ export default defineNuxtConfig({
       { code: 'en', language: 'en-GB', files: ['en.ts'] },
       { code: 'pl', language: 'pl-PL', files: ['pl.ts'] },
     ],
-    bundle: { optimizeTranslationDirective: false },
     detectBrowserLanguage: {
       useCookie: true,
       cookieKey: 'open_enu_locale',
