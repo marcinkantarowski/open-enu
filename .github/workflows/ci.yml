@@ -85,6 +85,20 @@ jobs:
       - name: The gate
         run: make ci
 
+      # The build regenerates files that are committed: npm rewrites the
+      # lockfile's copy of each workspace manifest, Symfony rewrites
+      # config/reference.php from the installed bundles. If the build changed
+      # one, main is carrying a stale copy - it once kept the options
+      # DoctrineBundle 3 had removed, and nothing noticed.
+      - name: Nothing the build generated is left uncommitted
+        run: |
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            git status --short --untracked-files=no
+            git --no-pager diff --stat
+            echo "::error::the build changed committed files - run make builddev locally and commit what it changed"
+            exit 1
+          fi
+
       # Only on failure, and only what a human would actually open: traces and
       # the report. A green run uploading artefacts nobody looks at is minutes
       # added to every merge.
