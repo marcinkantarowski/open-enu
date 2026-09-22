@@ -45,6 +45,13 @@ updates:
       # a 13.x release carries `node-v127-linuxmusl-x64` again.
       - dependency-name: better-sqlite3
         versions: ['>=13']
+      # TypeScript 7 is the native (Go) compiler and has no JavaScript API.
+      # @typescript-eslint reads that API, and @nuxtjs/i18n loads it through
+      # unplugin-vue-i18n, so `nuxt prepare` dies in postinstall ("Cannot read
+      # properties of undefined (reading 'Intrinsic')"). Lift this when
+      # @typescript-eslint supports 7.
+      - dependency-name: typescript
+        versions: ['>=7']
     groups:
       nuxt:
         patterns: ['nuxt', '@nuxt/*', '@nuxtjs/*', 'vue', 'vue-router']
