@@ -15,6 +15,18 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 3
+    ignore:
+      # The app is on Symfony 7.4 (LTS) - composer.json pins it with Flex's
+      # `extra.symfony.require: 7.4.*`. Dependabot runs composer without
+      # plugins, so it never sees that pin: it once bumped monolog-bundle to 4
+      # and phpunit-bridge to 8.1 and dragged var-exporter, http-foundation and
+      # six other components to 8.0 beside a 7.4 kernel. Doctrine's lazy ghosts
+      # were gone and the first migration failed. The real fence is the
+      # `conflict` list in backend/composer.json (make symfony-check); this
+      # only spares us pull requests for a major that cannot resolve. Moving to
+      # 8 is a deliberate upgrade of the whole framework, not a monthly bump.
+      - dependency-name: 'symfony/*'
+        update-types: ['version-update:semver-major']
     groups:
       symfony:
         patterns: ['symfony/*']
@@ -33,6 +45,13 @@ updates:
       # a 13.x release carries `node-v127-linuxmusl-x64` again.
       - dependency-name: better-sqlite3
         versions: ['>=13']
+      # TypeScript 7 is the native (Go) compiler and has no JavaScript API.
+      # @typescript-eslint reads that API, and @nuxtjs/i18n loads it through
+      # unplugin-vue-i18n, so `nuxt prepare` dies in postinstall ("Cannot read
+      # properties of undefined (reading 'Intrinsic')"). Lift this when
+      # @typescript-eslint supports 7.
+      - dependency-name: typescript
+        versions: ['>=7']
     groups:
       nuxt:
         patterns: ['nuxt', '@nuxt/*', '@nuxtjs/*', 'vue', 'vue-router']

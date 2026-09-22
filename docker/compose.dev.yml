@@ -386,12 +386,12 @@ services:
   #  Behind a profile, so `docker compose up` never starts it: it is a one-shot
   #  runner, not a service, and it is invoked by `make e2e`.
   #
-  #  PLAYWRIGHT_VERSION must match the @playwright/test version in e2e/package.json.
-  #  The image ships the browsers and the package drives them; a mismatch fails
-  #  at startup with a version banner rather than with a confusing test error.
+  #  The image ships the browsers and @playwright/test drives them, so the tag
+  #  is the package's version, read from e2e/package.json by `make e2e`. There is
+  #  deliberately no version written here: a second copy is a copy that drifts.
   # ───────────────────────────────────────────────────────────────────────────
   e2e:
-    image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION:-1.50.1}-noble
+    image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION:-unset-run-make-e2e}-noble
     container_name: ${STACK:-open-enu}-e2e
     profiles: [e2e]
     working_dir: /app/e2e

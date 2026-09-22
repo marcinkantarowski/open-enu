@@ -5,7 +5,7 @@
   "description": "Browser tests against the running dev stack. Runs in `make ci`, never in `make check`.",
   "scripts": {
     "test": "playwright test",
-    "//": "The @playwright/test version MUST match PLAYWRIGHT_VERSION in docker/compose.dev.yml: the image ships the browsers, this package drives them."
+    "//": "The exact @playwright/test version is also the browser image's tag - make e2e reads it from here. Keep it exact, never a range."
   },
   "devDependencies": {
     "@playwright/test": "1.50.1"

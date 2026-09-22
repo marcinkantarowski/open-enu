@@ -103,6 +103,10 @@ typography-check: ## Fail on a long dash (U+2014) anywhere - this project writes
 seo-check: ## Landing pages: titles, descriptions, headings, alt text, URL-safe filenames
 	@$(DEV)/check-landing-seo.sh
 
+.PHONY: symfony-check
+symfony-check: ## Every Symfony component on the framework's line, fenced from the next major
+	@$(DEV)/check-symfony-line.sh
+
 .PHONY: agents-budget
 agents-budget: ## Check AGENTS.md / MODULE.md context budgets
 	@$(DEV)/agents-budget.sh
@@ -372,9 +376,17 @@ typecheck: ## Type-check all three Nuxt apps against the generated API types
 e2e-fixtures: ## Create the accounts the browser suite signs in as (idempotent)
 	@$(DEV)/e2e-fixtures.sh
 
+# The image ships the browsers and @playwright/test drives them, so they must be
+# one release. e2e/package.json is the only place that release is written:
+# Dependabot bumps the package there, and the image tag follows it here. Written
+# twice, the two drifted - a bump moved the package to 1.63 and left the
+# browsers on 1.50.
+PLAYWRIGHT_VERSION := $(shell sed -n 's/.*"@playwright\/test": *"\([0-9][0-9.]*\)".*/\1/p' $(ROOT)/e2e/package.json)
+
 .PHONY: e2e
 e2e: e2e-fixtures ## Browser tests against the running dev stack (ci only, never check)
-	@$(COMPOSE) --profile e2e run --rm e2e npx playwright test $(if $(SPEC),$(SPEC),)
+	@test -n "$(PLAYWRIGHT_VERSION)" || { echo "  no exact @playwright/test version in e2e/package.json" >&2; exit 1; }
+	@PLAYWRIGHT_VERSION=$(PLAYWRIGHT_VERSION) $(COMPOSE) --profile e2e run --rm e2e npx playwright test $(if $(SPEC),$(SPEC),)
 
 .PHONY: openapi
 openapi: ## Regenerate the committed OpenAPI spec
@@ -390,7 +402,7 @@ types: openapi ## Regenerate the frontend types from the spec
 	@echo "  ✓ ui-kit/types/api.d.ts"
 
 .PHONY: arch
-arch: stan test-kernel test-arch schema-check openapi-check module-check docs-check i18n-check typography-check seo-check shell-check prod-check route-coverage inventory-check dead-code ## Every architectural guardrail
+arch: stan test-kernel test-arch schema-check openapi-check module-check docs-check i18n-check typography-check seo-check symfony-check shell-check prod-check route-coverage inventory-check dead-code ## Every architectural guardrail
 
 .PHONY: check
 check: ## The inner loop - run after every edit (target: under 60s)
