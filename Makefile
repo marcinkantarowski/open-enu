@@ -376,9 +376,17 @@ typecheck: ## Type-check all three Nuxt apps against the generated API types
 e2e-fixtures: ## Create the accounts the browser suite signs in as (idempotent)
 	@$(DEV)/e2e-fixtures.sh
 
+# The image ships the browsers and @playwright/test drives them, so they must be
+# one release. e2e/package.json is the only place that release is written:
+# Dependabot bumps the package there, and the image tag follows it here. Written
+# twice, the two drifted - a bump moved the package to 1.63 and left the
+# browsers on 1.50.
+PLAYWRIGHT_VERSION := $(shell sed -n 's/.*"@playwright\/test": *"\([0-9][0-9.]*\)".*/\1/p' $(ROOT)/e2e/package.json)
+
 .PHONY: e2e
 e2e: e2e-fixtures ## Browser tests against the running dev stack (ci only, never check)
-	@$(COMPOSE) --profile e2e run --rm e2e npx playwright test $(if $(SPEC),$(SPEC),)
+	@test -n "$(PLAYWRIGHT_VERSION)" || { echo "  no exact @playwright/test version in e2e/package.json" >&2; exit 1; }
+	@PLAYWRIGHT_VERSION=$(PLAYWRIGHT_VERSION) $(COMPOSE) --profile e2e run --rm e2e npx playwright test $(if $(SPEC),$(SPEC),)
 
 .PHONY: openapi
 openapi: ## Regenerate the committed OpenAPI spec
