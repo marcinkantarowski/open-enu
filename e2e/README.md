@@ -44,5 +44,6 @@ never renders, and the switch spec would assert on something that is not there.
 - **Fixtures must write values that differ from what is already there.** A rename to the name
   a record already has produces no `UPDATE`, so the version does not move and a locking test
   silently stops testing anything - see [[a-no-op-write-does-not-bump-the-version]].
-- The `@playwright/test` version in `package.json` must match `PLAYWRIGHT_VERSION` in
-  `docker/compose.dev.yml`. The image ships the browsers; this package drives them.
+- The `@playwright/test` version in `package.json` is also the browser image's tag: `make e2e`
+  reads it from there, so bumping the package bumps the browsers. Keep it an exact version -
+  a range (`^1.63.0`) is not an image tag, and `make e2e` refuses it.
