@@ -29,6 +29,28 @@ wait_healthy() {
   return 1
 }
 
+# wait_serving <service> <path> <expected-body-fragment> <seconds>
+#
+# Docker's health status is a verdict on the PAST: a container turns unhealthy
+# only after `retries` failed probes in a row (twelve, two minutes, for the
+# API). `make builddev` runs composer install between `up` and this script, so
+# the API passed its first probe on the old vendor/, then answered 500 to every
+# request on the new one - and was still "healthy" when the next step died on
+# a console that could not boot. So ask it now, from inside the container (no
+# DNS, no edge), and read the body, not only the status.
+wait_serving() {
+  local svc="$1" path="$2" want="$3" limit="${4:-60}" i=0 body=""
+  while [ "$i" -lt "$limit" ]; do
+    body="$("${CO[@]}" exec -T "$svc" curl -s --max-time 5 "http://localhost$path" 2>/dev/null)"
+    case "$body" in *"$want"*) log_ok "$svc answers $path"; return 0 ;; esac
+    sleep 1; i=$((i + 1))
+  done
+  log_fail "$svc does not answer $path with $want after ${limit}s - it is up but not serving" \
+    "last answer: $(printf '%s' "${body:-nothing}" | tr -s '[:space:]' ' ' | cut -c1-160)" \
+    "inspect: make logs-api"
+  return 1
+}
+
 # wait_routed <service> <host> <seconds>
 #
 # Healthy is not reachable. The edge adds a container's route only once Docker
@@ -68,6 +90,7 @@ log_step "Waiting for applications"
 # slowest thing in the build. Waiting on their healthchecks is what keeps the
 # smoke test from racing them.
 wait_healthy api      120 || rc=1
+wait_serving api /health '"status":"ok"' 60 || rc=1
 wait_healthy frontend 180 || rc=1
 wait_healthy manager  180 || rc=1
 wait_healthy landing  180 || rc=1

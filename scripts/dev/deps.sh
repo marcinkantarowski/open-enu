@@ -8,18 +8,9 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 . "$ROOT/scripts/lib/compose.sh"; compose_init "$ROOT"
 CO=("${COMPOSE[@]}")
 
-# Runs a command quietly: the last few lines when it succeeds, the last forty
-# when it fails. A bare `| tail -4` cut the actual error off and left only
-# "A complete log of this run can be found in..." - a path inside a container
-# that `run --rm` has already deleted.
-quiet() {
-  local out rc
-  out="$(mktemp)"
-  "$@" >"$out" 2>&1; rc=$?
-  if [ "$rc" -eq 0 ]; then tail -4 "$out"; else tail -40 "$out"; fi
-  rm -f "$out"
-  return "$rc"
-}
+# Every install goes through `quiet` (scripts/lib/log.sh): a bare `| tail -4`
+# cut npm's actual error off and left only "A complete log of this run can be
+# found in..." - a path inside a container that `run --rm` has already deleted.
 
 log_step "PHP dependencies (in the api container)"
 # As www-data (remapped to the host uid), not root - otherwise every install

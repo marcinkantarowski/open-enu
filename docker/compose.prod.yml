@@ -123,7 +123,8 @@ services:
       - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.healthcheck.path=/health
       - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.healthcheck.interval=10s
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/health || exit 1"]
+      # The body, not only the status: a crashed kernel still answers something.
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/health | grep -q '\"status\":\"ok\"' || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5

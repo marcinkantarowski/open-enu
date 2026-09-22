@@ -25,3 +25,17 @@ log_fail() {
 }
 
 die() { log_fail "$@"; exit 1; }
+
+# quiet <command...> - run a noisy command: its last few lines when it succeeds,
+# its last forty when it fails. A bare `| tail -2` keeps the tail of the output
+# either way, and a Symfony error box is mostly blank padding - the message it
+# cut off was the only line that mattered ("could not generate the keypair",
+# with the reason a screen further up).
+quiet() {
+  local out rc
+  out="$(mktemp)"
+  "$@" >"$out" 2>&1; rc=$?
+  if [ "$rc" -eq 0 ]; then tail -4 "$out"; else grep -v '^[[:space:]]*$' "$out" | tail -40; fi
+  rm -f "$out"
+  return "$rc"
+}
