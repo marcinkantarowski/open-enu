@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.6.0",
-    "@pinia/nuxt": "^0.9.0",
-    "pinia": "^2.3.0",
+    "@pinia/nuxt": "^1.0.2",
+    "pinia": "^4.0.3",
     "@tailwindcss/vite": "^4.0.0",
     "tailwindcss": "^4.0.0",
-    "@vueuse/core": "^12.0.0"
+    "@vueuse/core": "^15.0.0"
   }
 }
