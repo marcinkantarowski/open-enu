@@ -332,7 +332,7 @@ services:
   #  Mailpit - catches every outbound mail in dev. Nothing leaves the machine.
   # ───────────────────────────────────────────────────────────────────────────
   mailpit:
-    image: axllent/mailpit:v1.21
+    image: axllent/mailpit:v1.31.2
     container_name: ${STACK:-open-enu}-mailpit
     restart: unless-stopped
     environment:
@@ -356,7 +356,7 @@ services:
   #  signature with its own HMAC rather than with ours.
   # ───────────────────────────────────────────────────────────────────────────
   webhook-echo:
-    image: python:3.13-alpine
+    image: python:3.14-alpine
     container_name: ${STACK:-open-enu}-webhook-echo
     profiles: [e2e]
     command: python /receiver.py
