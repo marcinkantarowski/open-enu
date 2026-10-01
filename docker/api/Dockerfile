@@ -8,7 +8,7 @@
 #  developer; `prod` copies a built, dependency-complete tree and owns it.
 # =============================================================================
 
-FROM php:8.4-fpm-alpine AS base
+FROM php:8.5-fpm-alpine AS base
 
 RUN apk add --no-cache \
       bash curl git icu-dev libzip-dev postgresql-dev postgresql-client \
