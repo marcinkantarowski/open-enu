@@ -18,8 +18,8 @@
     "ci": "make ci"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
-    "knip": "^6.37.0",
+    "@types/node": "^26.6.3",
+    "knip": "^6.38.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.0.0"
   },

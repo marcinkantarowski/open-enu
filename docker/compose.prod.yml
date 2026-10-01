@@ -55,7 +55,7 @@ services:
         limits: { memory: 1g }
 
   redis:
-    image: redis:7.4-alpine
+    image: redis:8.0-alpine
     container_name: ${STACK:-open-enu}-redis
     <<: [*restart, *logging]
     command: >
