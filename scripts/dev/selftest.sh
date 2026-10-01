@@ -186,7 +186,18 @@ fails_when() {
 
   bash -c "$breakage" >/dev/null 2>&1
 
-  if "$check" >/dev/null 2>&1; then
+  # A fixture that changed nothing proves nothing, and the verdict below would
+  # blame the guardrail for it: a `sed` naming redis:7.4-alpine stopped matching
+  # the day Dependabot moved the tag, and a working check was reported broken.
+  local changed=0
+  for path in "${RESTORABLE[@]}"; do
+    [ -e "$snapshot/$path" ] || [ -e "$WORK/$path" ] || continue
+    diff -rq "$snapshot/$path" "$WORK/$path" >/dev/null 2>&1 || { changed=1; break; }
+  done
+
+  if [ "$changed" -eq 0 ]; then
+    bad "$label" "the fixture to break something" "it changed nothing - the fixture is stale, not the guardrail"
+  elif "$check" >/dev/null 2>&1; then
     bad "$label" "the check to FAIL" "it passed - the guardrail does not work"
   else
     ok "$label"
@@ -284,9 +295,11 @@ fails_when "prod-check catches a published database port" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "sed -i 's|^  postgres:|  postgres:\\n    ports: [\"5432:5432\"]|' '$WORK/docker/compose.prod.yml'"
 
+# Whatever tag is pinned today: Dependabot moves it, and a fixture that names
+# the version stops matching on the next bump.
 fails_when "prod-check catches an unpinned image" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
-  "sed -i 's|image: redis:7.4-alpine|image: redis:latest|' '$WORK/docker/compose.prod.yml'"
+  "sed -i -E 's|image: redis:[^[:space:]]+|image: redis:latest|' '$WORK/docker/compose.prod.yml'"
 
 fails_when "prod-check catches a router with no certificate resolver" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
