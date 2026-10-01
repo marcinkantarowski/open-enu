@@ -13,7 +13,7 @@ FROM php:8.5-fpm-alpine AS base
 RUN apk add --no-cache \
       bash curl git icu-dev libzip-dev postgresql-dev postgresql-client \
       nginx supervisor zip unzip linux-headers \
- && docker-php-ext-install -j"$(nproc)" bcmath intl opcache pdo_pgsql zip \
+ && docker-php-ext-install -j"$(nproc)" bcmath intl pdo_pgsql zip \
  && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
  && pecl install redis apcu \
  && docker-php-ext-enable redis apcu \
