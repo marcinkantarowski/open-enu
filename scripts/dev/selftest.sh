@@ -253,6 +253,10 @@ fails_when "i18n-check catches a key present in one locale only" \
   "$WORK/scripts/dev/check-i18n.sh" \
   "printf '{\"scratch.title\":\"Scratch\",\"scratch.only_en\":\"x\"}' > '$WORK/backend/src/Module/Scratch/i18n/messages.en.json'"
 
+fails_when "module-check catches a clock task the scheduler would silently never run" \
+  "$WORK/scripts/dev/check-modules.sh" \
+  "printf 'hourly app:scratch:run\n' > '$WORK/backend/src/Module/Scratch/clock'"
+
 # An operator layer is the third place a module keeps strings, and the newest:
 # a check that covered backend/ and frontend/ and forgot manager/ would let an
 # operator's screen ship half-translated.

@@ -59,4 +59,4 @@ design names: the command bus, the outbox handler, and the webhook delivery job.
 | Is anything stuck? | Operator console → Workers, or `make console CMD="messenger:failed:show"` |
 | Did we deliver that webhook? | Settings → Webhooks → Deliveries, per attempt with the response code |
 | Why did a background job stop? | `messenger:failed:show {id} --transport=failed -vv` |
-| Did the nightly tasks run? | `make logs` - the `scheduler` container prints each run |
+| Did the scheduled tasks run? | `make logs` - the `scheduler` container prints each run, every-minute and nightly alike |
