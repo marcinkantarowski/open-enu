@@ -329,6 +329,10 @@ modules: ## Show what module discovery resolved (routes, entities, migrations, p
 module: ## Scaffold a feature end to end: backend module, frontend layer, docs, spec, Task Router row
 	@$(DEV)/module.sh
 
+.PHONY: manager-module
+manager-module: ## Give an existing module operator screens: make manager-module NAME=Invoicing
+	@$(DEV)/manager-module.sh
+
 # ═════════════════════════════════════════════════════════════════════════════
 ##@ Quality
 # ═════════════════════════════════════════════════════════════════════════════
