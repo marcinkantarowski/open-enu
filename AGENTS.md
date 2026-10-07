@@ -298,7 +298,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Outbound webhooks, signing, delivery retries | `backend/src/Module/Webhook/MODULE.md` |
 | Telling a user something happened | `OpenEnu\Kernel\Notification\NotifierInterface` + `backend/src/Module/Notification/MODULE.md` |
 | Making a module's data findable | `backend/src/Module/Example/search.php` - declare fields **and** a permission |
-| Background work on a clock | `docker/api/scheduler.sh` + the `Console/` commands it calls |
+| Background work on a clock | a `clock` file in the module (`minute app:x:run` / `daily app:x:sweep`) + the `Console/` command it names; `docker/api/scheduler.sh` reads it |
 | Logs, error tracking, traces, "is anything stuck?" | [`.ai/platform/docs/observability.md`](.ai/platform/docs/observability.md) |
 | **Deploying anything, anywhere** | [`.ai/platform/docs/deployment.md`](.ai/platform/docs/deployment.md) |
 | Staging and production (one server or two); vibe coding on staging; `make promote` | `.ai/platform/docs/deployment.md` → *The loop* + `scripts/lib/stage.sh` |

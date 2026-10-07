@@ -116,3 +116,28 @@ log belongs. The Webhook module does exactly this, and the lesson explaining why
 - `backend/src/Module/Webhook/` - the same machinery carrying events out of the system
 - `GET /api/manager/workers` - queue depth and dead-letter count, which is the first thing
   to look at when something "didn't happen"
+
+---
+
+## Work on a clock
+
+Something that happens because a moment arrived, not because a request did - a scheduled
+send, a nightly sweep - is a console command named in the module's own `clock` file:
+
+```
+# backend/src/Module/Billing/clock
+minute app:billing:run-due
+daily  app:billing:sweep
+```
+
+`docker/api/scheduler.sh` reads every module's file on each pass and runs the commands; nothing
+central is edited. Two cadences exist and no others: `minute` (every tick) and `daily`
+(housekeeping). `make check` refuses a line that is neither, because the scheduler would not
+complain about it - it would simply never run it.
+
+**A clock task decides what is due from its own data, never from the time it was called.**
+The scheduler promises "roughly every minute", not "at 14:30": a deploy, a restart or a slow
+tick moves a run or skips it. A task written as "do the 14:30 work" loses that work; one
+written as "do everything whose time has come and is not yet done" cannot. Store the next due
+time on the row, select what is due, and move the time forward in the same write that claims
+the row - so a second runner, or a second tick, finds nothing left to claim.

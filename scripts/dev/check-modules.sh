@@ -69,6 +69,23 @@ for dir in "${modules[@]}"; do
     ok=0
   fi
 
+  # ── clock tasks are well-formed ───────────────────────────────────────────
+  # The scheduler is a shell loop and reads this file with `read`: a line it
+  # cannot parse is not an error there, it is a task that silently never runs.
+  if [ -f "$dir/clock" ]; then
+    lineno=0
+    while IFS= read -r line || [ -n "$line" ]; do
+      lineno=$((lineno + 1))
+      case "$line" in ''|'#'*) continue ;; esac
+      if ! grep -qE '^(minute|daily) +app:[a-z0-9:-]+( .*)?$' <<<"$line"; then
+        bad "$rel/clock line $lineno is not a task: $line" \
+            "one task per line: 'minute app:name:of-command' or 'daily app:name:of-command'" \
+            "see docker/api/scheduler.sh"
+        ok=0
+      fi
+    done < "$dir/clock"
+  fi
+
   # ── both locales present (ADR-0020) ───────────────────────────────────────
   for loc in en pl; do
     # Symfony's naming, not Nuxt's. Required rather than optional: check-i18n
