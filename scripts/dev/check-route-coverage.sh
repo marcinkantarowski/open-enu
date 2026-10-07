@@ -28,8 +28,12 @@ log_step "Route coverage"
 
 # Every suite that makes HTTP requests. The unit suite does not, and including
 # it would only slow this down.
-if ! "${API[@]}" env ROUTE_TRACE="$TRACE" php vendor/bin/phpunit \
-      --testsuite functional,security --no-output >/dev/null 2>&1; then
+# Quiet when it passes; PHPUnit's own summary when it does not. Discarding the
+# output left "run the suites yourself" as the only clue, and run by themselves
+# they passed - so the failure that mattered was the one nobody could see.
+if ! out="$("${API[@]}" env ROUTE_TRACE="$TRACE" php vendor/bin/phpunit \
+      --testsuite functional,security --no-progress 2>&1)"; then
+  printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -40 | sed 's/^/    /' >&2
   log_fail "the functional and security suites must pass before coverage means anything" \
     "run: make test-functional test-security"
   exit 1

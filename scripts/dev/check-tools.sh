@@ -8,7 +8,7 @@
 # =============================================================================
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. "$HERE/../lib/log.sh"; . "$HERE/../lib/require.sh"; . "$HERE/../lib/os.sh"
+. "$HERE/../lib/log.sh"; . "$HERE/../lib/require.sh"; . "$HERE/../lib/os.sh"; . "$HERE/../lib/tools.sh"
 
 rc=0
 
@@ -21,17 +21,27 @@ else
     "install: apt-get install docker-compose-plugin" \
     "the legacy 'docker-compose' binary is not supported" || rc=1
 fi
-require_tool git      "apt-get install git"                               || rc=1
-require_tool openssl  "apt-get install openssl"                           || rc=1
-require_tool mkcert   "https://github.com/FiloSottile/mkcert#installation" \
-  "generates the locally-trusted wildcard certificate for *.${DOMAIN:-open-enu.local}" || rc=1
+# Everything else comes from lib/tools.sh, the table install-dev-tools.sh
+# installs from - one list, so the two cannot disagree.
+tools_of() {
+  local row
+  while IFS= read -r row; do
+    if [ "$(tool_field "$row" 2)" = "$1" ]; then echo "$row"; fi
+  done < <(host_tools)
+}
+why_of() { local w; w="$(tool_field "$1" 6)"; echo "${w//\$\{DOMAIN\}/${DOMAIN:-open-enu.local}}"; }
+
+while IFS= read -r row; do
+  require_tool "$(tool_field "$row" 1)" "$(tool_field "$row" 5)" "$(why_of "$row")" || rc=1
+done < <(tools_of dev)
+while IFS= read -r row; do
+  want_tool "$(tool_field "$row" 1)" "$(tool_field "$row" 5)" "$(why_of "$row")"
+done < <(tools_of dev-extra)
 
 log_step "Required to deploy (staging / production)"
-want_tool dig    "apt-get install dnsutils"                   "make preflight cannot verify DNS without it"
-want_tool rclone "https://rclone.org/install/"                "make backup cannot push off-box without it"
-want_tool age    "apt-get install age"                        "make backup cannot encrypt dumps without it"
-want_tool gh     "https://cli.github.com/"                    "make deploy-key falls back to manual paste without it"
-want_tool rsync  "apt-get install rsync"                      "SYNC=rsync deploys are unavailable without it"
+while IFS= read -r row; do
+  want_tool "$(tool_field "$row" 1)" "$(tool_field "$row" 5)" "$(why_of "$row")"
+done < <(tools_of deploy)
 
 log_step "Host"
 kind="$(os_kind)"
@@ -46,11 +56,23 @@ if [ "$kind" = wsl2 ]; then
     log_warn "Windows hosts file not reachable - is /mnt/c mounted?"
     log_info "the browser resolves names via Windows, not via WSL's /etc/hosts"
   fi
-  if command -v mkcert.exe >/dev/null 2>&1; then
-    log_ok "mkcert.exe (Windows) - the CA can be trusted by the Windows browser"
+  # What matters is whether Windows trusts the CA, not whether mkcert.exe is
+  # installed: certs.sh copies the Linux CA into the Windows user store with
+  # certutil.exe, which ships with Windows. This used to demand mkcert.exe and
+  # warn about a browser that was in fact already trusting the certificate.
+  ca="$(mkcert -CAROOT 2>/dev/null)/rootCA.pem"
+  if ! command -v certutil.exe >/dev/null 2>&1; then
+    log_warn "certutil.exe not reachable from WSL - the dev CA cannot be handed to Windows"
+    log_info "is Windows interop enabled? (/etc/wsl.conf [interop] enabled=true)"
+  elif [ ! -f "$ca" ]; then
+    log_skip "dev CA not created yet - make certs creates it and hands it to Windows"
+    log_info "Windows will ask once to confirm adding a root certificate"
+  elif certutil.exe -user -verifystore Root \
+         "$(openssl x509 -in "$ca" -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')" >/dev/null 2>&1; then
+    log_ok "Windows trusts the dev CA - the browser will accept the certificate"
   else
-    log_warn "mkcert.exe not on PATH - the Windows browser will not trust the dev CA"
-    log_info "install mkcert on Windows too: choco install mkcert  (or scoop install mkcert)"
+    log_warn "Windows does not trust the dev CA yet - the browser will show a warning"
+    log_info "run: make certs   (Windows asks once to confirm adding a root certificate)"
   fi
 fi
 
@@ -83,5 +105,5 @@ if command -v composer >/dev/null 2>&1; then log_ok "composer $(composer --versi
 
 echo
 if [ $rc -eq 0 ]; then log_ok "toolchain ready for: make env, make builddev"
-else log_fail "install the tools marked ✗ above, then re-run: make check-tools"; fi
+else log_fail "install the tools marked ✗ above - or let the installer do it: make installdevtools"; fi
 exit $rc
