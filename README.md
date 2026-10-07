@@ -204,6 +204,19 @@ safe), and a variable added upstream surfaces as a message rather than a 3am cra
 Everything hangs off one `DOMAIN`: the apex serves the landing page, with `app.`, `manager.`
 and `api.` beside it (Mercure is served from `api.`). Changing domains is one line.
 
+## Keeping a project up to date
+
+A project made from this repository follows it with one command:
+
+```bash
+make platform-update          # FROM=<path|url> the first time; remembered afterwards
+```
+
+It applies everything the platform changed since the project last looked - kernel, platform
+modules, scripts, compose files, docs - as a three-way merge in the project's own spelling,
+and leaves the result staged for review. See
+[`.ai/platform/docs/updating.md`](.ai/platform/docs/updating.md).
+
 ## Requirements
 
 Docker with Compose v2, git, openssl, mkcert. To deploy you also need `dig`, `rclone`, `age`

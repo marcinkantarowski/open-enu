@@ -47,6 +47,10 @@ CONSOLE := $(APIRUN) api php bin/console
 init: ## Rename the boilerplate into your project (NAME=myproject [DOMAIN=...])
 	@$(DEV)/init.sh
 
+.PHONY: platform-update
+platform-update: ## Bring this project up to a newer platform (FROM=<path|url> [REF=...] [BASE=...])
+	@$(DEV)/platform-update.sh
+
 .PHONY: check-tools
 check-tools: ## Verify the toolchain, split into needed-now and needed-to-deploy
 	@$(DEV)/check-tools.sh

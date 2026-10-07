@@ -179,6 +179,23 @@ log_ok "database identifiers set to '${NEW_DB}'"
 # `initialized` is a BOOLEAN, deliberately not a comparison against the string
 # "open-enu": init rewrites that string everywhere, so any sentinel built from it
 # inverts its own meaning the moment it works. (It did. See .ai/platform/lessons/.)
+# Where this project came from, for `make platform-update`. Kept across a
+# re-init; on the first one, taken from git while it is still true: a fresh
+# clone's HEAD is the platform commit and its origin is the platform.
+PLATFORM_REF="$(read_manifest platform_ref)"
+PLATFORM_SOURCE="$(read_manifest platform_source)"
+if [ -z "$PLATFORM_REF" ] && grep -q '"initialized"[[:space:]]*:[[:space:]]*false' "$MANIFEST" \
+   && git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  PLATFORM_REF="$(git -C "$ROOT" rev-parse --verify --quiet HEAD 2>/dev/null || true)"
+  PLATFORM_SOURCE="${PLATFORM_SOURCE:-$(git -C "$ROOT" remote get-url origin 2>/dev/null || true)}"
+fi
+
+# Built here, not inside the here-document: quotes within a `${var:+...}` there
+# are dropped, and the manifest stops being JSON.
+PLATFORM_FIELDS=""
+[ -n "$PLATFORM_REF" ]    && PLATFORM_FIELDS="${PLATFORM_FIELDS},"$'\n'"  \"platform_ref\": \"${PLATFORM_REF}\""
+[ -n "$PLATFORM_SOURCE" ] && PLATFORM_FIELDS="${PLATFORM_FIELDS},"$'\n'"  \"platform_source\": \"${PLATFORM_SOURCE}\""
+
 cat > "$MANIFEST" <<EOF
 {
   "\$comment": "Identity of THIS project. Rewritten by \`make init NAME=...\`. The kernel package (open-enu/kernel, OpenEnu\\\\Kernel\\\\, @open-enu/ui-kit) is deliberately NOT listed here - it is the framework's name and never changes, which is what lets a project pull kernel updates later. See .ai/platform/PLAN.md §2 and .ai/platform/adr/0016-kernel-packaging.md.",
@@ -186,7 +203,7 @@ cat > "$MANIFEST" <<EOF
   "slug": "${NEW_SLUG}",
   "name": "${NEW_NAME}",
   "domain": "${NEW_DOMAIN}",
-  "db": "${NEW_DB}"
+  "db": "${NEW_DB}"${PLATFORM_FIELDS}
 }
 EOF
 

@@ -23,4 +23,5 @@ code documents what someone intended, which is worse than no guide.
 | [`observability.md`](observability.md) | logs, correlation ids, health, queue depth |
 | [`deployment.md`](deployment.md) | going to a server |
 | [`agent-interfaces.md`](agent-interfaces.md) | the inventory and the MCP server |
+| [`updating.md`](updating.md) | bringing a project up to a newer platform, or fixing the platform from a project |
 | [`troubleshooting.md`](troubleshooting.md) | something in the stack is broken - symptoms first |
