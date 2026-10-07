@@ -28,7 +28,14 @@ final class AccessControlCoverageTest extends KernelTestCase
      * its own rate limiter for that reason. Anything else under `/api` must say
      * what it needs.
      */
-    private const array PUBLIC_PREFIXES = ['/api/auth/', '/api/manager/login'];
+    private const array PUBLIC_PREFIXES = [
+        '/api/auth/',
+        '/api/manager/login',
+        // Third-party callbacks. No permission can be named because there is no
+        // user: the action verifies the provider's signature instead, and a
+        // functional test of each one must show a forged call being refused.
+        '/api/callbacks/',
+    ];
 
     public function testEveryModuleActionDeclaresThePermissionItNeeds(): void
     {

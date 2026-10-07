@@ -57,6 +57,21 @@ security:
             stateless: true
             security: false
 
+        # Callbacks from third parties: a payment provider confirming a payment,
+        # an SMS provider reporting a delivery. The caller is a server with no
+        # session and no token of ours, so the firewall cannot authenticate it -
+        # and therefore EVERY action under this prefix must authenticate the
+        # caller itself, by the provider's signature or shared secret, before
+        # it believes a word of the body. An unauthenticated callback that
+        # credits a wallet is a way to print money.
+        #
+        # MUST be declared before the `api` firewall, which would otherwise
+        # claim the path and answer 401.
+        callbacks:
+            pattern: ^/api/callbacks/
+            stateless: true
+            security: false
+
         # The tenant realm, reachable two ways.
         #
         # The API-key authenticator runs FIRST and claims only bearers carrying
@@ -83,6 +98,7 @@ security:
         - { path: ^/storage/, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/, roles: PUBLIC_ACCESS }
         - { path: ^/api/manager/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/callbacks/, roles: PUBLIC_ACCESS }
         # Belt to the firewall's braces: even if a route slipped past the
         # manager firewall's pattern, it still requires an operator role.
         - { path: ^/api/manager, roles: ROLE_PLATFORM_MANAGER }
