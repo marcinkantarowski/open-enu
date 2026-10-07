@@ -9,12 +9,12 @@
 const api = useApi()
 const auth = useAuthStore()
 const toast = useToast()
-const { t, setLocale } = useI18n()
+const { t, locale, setLocale } = useI18n()
 const ui = useUiStore()
 
 const form = reactive({
   displayName: auth.user?.displayName ?? '',
-  locale: auth.user?.locale ?? 'en',
+  locale: auth.user?.locale ?? locale.value,
 })
 
 const busy = ref(false)

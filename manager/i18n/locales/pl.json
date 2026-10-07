@@ -52,5 +52,7 @@
   "manager.rateLimited": "Zbyt wiele prób. To konto sięga każdego najemcy, więc limit jest celowo ostry - odczekaj i spróbuj ponownie.",
   "manager.loginNotice": "Sesje operatora nie przetrwają przeładowania strony i wygasają po 15 minutach.",
   "manager.outcomeOk": "OK",
-  "manager.outcomeFailed": "Niepowodzenie"
+  "manager.outcomeFailed": "Niepowodzenie",
+  "manager.loginTitle": "Konsola operatora",
+  "manager.loginSubtitle": "Zaloguj się kontem operatora platformy."
 }

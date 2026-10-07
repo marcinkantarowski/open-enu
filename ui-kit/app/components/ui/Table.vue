@@ -35,12 +35,12 @@ const cell = (row: Row, key: string): unknown => (row as Record<string, unknown>
   <div class="overflow-x-auto">
     <table class="w-full border-collapse text-sm">
       <thead>
-        <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-fg-muted">
+        <tr class="border-b border-border bg-surface-muted text-left text-xs uppercase tracking-wide text-fg-muted">
           <th
             v-for="column in columns"
             :key="column.key"
             scope="col"
-            class="px-4 py-2 font-medium"
+            class="px-4 py-2.5 font-semibold"
             :class="column.numeric ? 'text-right' : ''"
           >
             {{ column.label }}
@@ -73,7 +73,7 @@ const cell = (row: Row, key: string): unknown => (row as Record<string, unknown>
             <td
               v-for="column in columns"
               :key="column.key"
-              class="px-4 py-2.5 align-top text-fg"
+              class="px-4 py-3 align-top text-fg"
               :class="column.numeric ? 'text-right tabular-nums' : ''"
             >
               <slot :name="`cell-${column.key}`" :row="row" :value="cell(row, column.key)">

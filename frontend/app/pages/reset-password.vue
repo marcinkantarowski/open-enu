@@ -28,23 +28,31 @@ async function submit() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4" @submit.prevent="submit">
-    <UiAlert v-if="!token" tone="warning">{{ t('app.reset.missingToken') }}</UiAlert>
+  <div>
+    <AuthHeading :title="t('app.reset.title')" :subtitle="t('app.reset.subtitle')" />
 
-    <UiField v-slot="field" :label="t('app.reset.newPassword')" :hint="t('app.register.passwordHint')" required>
-      <UiInput
-        :id="field.id"
-        v-model="password"
-        type="password"
-        autocomplete="new-password"
-        :described-by="field.describedBy"
-      />
-    </UiField>
+    <form class="flex flex-col gap-5" @submit.prevent="submit">
+      <UiAlert v-if="!token" tone="warning">{{ t('app.reset.missingToken') }}</UiAlert>
 
-    <UiAlert v-if="error" tone="danger">{{ error }}</UiAlert>
+      <UiField v-slot="field" :label="t('app.reset.newPassword')" :hint="t('app.register.passwordHint')">
+        <UiInput
+          :id="field.id"
+          v-model="password"
+          type="password"
+          autocomplete="new-password"
+          :described-by="field.describedBy"
+        />
+      </UiField>
 
-    <UiButton type="submit" variant="primary" :loading="busy" :disabled="!token">
-      {{ t('app.reset.submit') }}
-    </UiButton>
-  </form>
+      <UiAlert v-if="error" tone="danger">{{ error }}</UiAlert>
+
+      <UiButton type="submit" variant="primary" size="lg" :loading="busy" :disabled="!token">
+        {{ t('app.reset.submit') }}
+      </UiButton>
+    </form>
+
+    <p class="mt-8 text-center text-sm">
+      <NuxtLink to="/login" class="font-medium text-brand-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
+    </p>
+  </div>
 </template>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const { public: cfg } = useRuntimeConfig()
+const { locale } = useI18n()
 
 useHead({
   title: cfg.appName as string,
-  htmlAttrs: { lang: 'en' },
+  htmlAttrs: { lang: locale },
 })
 </script>
 

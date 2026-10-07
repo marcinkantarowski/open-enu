@@ -56,6 +56,10 @@ export default defineNuxtConfig({
       // APP_STAGE=production and nowhere else. False by default, so a missing
       // variable hides a site rather than publishing a staging server.
       indexable: process.env.NUXT_PUBLIC_INDEXABLE === 'true',
+      // The language served at the bare URL; every other one gets a prefix.
+      // The sitemap, llms.txt and x-default all have to agree with the router
+      // about which that is, so they read it from here.
+      defaultLocale: process.env.NUXT_PUBLIC_DEFAULT_LOCALE || 'en',
     },
   },
 })

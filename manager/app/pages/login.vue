@@ -33,33 +33,37 @@ async function submit() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4" data-testid="login-form" @submit.prevent="submit">
-    <UiField v-slot="field" :label="t('auth.email')" required>
-      <UiInput
-        :id="field.id"
-        v-model="email"
-        type="email"
-        autocomplete="username"
-        data-testid="login-email"
-        :described-by="field.describedBy"
-      />
-    </UiField>
+  <div>
+    <AuthHeading :title="t('manager.loginTitle')" :subtitle="t('manager.loginSubtitle')" />
 
-    <UiField v-slot="field" :label="t('auth.password')" required>
-      <UiInput
-        :id="field.id"
-        v-model="password"
-        type="password"
-        autocomplete="current-password"
-        data-testid="login-password"
-        :described-by="field.describedBy"
-      />
-    </UiField>
+    <form class="flex flex-col gap-5" data-testid="login-form" @submit.prevent="submit">
+      <UiField v-slot="field" :label="t('auth.email')">
+        <UiInput
+          :id="field.id"
+          v-model="email"
+          type="email"
+          autocomplete="username"
+          data-testid="login-email"
+          :described-by="field.describedBy"
+        />
+      </UiField>
 
-    <UiAlert v-if="error" tone="danger" data-testid="login-error">{{ error }}</UiAlert>
+      <UiField v-slot="field" :label="t('auth.password')">
+        <UiInput
+          :id="field.id"
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+          data-testid="login-password"
+          :described-by="field.describedBy"
+        />
+      </UiField>
 
-    <UiButton type="submit" variant="primary" :loading="busy" data-testid="login-submit">
-      {{ busy ? t('auth.signingIn') : t('auth.signIn') }}
-    </UiButton>
-  </form>
+      <UiAlert v-if="error" tone="danger" data-testid="login-error">{{ error }}</UiAlert>
+
+      <UiButton type="submit" variant="primary" size="lg" :loading="busy" data-testid="login-submit">
+        {{ busy ? t('auth.signingIn') : t('auth.signIn') }}
+      </UiButton>
+    </form>
+  </div>
 </template>

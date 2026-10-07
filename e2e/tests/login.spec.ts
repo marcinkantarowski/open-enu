@@ -20,6 +20,19 @@ test.describe('session', () => {
     await expect(page).toHaveURL(/[?&]next=(%2F|\/)example/)
   })
 
+  test('the shared components arrive with their styles', async ({ page }) => {
+    await page.goto('/login')
+
+    // The button's colour is a class used only inside the shared layer. If
+    // Tailwind stops scanning that layer the class is silently never generated,
+    // and the one thing this screen is for becomes white text on nothing.
+    const background = await page.getByTestId('login-submit')
+      .evaluate(element => getComputedStyle(element).backgroundColor)
+
+    expect(background).not.toBe('rgba(0, 0, 0, 0)')
+    expect(background).not.toBe('transparent')
+  })
+
   test('wrong credentials are refused with one indistinguishable message', async ({ page }) => {
     await page.goto('/login')
     await page.getByTestId('login-email').fill(OWNER.email)

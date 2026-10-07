@@ -4,8 +4,10 @@
  * titles and descriptions a search engine reads, so writing those well is the
  * whole of the work.
  */
+const OTHER_LANGUAGES = { en: 'English', pl: 'Polski' }
+
 export default defineEventHandler(async (event) => {
-  const { name } = siteConfig(event)
+  const { name, defaultLocale } = siteConfig(event)
   const pages = await sitePages(event)
   setHeader(event, 'Content-Type', 'text/plain; charset=utf-8')
 
@@ -14,7 +16,7 @@ export default defineEventHandler(async (event) => {
     .filter(v => v !== undefined)
     .map(v => `- [${v.title}](${v.url}): ${v.description}`)
 
-  const home = pages.find(p => p.path === '/')?.versions.find(v => v.code === 'en')
+  const home = pages.find(p => p.path === '/')?.versions.find(v => v.code === defaultLocale)
 
   return [
     `# ${name}`,
@@ -22,11 +24,11 @@ export default defineEventHandler(async (event) => {
     ...(home ? [`> ${home.description}`, ''] : []),
     '## Pages',
     '',
-    ...list('en'),
+    ...list(defaultLocale),
     '',
-    '## Polski',
-    '',
-    ...list('pl'),
-    '',
+    // The other language under its own name, as a reader of it would look for it.
+    ...Object.entries(OTHER_LANGUAGES)
+      .filter(([code]) => code !== defaultLocale)
+      .flatMap(([code, heading]) => [`## ${heading}`, '', ...list(code), '']),
   ].join('\n')
 })

@@ -5,10 +5,11 @@
  */
 export default defineEventHandler(async (event) => {
   const pages = await sitePages(event)
+  const { defaultLocale } = siteConfig(event)
   setHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
 
   const urls = pages.flatMap(page => page.versions.map((version) => {
-    const fallback = page.versions.find(v => v.code === 'en') ?? version
+    const fallback = page.versions.find(v => v.code === defaultLocale) ?? version
     const alternates = [
       ...page.versions.map(v => `    <xhtml:link rel="alternate" hreflang="${v.language}" href="${xmlEscape(v.url)}"/>`),
       `    <xhtml:link rel="alternate" hreflang="x-default" href="${xmlEscape(fallback.url)}"/>`,

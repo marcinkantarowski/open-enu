@@ -26,3 +26,4 @@ edits these - see [`.ai/README.md`](../../README.md).
 | [An ambient dependency breaks its legitimate callers](an-ambient-dependency-breaks-its-legitimate-callers.md) | Adding anything to a Doctrine listener, or reading the tenant from scope on a write |
 | [Unflushed work does not survive a scope crossing](unflushed-work-does-not-survive-rununscoped.md) | Calling anything that uses `runUnscoped()`, or any `$em->clear()`, with entities you still mean to save |
 | [A worker runs the code it started with](a-worker-runs-the-code-it-started-with.md) | Adding or editing a job, an event listener, a scheduled task - anything that runs in a long-lived process rather than per request |
+| [A class nobody scans is a style nobody gets](a-class-nobody-scans-is-a-style-nobody-gets.md) | Adding a component to `ui-kit`, or anything looking unstyled with no error anywhere |

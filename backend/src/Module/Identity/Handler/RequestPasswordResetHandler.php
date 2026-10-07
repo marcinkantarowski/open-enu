@@ -11,6 +11,7 @@ use App\Module\Identity\Service\IdentityMailer;
 use App\Module\Identity\Service\SecurityTokenIssuer;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenEnu\Kernel\Crypto\Encryptor;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -22,6 +23,7 @@ final readonly class RequestPasswordResetHandler
         private SecurityTokenIssuer $tokens,
         private IdentityMailer $mailer,
         private EntityManagerInterface $em,
+        #[Autowire('%kernel.default_locale%')] private string $defaultLocale,
     ) {
     }
 
@@ -34,7 +36,7 @@ final readonly class RequestPasswordResetHandler
             [$token, $raw] = $this->tokens->issue(SecurityToken::PURPOSE_RESET_PASSWORD, $user);
             $this->em->persist($token);
             $this->em->flush();
-            $this->mailer->sendPasswordReset($command->email, $raw, $user->locale() ?? 'en');
+            $this->mailer->sendPasswordReset($command->email, $raw, $user->locale() ?? $this->defaultLocale);
         }
 
         // The same answer either way. Otherwise this endpoint enumerates users

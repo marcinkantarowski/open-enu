@@ -30,17 +30,23 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-3 text-center">
-    <UiSpinner v-if="state === 'working'" class="size-6 text-brand-600" />
+  <div>
+    <div v-if="state === 'working'" class="flex items-center gap-3 text-sm text-fg-muted">
+      <UiSpinner class="size-5 text-brand-600" />
+      {{ t('app.verify.working') }}
+    </div>
 
     <template v-else-if="state === 'done'">
-      <p class="text-sm font-semibold text-fg">{{ t('app.verify.done') }}</p>
-      <NuxtLink to="/login" class="text-xs text-brand-700 hover:underline">{{ t('auth.signIn') }}</NuxtLink>
+      <AuthHeading :title="t('app.verify.done')" :subtitle="t('app.verify.doneHint')" />
+      <UiButton variant="primary" size="lg" class="w-full" @click="navigateTo('/login')">{{ t('auth.signIn') }}</UiButton>
     </template>
 
     <template v-else>
+      <AuthHeading :title="t('app.verify.failed')" />
       <UiAlert tone="danger">{{ message }}</UiAlert>
-      <NuxtLink to="/login" class="text-xs text-fg-muted hover:underline">{{ t('auth.signIn') }}</NuxtLink>
+      <p class="mt-8 text-sm">
+        <NuxtLink to="/login" class="font-medium text-brand-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
+      </p>
     </template>
   </div>
 </template>
