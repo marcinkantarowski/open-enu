@@ -54,6 +54,25 @@ case "$STAGE" in
 esac
 export EDGE_HOME="${EDGE_HOME:-$DEFAULT_HOME}"
 
+# Quiet when it works, and Docker's own words when it does not. This used to
+# discard the output and tell the reader to run the command again by hand - on
+# a first run, where the image is still to be pulled, the second attempt
+# succeeded and the reason for the first failure was gone for good.
+# True when Traefik has been unable to reach the Docker socket since the edge
+# container last started. Bounded by StartedAt so that the restart this
+# triggers also clears the evidence, instead of firing on every later run.
+edge_lost_docker() {
+  local since
+  since="$(docker inspect -f '{{.State.StartedAt}}' "$EDGE" 2>/dev/null)" || return 1
+  docker logs --since "$since" --tail 20 "$EDGE" 2>&1 | grep -q 'Cannot connect to the Docker daemon'
+}
+
+edge_compose_up() {
+  local out
+  if out="$(docker compose -f "$ROOT/docker/edge/compose.yml" up -d 2>&1)"; then return 0; fi
+  printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -15 | sed 's/^/    /' >&2
+  return 1
+}
 edge_state() { docker inspect -f '{{.State.Status}}' "$EDGE" 2>/dev/null; }
 edge_health() { docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$EDGE" 2>/dev/null; }
 on_network() { docker inspect -f '{{range $n, $_ := .NetworkSettings.Networks}}{{$n}} {{end}}' "$EDGE" 2>/dev/null | tr ' ' '\n' | grep -qxF "$NET"; }
@@ -169,11 +188,17 @@ cmd_up() {
         # this, every stack on the host answers 000 until its next `make up`.
         local saved
         saved="$(docker inspect -f '{{range $n, $v := .NetworkSettings.Networks}}{{$n}}{{range $v.Aliases}} {{.}}{{end}}{{println}}{{end}}' "$EDGE")"
-        docker compose -f "$ROOT/docker/edge/compose.yml" up -d >/dev/null 2>&1 \
-          || die "could not recreate $EDGE on $want_image" "run: EDGE_HOME=$EDGE_HOME docker compose -f docker/edge/compose.yml up -d"
+        edge_compose_up || die "could not recreate $EDGE on $want_image" "run: EDGE_HOME=$EDGE_HOME docker compose -f docker/edge/compose.yml up -d"
         reattach "$saved"
       elif [ "$static_changed" -eq 1 ]; then
         log_warn "the edge's static config changed - restarting it (every stack on this host blinks)"
+        docker restart "$EDGE" >/dev/null || die "could not restart $EDGE"
+      elif edge_lost_docker; then
+        # Restarting the Docker daemon (Docker Desktop, a host reboot) replaces
+        # the socket the edge has mounted. The container comes back "healthy",
+        # Traefik keeps its file routes, and every stack answers 404 because the
+        # docker provider can no longer see a single container.
+        log_warn "the edge lost its connection to Docker (the daemon was restarted) - restarting it"
         docker restart "$EDGE" >/dev/null || die "could not restart $EDGE"
       else
         log_skip "$EDGE already running ($have_image)"
@@ -189,8 +214,7 @@ cmd_up() {
           "the edge needs 80 and 443 for itself; stop that container first: docker stop $holder" \
           "(a per-stack Traefik from before the edge existed is exactly this - see troubleshooting.md)"
       fi
-      docker compose -f "$ROOT/docker/edge/compose.yml" up -d >/dev/null 2>&1 \
-        || die "the edge did not start" "run: EDGE_HOME=$EDGE_HOME docker compose -f docker/edge/compose.yml up -d"
+      edge_compose_up || die "the edge did not start" "run: EDGE_HOME=$EDGE_HOME docker compose -f docker/edge/compose.yml up -d"
       ;;
   esac
 

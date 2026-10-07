@@ -51,6 +51,10 @@ init: ## Rename the boilerplate into your project (NAME=myproject [DOMAIN=...])
 check-tools: ## Verify the toolchain, split into needed-now and needed-to-deploy
 	@$(DEV)/check-tools.sh
 
+.PHONY: installdevtools
+installdevtools: ## Install the missing host tools check-tools asks for (DEPLOY=1 adds the deploy ones)
+	@$(DEV)/install-dev-tools.sh
+
 .PHONY: env
 env: ## Create/repair .env and derive every per-app env file from it
 	@$(LIB)/envgen.sh generate

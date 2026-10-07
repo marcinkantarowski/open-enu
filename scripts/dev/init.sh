@@ -13,6 +13,7 @@
 #      OpenEnuKernel*         the bundle and its extension, named in app config
 #      @open-enu/ui-kit       npm package
 #      backend/kernel/        the package's own source tree
+#      .ai/platform/          the platform's own records (ADR-0023)
 #
 #  Everything else the framework names - container parameters, service tags,
 #  the route loader type, cookies, PHPStan identifiers - is spelled open_enu_*,
@@ -93,6 +94,19 @@ PROTECTED=(
   'open-enu/ui-kit'
 )
 
+# .ai/platform/ is the platform's record of itself and is replaced wholesale by
+# an update (ADR-0023), so init leaves it alone: renaming it produced documents
+# saying "the framework is now called <project>", and a diff against every
+# future platform version. A platform file whose NAME carries the slug is
+# linked from outside that tree, so its name is protected as well - otherwise
+# the link is rewritten and the file it points at is not.
+PLATFORM_DOCS="$ROOT/.ai/platform"
+if [ -d "$PLATFORM_DOCS" ]; then
+  while IFS= read -r p; do
+    [ -n "$p" ] && PROTECTED+=("$(basename "$p")")
+  done < <(find "$PLATFORM_DOCS" -name "*${OLD_SLUG}*" -print 2>/dev/null | sort)
+fi
+
 build_sed_script() {
   local i=0 p
   # 1. mask
@@ -122,6 +136,7 @@ mapfile -t FILES < <(
   find "$ROOT" \
     \( -path '*/.git' -o -path '*/node_modules' -o -path '*/vendor' \
        -o -path "$ROOT/backend/kernel" -o -path "$ROOT/.out" \
+       -o -path "$PLATFORM_DOCS" \
        -o -path "$ROOT/docker/certs" -o -path '*/.nuxt' -o -path '*/.output' \
        -o -path "$ROOT/backend/var" -o -path '*/.idea' \) -prune -o \
     -type f \( -name '*.php'  -o -name '*.json' -o -name '*.yaml' -o -name '*.yml' \
@@ -150,7 +165,7 @@ while IFS= read -r p; do
   [ "$p" = "$np" ] && continue
   mv "$p" "$np"; renamed=$((renamed + 1)); log_info "  ${p#$ROOT/} -> ${np#$ROOT/}"
 done < <(find "$ROOT" \( -path '*/.git' -o -path '*/node_modules' -o -path '*/vendor' \
-           -o -path "$ROOT/backend/kernel" \) -prune -o \
+           -o -path "$ROOT/backend/kernel" -o -path "$PLATFORM_DOCS" \) -prune -o \
          -name "*${OLD_SLUG}*" -print 2>/dev/null | sort -r)
 
 # ── database identifiers (underscore form, never the dashed slug) ───────────

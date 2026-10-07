@@ -40,6 +40,11 @@ framework_ids() {
 }
 FRAMEWORK_IDS_BEFORE="$(framework_ids)"
 
+# The platform's own records. init once rewrote them - an ADR came out saying the
+# framework "is now AcmeCrm" - and renamed a spec that scripts link to by name.
+platform_docs_sum() { find .ai/platform -type f -print0 2>/dev/null | sort -z | xargs -0 cksum | cksum; }
+PLATFORM_DOCS_BEFORE="$(platform_docs_sum)"
+
 j() { php -r '$j=json_decode(file_get_contents($argv[1]),true); $v=$j; foreach(array_slice($argv,2) as $k){ $v = $v[$k] ?? ""; } echo is_bool($v) ? var_export($v,true) : $v;' "$@"; }
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -77,6 +82,17 @@ else
   bad "init rewrote a framework identifier outside the kernel" \
     "identical counts" "$(diff <(echo "$FRAMEWORK_IDS_BEFORE") <(framework_ids) | grep '^[<>]' | head -5 | tr '\n' ' ')"
 fi
+
+assert_eq "platform records (.ai/platform) untouched" "$PLATFORM_DOCS_BEFORE" "$(platform_docs_sum)"
+
+# A link into .ai/platform from outside it must still resolve: the target was
+# not renamed, so the link text must not be either.
+broken=""
+while IFS= read -r ref; do
+  [ -e "$ref" ] || broken="$broken $ref"
+done < <(grep -rhoE --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=platform \
+           '\.ai/platform/[A-Za-z0-9_./-]+\.md' . 2>/dev/null | sort -u)
+assert_eq "links into .ai/platform still resolve" "" "$broken"
 
 # ═══════════════════════════════════════════════════════════════════════════
 log_step "make init - database identifiers stay SQL-safe"

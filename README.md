@@ -209,6 +209,10 @@ and `api.` beside it (Mercure is served from `api.`). Changing domains is one li
 Docker with Compose v2, git, openssl, mkcert. To deploy you also need `dig`, `rclone`, `age`
 and optionally `gh` - `make check-tools` tells you which you are missing and why each matters.
 
+`make installdevtools` installs the missing ones (apt on Debian/Ubuntu/WSL2, Homebrew on
+macOS) and re-runs the check; `make installdevtools DEPLOY=1` adds the deploy tools. Docker is
+the one thing it leaves to you.
+
 Linux, macOS and **WSL2** are supported. On WSL2 the browser and certificate trust store live
 on Windows, so `make builddev` reaches across that boundary for the hosts file and the CA;
 `make check-tools` verifies both.
