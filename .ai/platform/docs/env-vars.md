@@ -74,6 +74,7 @@ first run". Use it for anything secret; never ship a real default.
 |---|---|
 | `DOMAIN` | drives every host: apex, `app.`, `manager.`, `api.` (which also serves Mercure at `/.well-known/mercure`) |
 | `PROJECT_NAME` / `PROJECT_SLUG` | set by `make init`, not by hand |
+| `DEMO_CONTENT` | whether the tenant app offers the platform's reference module in its menu. `true` on a fresh clone; a product sets `false`. The module itself stays - tests stand on it |
 | `DEFAULT_LOCALE` | the language before anyone has chosen: the three apps' default and the fallback for an email (`en`, `pl`). A browser asking for another shipped language still gets it; a user's saved choice wins |
 | `APP_ENV` | Symfony's environment: only `dev`, `prod` or `test` |
 | `APP_STAGE` | *which* prod-like deployment this is: `local`, `staging`, `prod` |

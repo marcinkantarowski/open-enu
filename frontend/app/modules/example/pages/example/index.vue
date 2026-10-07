@@ -115,7 +115,16 @@ async function keepMine() {
 // ── the live stream ───────────────────────────────────────────────────────
 // Scoped to this tenant's topic by the subscriber token, so another tenant's
 // create cannot arrive here even if this page asked for it.
-useAppEvent('example.project.created', () => { void refresh() })
+//
+// The feed below the list shows the raw events as they arrive. It is here for
+// one reason: it is the only place where NOT receiving something is visible,
+// which is what a browser test of tenant isolation has to look at.
+const feed = ref<Array<{ event: string, at: string, subject: string }>>([])
+
+useAppEvent('example.project.created', (message) => {
+  feed.value = [{ event: message.event, at: message.occurredAt, subject: message.subjectId }, ...feed.value].slice(0, 5)
+  void refresh()
+})
 
 // ── the long job, behind a flag ───────────────────────────────────────────
 const jobId = ref<string | null>(null)
@@ -285,5 +294,12 @@ async function onArchived(result: Record<string, unknown>) {
         <UiButton variant="primary" data-testid="example-rename-save" @click="save">{{ t('common.save') }}</UiButton>
       </template>
     </UiModal>
+    <UiCard v-if="feed.length > 0" :title="t('example.live')" :description="t('example.liveHint')">
+      <ul class="flex flex-col gap-1 text-xs" data-testid="live-feed">
+        <li v-for="(entry, index) in feed" :key="`${entry.at}-${index}`" class="font-mono text-fg">
+          {{ entry.at }} · {{ entry.event }} · {{ entry.subject }}
+        </li>
+      </ul>
+    </UiCard>
   </div>
 </template>

@@ -15,16 +15,6 @@
   "app.verify.missingToken": "This confirmation link is incomplete.",
   "app.impersonate.failed": "This support session could not be opened. Ask the operator to start it again.",
   "app.dashboard.greeting": "Hello, {name}",
-  "app.dashboard.subtitle": "Everything below is scoped to the workspace you are signed in to.",
-  "app.dashboard.session": "This session",
-  "app.dashboard.role": "Role",
-  "app.dashboard.permissions": "Permissions granted",
-  "app.dashboard.modules": "Modules",
-  "app.dashboard.modulesHint": "Each one is a folder in frontend/app/modules and a folder in backend/src/Module.",
-  "app.dashboard.live": "Live events",
-  "app.dashboard.liveHint": "Server-sent, scoped to this workspace's topic.",
-  "app.dashboard.liveEmpty": "No events yet",
-  "app.dashboard.liveEmptyHint": "Create a project in another tab and it will appear here.",
   "app.auth.headline": "Your workspace, in order and within reach.",
   "app.auth.tagline": "Sign in to pick up where you left off.",
   "app.auth.backToLogin": "Back to sign in",
@@ -43,5 +33,8 @@
   "app.verify.doneHint": "Your account is active. You can sign in.",
   "app.verify.failed": "The address could not be confirmed",
   "app.nav.menu": "Show or hide the menu",
-  "app.nav.main": "Main menu"
+  "app.nav.main": "Main menu",
+  "app.dashboard.workspace": "Workspace:",
+  "app.dashboard.empty": "Nothing here yet",
+  "app.dashboard.emptyHint": "Modules put their cards on this page. None has yet."
 }

@@ -17,5 +17,7 @@
   "example.archive": "Zarchiwizuj wszystko",
   "example.archived": "Zarchiwizowano {count} projekt(ów).",
   "example.archiveUnavailable": "Archiwizacja jest wyłączona dla tego obszaru roboczego.",
-  "example.attached": "Załączono {name}."
+  "example.attached": "Załączono {name}.",
+  "example.live": "Zdarzenia na żywo",
+  "example.liveHint": "Wysyłane przez serwer, ograniczone do tematu tego obszaru roboczego."
 }
