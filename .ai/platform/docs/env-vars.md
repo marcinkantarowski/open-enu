@@ -47,6 +47,22 @@ make env-check   # read-only: what has drifted
      under `NUXT_PUBLIC_` is compiled into the client bundle.
 4. `make env && make check`.
 
+### A project's own variables
+
+A product built on the platform talks to third parties the platform has never heard of - an
+invoicing service, an SMS provider - and each comes with a credential. Those do not go
+through step 2. Declare them in `.env.example` **below the line**
+
+```
+# == Project variables ==
+```
+
+and `make env` hands every variable declared after it to the backend as it is, where it is
+`%env(NAME)%` like any other. The generator is not edited, so a platform update never
+conflicts over it. Values are passed literally (a `$` stays a `$`); a value containing a
+single quote is refused. Frontend variables are not covered: anything under `NUXT_PUBLIC_` is
+public, and a credential must never be one.
+
 `__GENERATE__` as the value in `.env.example` means "fill this with 32 random bytes on
 first run". Use it for anything secret; never ship a real default.
 

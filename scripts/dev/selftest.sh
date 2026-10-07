@@ -156,6 +156,22 @@ sed -i '/^NEW_UPSTREAM_KEY/d' .env
 out="$(./scripts/lib/envgen.sh check 2>&1 || true)"
 assert_contains "env-check detects the gap" "$out" "NEW_UPSTREAM_KEY"
 
+# A project's own variable - the credential of something only IT talks to -
+# reaches the backend without the generator being edited, and literally: a `$`
+# in a token must arrive as a `$`, not as the expansion of whatever follows it.
+sed -i '/^NEW_UPSTREAM_KEY/d' .env.example
+grep -qxF '# == Project variables ==' .env.example || printf '\n# == Project variables ==\n' >> .env.example
+printf '# a third party the product talks to\nSELFTEST_PARTNER_TOKEN=\n' >> .env.example
+./scripts/lib/envgen.sh generate >/dev/null 2>&1
+sed -i 's|^SELFTEST_PARTNER_TOKEN=.*|SELFTEST_PARTNER_TOKEN=abc$HOME#1|' .env
+./scripts/lib/envgen.sh generate >/dev/null 2>&1
+# shellcheck disable=SC2016 # the dollar sign is the point: it must arrive unexpanded
+assert_contains "a project variable reaches the backend literally" \
+  "$(cat backend/.env.local)" 'SELFTEST_PARTNER_TOKEN='"'"'abc$HOME#1'"'"
+assert_eq "a platform variable above the marker is not passed a second time" "1" \
+  "$(grep -c '^APP_SECRET=' backend/.env.local)"
+sed -i '/SELFTEST_PARTNER_TOKEN/d; /a third party the product talks to/d' .env.example .env
+
 # ═══════════════════════════════════════════════════════════════════════════
 log_step "envgen - derived files agree with each other"
 # ═══════════════════════════════════════════════════════════════════════════
