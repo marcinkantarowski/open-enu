@@ -154,6 +154,31 @@ else
   log_ok "every script reads COMPOSE_FILE"
 fi
 
+# ── workers and the code they run ───────────────────────────────────────────
+# A worker runs the classes it started with. In development that means an
+# edited handler keeps its old behaviour until something restarts the process,
+# so every dev worker goes through worker-dev.sh, which does. In production the
+# image cannot change underneath a worker, and nothing there may walk the
+# source tree looking for edits.
+log_step "Worker invariants"
+
+DEV_FILE="$ROOT/docker/compose.dev.yml"
+bare="$(grep -nE '^\s+command:.*messenger:consume' "$DEV_FILE" 2>/dev/null || true)"
+if [ -n "$bare" ]; then
+  bad "a development worker runs messenger:consume directly" \
+      "it will keep running old code after an edit - use: command: sh /worker-dev.sh <transport>" \
+      "$bare"
+else
+  log_ok "every development worker restarts when the code changes"
+fi
+
+if grep -q 'worker-dev.sh' "$FILE"; then
+  bad "the production stack uses worker-dev.sh" \
+      "that script polls the source tree and is for development only"
+else
+  log_ok "no production worker watches the source tree"
+fi
+
 echo
 [ "$fails" -eq 0 ] && { log_ok "the production and staging stacks hold every invariant"; exit 0; }
 log_fail "$fails problem(s) above"

@@ -11,6 +11,10 @@ make module NAME=Billing
 That writes the backend module, the matching frontend layer, `MODULE.md`, a dated spec stub
 and the `AGENTS.md` Task Router row - then syntax-checks every PHP file it generated.
 
+If the stack is running, it also restarts the frontend: editing a file inside a layer
+hot-reloads, but a *new* layer is only discovered when the dev server starts, and until
+then its pages answer 404.
+
 Nothing else needs editing. Discovery picks the module up from `module.yaml`; confirm with:
 
 ```bash

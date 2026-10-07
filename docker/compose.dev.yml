@@ -150,9 +150,10 @@ services:
     build: { context: ., dockerfile: docker/api/Dockerfile, target: dev, args: { UID: "${HOST_UID:-1000}", GID: "${HOST_GID:-1000}" } }
     container_name: ${STACK:-open-enu}-worker-events
     restart: unless-stopped
-    # --time-limit recycles the process so a slow leak in a handler cannot grow
-    # unbounded; supervisor restarts it immediately.
-    command: php bin/console messenger:consume outbox --time-limit=3600 --memory-limit=256M -v
+    # Through worker-dev.sh, which restarts the worker when the source changes:
+    # a worker runs the code it started with, so without it an edited handler
+    # keeps its old behaviour and a new one does not exist (`make prod-check`).
+    command: sh /worker-dev.sh outbox
     entrypoint: ["/usr/local/bin/entrypoint"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -162,6 +163,7 @@ services:
       APP_DEBUG: ${APP_DEBUG:-1}
     volumes:
       - ./backend:/app
+      - ./docker/api/worker-dev.sh:/worker-dev.sh:ro
       - apivendor:/app/vendor
       - apivar:/app/var
       - ./docker/certs:/etc/open-enu/certs:ro
@@ -171,7 +173,7 @@ services:
     build: { context: ., dockerfile: docker/api/Dockerfile, target: dev, args: { UID: "${HOST_UID:-1000}", GID: "${HOST_GID:-1000}" } }
     container_name: ${STACK:-open-enu}-worker-jobs
     restart: unless-stopped
-    command: php bin/console messenger:consume jobs --time-limit=3600 --memory-limit=256M -v
+    command: sh /worker-dev.sh jobs
     entrypoint: ["/usr/local/bin/entrypoint"]
     # Let an in-flight job finish on restart. At the 10s default, restarting the
     # worker after a code change SIGKILLs a handler mid-write, which is how a
@@ -185,6 +187,7 @@ services:
       APP_DEBUG: ${APP_DEBUG:-1}
     volumes:
       - ./backend:/app
+      - ./docker/api/worker-dev.sh:/worker-dev.sh:ro
       - apivendor:/app/vendor
       - apivar:/app/var
       - ./docker/certs:/etc/open-enu/certs:ro

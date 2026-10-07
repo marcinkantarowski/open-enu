@@ -54,6 +54,10 @@ final readonly class NotifyOnProjectCreated
 ```
 
 A listener runs in the worker, with the tenant restored from the message's `TenantStamp`.
+
+In development the workers restart themselves when the code changes
+(`docker/api/worker-dev.sh`), so an edited listener or handler is live within a couple of
+seconds. Without that a worker would keep running the classes it started with.
 Nothing about the dispatching request survives except what the event carries - so an event
 carries **ids and names, never entities**.
 

@@ -68,7 +68,12 @@ ERR Failed to retrieve information of the docker client and server host
     error="Error response from daemon: " providerName=docker
 ```
 
-The empty error message is the tell: the daemon rejected the API version outright.
+Two things produce this. If the message is `Cannot connect to the Docker daemon`, the
+daemon was restarted (Docker Desktop, a host reboot) and the edge is holding a socket that
+no longer exists. `make up` detects that and restarts the edge; `docker restart enu-edge`
+does the same by hand.
+
+An empty error message is the other tell: the daemon rejected the API version outright.
 Docker ≥ 29 sets a minimum API version (`docker version` → `MinAPIVersion`), and older
 Traefik builds negotiate below it.
 
@@ -108,6 +113,40 @@ immediately after a restart races it.
 **Fix.** Already handled: the three app services have healthchecks with a `start_period`,
 `make wait` blocks on them, and `builddev` is ordered `up → deps → wait → smoke`. Never add
 a `sleep` - wait on the healthcheck.
+
+---
+
+## A job is queued and never finishes, or a handler runs old code
+
+**Cause.** A queue worker is one long-lived PHP process and runs the classes it loaded at
+startup. A handler written after that does not exist for it (`No handler for message` in
+`make logs`, retried with a growing delay); a handler edited after that keeps its old
+behaviour.
+
+**Fix.** Nothing, normally: development workers run under `docker/api/worker-dev.sh`, which
+restarts them within a couple of seconds of a change to `src/`, `kernel/src/` or `config/`.
+If a worker is stuck anyway, check how long it has been up before reading the code again:
+
+```bash
+docker ps --format '{{.Names}}\t{{.Status}}' | grep worker
+make restart
+```
+
+See [the lesson](../lessons/a-worker-runs-the-code-it-started-with.md).
+
+---
+
+## A new module's page returns 404, though the file is there
+
+**Cause.** A frontend module is a Nuxt layer, and Nuxt reads its list of layers once, at
+startup. Editing a file inside an existing layer hot-reloads; adding a layer does not.
+
+**Fix.** `make module` restarts the frontend for you when the stack is running. If the
+directory arrived another way - a branch switch, a pull - restart it by hand:
+
+```bash
+make restart
+```
 
 ---
 

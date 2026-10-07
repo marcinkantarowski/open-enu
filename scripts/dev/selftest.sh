@@ -187,7 +187,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module backend/composer.json backend/composer.lock AGENTS.md docker/compose.prod.yml docker/compose.staging.yml scripts/dev .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module backend/composer.json backend/composer.lock AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml scripts/dev .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -333,6 +333,10 @@ fails_when "prod-check catches a script that drops the staging override" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "printf '#!/usr/bin/env bash\\ndocker compose -f docker/compose.dev.yml up -d\\n' > '$WORK/scripts/dev/rogue-fixture.sh'"
 
+fails_when "prod-check catches a development worker that will not see code changes" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "sed -i 's|command: sh /worker-dev.sh jobs|command: php bin/console messenger:consume jobs|' '$WORK/docker/compose.dev.yml'"
+
 fails_when "shell-check catches a broken script" \
   "$WORK/scripts/dev/check-shell.sh" \
   "printf '#!/usr/bin/env bash\\ncd \$1\\n' > '$WORK/scripts/dev/broken-fixture.sh'"
@@ -351,6 +355,78 @@ for c in check-modules check-docs check-i18n check-typography check-landing-seo 
     "$WORK/scripts/dev/$c.sh" 2>&1 | sed 's/^/      /' >&2
   fi
 done
+
+# ═══════════════════════════════════════════════════════════════════════════
+log_step "make platform-update - a project follows the platform it was made from"
+# ═══════════════════════════════════════════════════════════════════════════
+# Two real repositories, built from this checkout: a platform, and a project
+# cloned from it and renamed. The platform then moves on, and the project has to
+# follow - with the project's spelling, without touching the kernel's, and
+# without overwriting what the project changed itself.
+UPD="$(mktemp -d)"
+GT=(git -c user.name=selftest -c user.email=selftest@localhost -c commit.gpgsign=false -c init.defaultBranch=main)
+PLAT_DOMAIN="$(sed -n 's/.*"domain"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ROOT/.project.json" | head -1)"
+
+mkdir "$UPD/platform"
+tar --exclude=.git --exclude=vendor --exclude=node_modules --exclude=.idea --exclude='.out' --exclude=.env \
+    -C "$ROOT" -cf - . | tar -C "$UPD/platform" -xf -
+# The platform side is, by definition, not a project yet.
+sed -i 's/"initialized"[[:space:]]*:[[:space:]]*true/"initialized": false/' "$UPD/platform/.project.json"
+sed -i '/"platform_ref"/d; /"platform_source"/d' "$UPD/platform/.project.json"
+sed -i 's/"db": \("[^"]*"\),$/"db": \1/' "$UPD/platform/.project.json"
+"${GT[@]}" -C "$UPD/platform" init -q
+"${GT[@]}" -C "$UPD/platform" add -A -f . >/dev/null
+"${GT[@]}" -C "$UPD/platform" commit -q -m "platform, as cloned"
+upd_base="$("${GT[@]}" -C "$UPD/platform" rev-parse HEAD)"
+
+"${GT[@]}" clone -q "$UPD/platform" "$UPD/project"
+( cd "$UPD/project" && make init NAME=upd-shop DOMAIN=shop.example.com >/dev/null 2>&1 )
+assert_eq "init records the platform commit it started from" "$upd_base" "$(j "$UPD/project/.project.json" platform_ref)"
+assert_eq "init records where the platform is"                "$UPD/platform" "$(j "$UPD/project/.project.json" platform_source)"
+echo 'the project owns this line' >> "$UPD/project/README.md"
+"${GT[@]}" -C "$UPD/project" add -A -f . >/dev/null
+"${GT[@]}" -C "$UPD/project" commit -q -m "the project, renamed"
+
+# The platform moves on: a new file that names its own domain, a platform doc,
+# and the kernel.
+printf '# served at app.%s\n' "$PLAT_DOMAIN" > "$UPD/platform/scripts/dev/update-probe.sh"
+echo 'A line the platform added.' >> "$UPD/platform/.ai/platform/docs/README.md"
+printf '\n// update probe\n' >> "$UPD/platform/backend/kernel/src/Kernel.php"
+"${GT[@]}" -C "$UPD/platform" add -A -f . >/dev/null
+"${GT[@]}" -C "$UPD/platform" commit -q -m "the platform moves on"
+upd_next="$("${GT[@]}" -C "$UPD/platform" rev-parse HEAD)"
+
+if out="$(cd "$UPD/project" && make platform-update 2>&1)"; then ok "the update applies cleanly"; else bad "the update applies cleanly" "exit 0" "$out"; fi
+assert_eq "a new platform file arrives in the project's spelling" "# served at app.shop.example.com" "$(cat "$UPD/project/scripts/dev/update-probe.sh" 2>/dev/null)"
+assert_contains "a platform doc is updated" "$(tail -1 "$UPD/project/.ai/platform/docs/README.md")" "A line the platform added."
+assert_contains "the kernel is updated" "$(tail -1 "$UPD/project/backend/kernel/src/Kernel.php")" "update probe"
+assert_eq "the kernel keeps its own name"    "open-enu/kernel" "$(j "$UPD/project/backend/kernel/composer.json" name)"
+assert_eq "the project keeps its own change" "the project owns this line" "$(tail -1 "$UPD/project/README.md")"
+assert_eq "the new platform commit is recorded" "$upd_next" "$(j "$UPD/project/.project.json" platform_ref)"
+assert_eq "nothing is committed for the user" "the project, renamed" "$("${GT[@]}" -C "$UPD/project" log -1 --format=%s)"
+"${GT[@]}" -C "$UPD/project" commit -q -m "platform update"
+
+# Both sides change the same line: the update must stop and say where, not pick.
+sed -i '1s/.*/# changed by the platform/' "$UPD/platform/README.md"
+"${GT[@]}" -C "$UPD/platform" commit -q -am "the platform edits a line"
+sed -i '1s/.*/# changed by the project/' "$UPD/project/README.md"
+"${GT[@]}" -C "$UPD/project" commit -q -am "the project edits the same line"
+if out="$(cd "$UPD/project" && make platform-update 2>&1)"; then
+  bad "a change on both sides is reported as a conflict" "non-zero exit" "exit 0"
+else
+  assert_contains "a change on both sides is reported as a conflict" "$out" "README.md"
+fi
+assert_contains "the conflict is marked in the file" "$(cat "$UPD/project/README.md")" "<<<<<<<"
+
+# A dirty tree is refused: the update has to be the only thing in the diff.
+"${GT[@]}" -C "$UPD/project" reset -q --hard
+echo dirty >> "$UPD/project/README.md"
+if out="$(cd "$UPD/project" && make platform-update 2>&1)"; then
+  bad "an update over uncommitted work is refused" "non-zero exit" "exit 0"
+else
+  assert_contains "an update over uncommitted work is refused" "$out" "uncommitted"
+fi
+rm -rf "$UPD"
 
 # ═══════════════════════════════════════════════════════════════════════════
 echo

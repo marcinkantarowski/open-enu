@@ -238,6 +238,7 @@ make e2e         # the browser suite - needs the stack up; in `ci`, never in `ch
 make preflight   # read-only: DNS, ports, SSH, repo access. Changes nothing
 make selftest    # proves the guardrails fail when broken
 make inventory   # regenerate .ai/inventory.json - what already exists
+make platform-update  # bring a project up to a newer platform; staged, never committed
 make dead-code   # unused TypeScript (blocking) + unreachable PHP (advisory)
 make modules     # what module discovery actually resolved
 make builddev    # bring the whole stack up from nothing (~90s)
@@ -304,6 +305,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | What the production stack may and may not contain | `scripts/dev/check-prod-compose.sh` |
 | A mistake that has been made before | `.ai/platform/lessons/` (the platform's) + `.ai/lessons/` (this project's) - read the index, never bulk-read the files |
 | Where the platform's records end and this project's begin | [`.ai/README.md`](.ai/README.md) |
+| Updating a project from the platform; fixing the platform from a project | [`.ai/platform/docs/updating.md`](.ai/platform/docs/updating.md) - `make platform-update` |
 | DNS, TLS, deploy keys, provisioning | [`.ai/platform/docs/deployment.md`](.ai/platform/docs/deployment.md) |
 | A step-by-step procedure for a whole task | [`.ai/platform/skills/`](.ai/platform/skills/) - create a module, add an endpoint, review a change |
 | Tenant - tenant | `backend/src/Module/Tenant/MODULE.md` |
