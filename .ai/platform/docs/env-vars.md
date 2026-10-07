@@ -58,6 +58,7 @@ first run". Use it for anything secret; never ship a real default.
 |---|---|
 | `DOMAIN` | drives every host: apex, `app.`, `manager.`, `api.` (which also serves Mercure at `/.well-known/mercure`) |
 | `PROJECT_NAME` / `PROJECT_SLUG` | set by `make init`, not by hand |
+| `DEFAULT_LOCALE` | the language before anyone has chosen: the three apps' default and the fallback for an email (`en`, `pl`). A browser asking for another shipped language still gets it; a user's saved choice wins |
 | `APP_ENV` | Symfony's environment: only `dev`, `prod` or `test` |
 | `APP_STAGE` | *which* prod-like deployment this is: `local`, `staging`, `prod` |
 | `APP_SECRET` | sessions and signed URLs. Rotating it logs everyone out |

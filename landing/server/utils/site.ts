@@ -13,10 +13,12 @@ type H3Event = Parameters<typeof queryCollection>[0]
  * step - and one marked `noindex` disappears from all three.
  */
 
-// The default locale has no URL prefix (`prefix_except_default` in nuxt.config).
+// The default locale has no URL prefix (`prefix_except_default` in nuxt.config),
+// and which locale that is comes from DEFAULT_LOCALE - so the prefix is worked
+// out per request instead of written down next to each language.
 const LOCALES = [
-  { code: 'en', language: 'en-GB', collection: 'pages_en', prefix: '' },
-  { code: 'pl', language: 'pl-PL', collection: 'pages_pl', prefix: '/pl' },
+  { code: 'en', language: 'en-GB', collection: 'pages_en' },
+  { code: 'pl', language: 'pl-PL', collection: 'pages_pl' },
 ] as const
 
 export interface SitePage {
@@ -28,14 +30,20 @@ export interface SitePage {
 
 export function siteConfig(event: H3Event) {
   const { public: cfg } = useRuntimeConfig(event)
-  return { name: String(cfg.appName), url: String(cfg.siteUrl), indexable: cfg.indexable === true }
+  return {
+    name: String(cfg.appName),
+    url: String(cfg.siteUrl),
+    indexable: cfg.indexable === true,
+    defaultLocale: String(cfg.defaultLocale),
+  }
 }
 
 export async function sitePages(event: H3Event): Promise<SitePage[]> {
-  const { url } = siteConfig(event)
+  const { url, defaultLocale } = siteConfig(event)
   const pages = new Map<string, SitePage>()
 
   for (const locale of LOCALES) {
+    const prefix = locale.code === defaultLocale ? '' : `/${locale.code}`
     const rows = await queryCollection(event, locale.collection)
       .select('path', 'title', 'description', 'noindex', 'updated')
       .all()
@@ -46,7 +54,7 @@ export async function sitePages(event: H3Event): Promise<SitePage[]> {
       page.versions.push({
         code: locale.code,
         language: locale.language,
-        url: `${url}${`${locale.prefix}${row.path}`.replace(/\/+$/, '') || '/'}`,
+        url: `${url}${`${prefix}${row.path}`.replace(/\/+$/, '') || '/'}`,
         title: row.title,
         description: row.description,
       })

@@ -13,6 +13,7 @@ use App\Module\Identity\Service\LoginService;
 use App\Module\Identity\Service\SessionIssuer;
 use App\Module\Identity\Service\SessionPayload;
 use OpenEnu\Kernel\Command\CommandBusInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -45,6 +46,7 @@ final readonly class AuthController
         #[Target('authLimiter')] private RateLimiterFactoryInterface $authLimiter,
         #[Target('registrationLimiter')] private RateLimiterFactoryInterface $registrationLimiter,
         #[Target('refreshLimiter')] private RateLimiterFactoryInterface $refreshLimiter,
+        #[Autowire('%kernel.default_locale%')] private string $defaultLocale,
     ) {
     }
 
@@ -59,7 +61,7 @@ final readonly class AuthController
             plainPassword: $this->requirePassword($body),
             tenantName: $this->requireString($body, 'tenantName'),
             displayName: \is_string($body['displayName'] ?? null) ? $body['displayName'] : null,
-            locale: \is_string($body['locale'] ?? null) ? $body['locale'] : 'en',
+            locale: \is_string($body['locale'] ?? null) ? $body['locale'] : $this->defaultLocale,
         ));
 
         // 202, not 201: the account exists but is unusable until the address is

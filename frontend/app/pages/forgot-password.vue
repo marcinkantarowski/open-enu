@@ -24,17 +24,27 @@ async function submit() {
 </script>
 
 <template>
-  <p v-if="sent" class="text-sm text-fg-muted">{{ t('app.forgot.sent') }}</p>
+  <div v-if="sent">
+    <AuthHeading :title="t('app.forgot.sentTitle')" :subtitle="t('app.forgot.sent')" />
 
-  <form v-else class="flex flex-col gap-4" @submit.prevent="submit">
-    <UiField v-slot="field" :label="t('auth.email')" required>
-      <UiInput :id="field.id" v-model="email" type="email" autocomplete="username" :described-by="field.describedBy" />
-    </UiField>
-
-    <UiButton type="submit" variant="primary" :loading="busy">{{ t('app.forgot.submit') }}</UiButton>
-
-    <NuxtLink to="/login" class="text-center text-xs text-fg-muted hover:underline">
-      {{ t('auth.signIn') }}
+    <NuxtLink to="/login" class="text-sm font-medium text-brand-700 hover:underline">
+      {{ t('app.auth.backToLogin') }}
     </NuxtLink>
-  </form>
+  </div>
+
+  <div v-else>
+    <AuthHeading :title="t('app.forgot.title')" :subtitle="t('app.forgot.subtitle')" />
+
+    <form class="flex flex-col gap-5" @submit.prevent="submit">
+      <UiField v-slot="field" :label="t('auth.email')">
+        <UiInput :id="field.id" v-model="email" type="email" autocomplete="username" :described-by="field.describedBy" />
+      </UiField>
+
+      <UiButton type="submit" variant="primary" size="lg" :loading="busy">{{ t('app.forgot.submit') }}</UiButton>
+    </form>
+
+    <p class="mt-8 text-center text-sm">
+      <NuxtLink to="/login" class="font-medium text-brand-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
+    </p>
+  </div>
 </template>

@@ -52,5 +52,7 @@
   "manager.rateLimited": "Too many attempts. This account reaches every tenant, so the limit is deliberately tight - wait and try again.",
   "manager.loginNotice": "Operator sessions do not persist across a reload, and expire after 15 minutes.",
   "manager.outcomeOk": "OK",
-  "manager.outcomeFailed": "Failed"
+  "manager.outcomeFailed": "Failed",
+  "manager.loginTitle": "Operator console",
+  "manager.loginSubtitle": "Sign in with a platform operator account."
 }

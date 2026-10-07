@@ -33,11 +33,21 @@ DOMAIN="$(sed -n 's/^DOMAIN=//p' "$ROOT/.env" | head -1)"
 CA="$(mkcert -CAROOT 2>/dev/null)/rootCA.pem"
 [ -f "$CA" ] || die "mkcert CA not found" "run: make certs"
 
+# The landing site gives the default language the bare URL and every other one
+# a prefix, so which URL is "the other language" follows DEFAULT_LOCALE. Checked
+# from both sides: the bare URL must be in the default language, and the
+# prefixed one in the other - a site that answers every URL in one language
+# passes a check that only looks at one of them.
+DEFAULT_LOCALE="$(sed -n 's/^DEFAULT_LOCALE=//p' "$ROOT/.env" | head -1)"
+DEFAULT_LOCALE="${DEFAULT_LOCALE:-en}"
+OTHER_LOCALE=pl; [ "$DEFAULT_LOCALE" = pl ] && OTHER_LOCALE=en
+
 # host | path | status | body must contain | what it is
 TARGETS=(
   "$DOMAIN|/|200|content=\"marketing\"|landing"
   "www.$DOMAIN|/|200|content=\"marketing\"|landing (www)"
-  "$DOMAIN|/pl|200|lang=\"pl\"|landing, Polish URL"
+  "$DOMAIN|/|200|lang=\"$DEFAULT_LOCALE\"|landing, default language ($DEFAULT_LOCALE)"
+  "$DOMAIN|/$OTHER_LOCALE|200|lang=\"$OTHER_LOCALE\"|landing, /$OTHER_LOCALE"
   "$DOMAIN|/robots.txt|200|User-agent:|landing robots.txt"
   "$DOMAIN|/sitemap.xml|200|hreflang=\"pl-PL\"|landing sitemap"
   "$DOMAIN|/llms.txt|200|## Pages|landing llms.txt"

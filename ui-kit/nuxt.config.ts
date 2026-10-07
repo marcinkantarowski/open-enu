@@ -47,7 +47,8 @@ export default defineNuxtConfig({
     // project (ADR-0020). Each layer contributes its own catalogue; the module
     // merges the `files` arrays, which is what lets a feature ship its strings
     // next to its pages.
-    defaultLocale: 'en',
+    // DEFAULT_LOCALE in the root .env, by way of the generated <app>/.env.
+    defaultLocale: (process.env.NUXT_PUBLIC_DEFAULT_LOCALE || 'en') as 'en' | 'pl',
     strategy: 'no_prefix',
     // No `langDir`: @nuxtjs/i18n resolves catalogues to `<layer>/i18n/locales`
     // by default, and every layer here follows that. Overriding it is how the
