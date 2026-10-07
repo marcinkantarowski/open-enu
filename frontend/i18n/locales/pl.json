@@ -15,16 +15,6 @@
   "app.verify.missingToken": "Ten link potwierdzający jest niekompletny.",
   "app.impersonate.failed": "Nie udało się otworzyć sesji wsparcia. Poproś operatora o ponowne jej uruchomienie.",
   "app.dashboard.greeting": "Cześć, {name}",
-  "app.dashboard.subtitle": "Wszystko poniżej dotyczy obszaru roboczego, do którego jesteś zalogowany.",
-  "app.dashboard.session": "Ta sesja",
-  "app.dashboard.role": "Rola",
-  "app.dashboard.permissions": "Przyznane uprawnienia",
-  "app.dashboard.modules": "Moduły",
-  "app.dashboard.modulesHint": "Każdy z nich to katalog w frontend/app/modules i katalog w backend/src/Module.",
-  "app.dashboard.live": "Zdarzenia na żywo",
-  "app.dashboard.liveHint": "Wysyłane przez serwer, ograniczone do tematu tego obszaru roboczego.",
-  "app.dashboard.liveEmpty": "Jeszcze bez zdarzeń",
-  "app.dashboard.liveEmptyHint": "Utwórz projekt w innej karcie, a pojawi się tutaj.",
   "app.auth.headline": "Twój obszar roboczy, uporządkowany i pod ręką.",
   "app.auth.tagline": "Zaloguj się, żeby wrócić do pracy tam, gdzie ją przerwałeś.",
   "app.auth.backToLogin": "Wróć do logowania",
@@ -43,5 +33,8 @@
   "app.verify.doneHint": "Konto jest aktywne. Możesz się zalogować.",
   "app.verify.failed": "Nie udało się potwierdzić adresu",
   "app.nav.menu": "Pokaż lub ukryj menu",
-  "app.nav.main": "Menu główne"
+  "app.nav.main": "Menu główne",
+  "app.dashboard.workspace": "Obszar roboczy:",
+  "app.dashboard.empty": "Jeszcze nic tu nie ma",
+  "app.dashboard.emptyHint": "Na tej stronie moduły umieszczają swoje kafelki. Żaden jeszcze tego nie zrobił."
 }

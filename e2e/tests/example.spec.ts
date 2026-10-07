@@ -54,7 +54,10 @@ test('a project created in one session appears in another, and not in another te
   await otherTenant.waitForURL('**/')
   await expect(otherTenant.getByTestId('current-tenant')).toHaveText(SECOND_TENANT.name)
 
-  // Both dashboards are open with a live connection.
+  // Both are on the reference screen, which shows events as they arrive, with a
+  // live connection open.
+  await openProjects(watcher)
+  await openProjects(otherTenant)
   await expect(watcher.getByRole('banner').getByTestId('realtime-indicator')).toContainText(/live/i)
   await expect(otherTenant.getByRole('banner').getByTestId('realtime-indicator')).toContainText(/live/i)
 

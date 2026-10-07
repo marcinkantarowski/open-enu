@@ -13,6 +13,12 @@ export interface NavigationItem {
   /** Hidden unless the session grants it. The server still enforces it. */
   permission?: string
   order?: number
+  /**
+   * Part of the platform's own demonstration, not of a product: shown only
+   * while `DEMO_CONTENT` is on. The page behind it stays reachable by URL -
+   * the platform's browser tests go there - it is merely not offered.
+   */
+  demo?: boolean
 }
 
 export function defineNavigation(items: NavigationItem[]): NavigationItem[] {

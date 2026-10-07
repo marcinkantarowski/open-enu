@@ -51,6 +51,25 @@ The `.ts` beside each `.json` catalogue is a two-line re-export and is not optio
 the i18n loader at a `.json` puts Vite's json plugin around the module's own transform and
 breaks server rendering. The `.json` stays because the parity check reads it as data.
 
+### The dashboard, and the reference module
+
+The dashboard (`frontend/app/pages/index.vue`) has no content of its own: a greeting and
+`<InjectionPoint name="dashboard.widgets">` in a two-column grid. What belongs on a product's
+first screen belongs to its modules, so a module puts a card there from its `injections.ts`:
+
+```ts
+defineInjection('dashboard.widgets', BalanceWidget, { id: 'wallet.balance', order: 10 })
+```
+
+`order` decides the position; a card that wants the full width adds `lg:col-span-2` to its own
+root. A widget fetches its own data and must render nothing for someone without the
+permission to see it.
+
+`Example` is the platform's reference module and is not a product screen. Its menu entry is
+marked `demo: true` and is offered only while `DEMO_CONTENT` is on (`.env`; on by default, a
+product switches it off). The module, its routes and `/example` stay either way, because the
+platform's browser and security tests stand on them - never delete it to tidy a menu.
+
 ### Screens for an operator
 
 Most features have nothing for an operator to do, so `make module` writes no operator half.

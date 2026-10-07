@@ -83,6 +83,10 @@ export default defineNuxtConfig({
       domain: process.env.NUXT_PUBLIC_DOMAIN || 'open-enu.local',
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
       mercureUrl: process.env.NUXT_PUBLIC_MERCURE_URL || '',
+      // The platform's own demonstration content - the reference module's menu
+      // entry. On unless switched off: a fresh clone should show what it can
+      // do, and a product built from it switches this off in `.env`.
+      demoContent: process.env.NUXT_PUBLIC_DEMO_CONTENT !== 'false',
     },
   },
 })

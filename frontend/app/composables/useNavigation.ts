@@ -25,6 +25,7 @@ const settingsModules = import.meta.glob<{ default: SettingsTab[] }>(
 export function useNavigation() {
   const auth = useAuthStore()
   const { t } = useI18n()
+  const { public: cfg } = useRuntimeConfig()
 
   const translate = <T extends { label: string }>(item: T): T => ({ ...item, label: t(item.label) })
 
@@ -34,6 +35,9 @@ export function useNavigation() {
       // Hidden, not disabled: an entry someone cannot use is noise, and the
       // server refuses the request regardless of what renders here.
       .filter(item => !item.permission || auth.can(item.permission))
+      // The reference module is the platform showing itself off. A product
+      // keeps the module - tests stand on it - and stops advertising it.
+      .filter(item => !item.demo || cfg.demoContent)
       .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
       .map(translate),
   )
