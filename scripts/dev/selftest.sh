@@ -156,6 +156,19 @@ sed -i '/^NEW_UPSTREAM_KEY/d' .env
 out="$(./scripts/lib/envgen.sh check 2>&1 || true)"
 assert_contains "env-check detects the gap" "$out" "NEW_UPSTREAM_KEY"
 
+# The same variable twice is what a merge leaves behind when two sides add it
+# with different values: no conflict, no error, and the last one silently wins.
+printf 'APP_STAGE=production\n' >> .env.example
+out="$(./scripts/lib/envgen.sh check 2>&1 || true)"
+assert_contains "env-check catches a variable declared twice" "$out" "more than once"
+assert_contains "env-check names the variable declared twice" "$out" "APP_STAGE"
+sed -i '$d' .env.example
+out="$(./scripts/lib/envgen.sh check 2>&1 || true)"
+case "$out" in
+  *"more than once"*) bad "env-check is quiet about a file with no duplicates" "no complaint" "$out" ;;
+  *) ok "env-check is quiet about a file with no duplicates" ;;
+esac
+
 # A project's own variable - the credential of something only IT talks to -
 # reaches the backend without the generator being edited, and literally: a `$`
 # in a token must arrive as a `$`, not as the expansion of whatever follows it.

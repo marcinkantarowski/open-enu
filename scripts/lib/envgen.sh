@@ -298,7 +298,21 @@ check_env() {
     [ "$(env_get "$key" "$ENV_FILE")" = "__GENERATE__" ] && unset_secrets+=("$key")
   done < <(env_keys "$ENV_FILE")
 
-  local rc=0
+  # A variable declared twice. Nothing downstream objects: every reader takes
+  # one of the two - the last, usually - and carries on, so the file says two
+  # things and only one of them is true. It arrives by merge: two branches, or a
+  # platform update and a project, each add the same variable a few lines apart
+  # with different values, and git joins them without a conflict.
+  local file duplicated rc=0
+  for file in "$ENV_EXAMPLE" "$ENV_FILE"; do
+    duplicated="$(env_keys "$file" | sort | uniq -d | tr '\n' ' ')"
+    if [ -n "$duplicated" ]; then
+      log_fail "$(basename "$file") declares a variable more than once" \
+        "$duplicated" "keep one line for each; the last one is the one that was winning" || true
+      rc=1
+    fi
+  done
+
   if [ ${#missing[@]} -gt 0 ]; then
     log_fail "${#missing[@]} variable(s) in .env.example are missing from .env" \
       "${missing[*]}" "run: make env" || true

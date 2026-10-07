@@ -63,6 +63,11 @@ conflicts over it. Values are passed literally (a `$` stays a `$`); a value cont
 single quote is refused. Frontend variables are not covered: anything under `NUXT_PUBLIC_` is
 public, and a credential must never be one.
 
+`make env-check` (part of `make check`) also refuses a file that declares a variable twice.
+That is what a merge leaves behind when two sides add the same variable with different
+values - a platform update and the project, typically: git sees two additions, not a
+conflict, and the last line silently wins.
+
 `__GENERATE__` as the value in `.env.example` means "fill this with 32 random bytes on
 first run". Use it for anything secret; never ship a real default.
 
