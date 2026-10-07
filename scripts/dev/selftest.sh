@@ -333,6 +333,10 @@ fails_when "prod-check catches a script that drops the staging override" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "printf '#!/usr/bin/env bash\\ndocker compose -f docker/compose.dev.yml up -d\\n' > '$WORK/scripts/dev/rogue-fixture.sh'"
 
+fails_when "prod-check catches a development worker that will not see code changes" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "sed -i 's|command: sh /worker-dev.sh jobs|command: php bin/console messenger:consume jobs|' '$WORK/docker/compose.dev.yml'"
+
 fails_when "shell-check catches a broken script" \
   "$WORK/scripts/dev/check-shell.sh" \
   "printf '#!/usr/bin/env bash\\ncd \$1\\n' > '$WORK/scripts/dev/broken-fixture.sh'"

@@ -426,6 +426,33 @@ else
 fi
 
 # ── next steps ──────────────────────────────────────────────────────────────
+# ── let the running app see its new layer ───────────────────────────────────
+# Editing a file inside a layer hot-reloads. A NEW layer does not: Nuxt reads
+# its list of layers once, at startup, so until the dev server restarts the
+# module's pages answer 404 - which looks exactly like a routing mistake in the
+# code just generated. Restart it here, or say why not.
+if [ "$WITH_FRONTEND" -eq 1 ]; then
+  # shellcheck source=../lib/compose.sh
+  . "$HERE/../lib/compose.sh"
+  compose_init "$ROOT"
+  running="$("${COMPOSE[@]}" ps -q --status running frontend 2>/dev/null | head -1)"
+  # Only a container serving THIS checkout. `make selftest` runs this generator
+  # in a throwaway copy that can share the stack's name, and restarting the real
+  # dev server from there would be a side effect nobody asked for.
+  if [ -n "$running" ] && [ "$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/app"}}{{.Source}}{{end}}{{end}}' "$running" 2>/dev/null)" != "$ROOT" ]; then
+    running=""
+  fi
+  if [ -n "$running" ]; then
+    if "${COMPOSE[@]}" restart frontend >/dev/null 2>&1; then
+      log_ok "frontend restarted - a new layer is only discovered at startup"
+    else
+      log_warn "could not restart the frontend - its pages will 404 until you do: make restart"
+    fi
+  else
+    log_skip "frontend is not running - the new layer is picked up when it starts"
+  fi
+fi
+
 log_step "Next"
 log_info "1. describe it:      $BACK/module.yaml  and  MODULE.md"
 log_info "2. write the spec:   $SPEC_DIR/${TODAY}-${KEBAB}.md"
