@@ -35,6 +35,43 @@ env_get() {
   sed -n "s/^${key}=//p" "$file" | head -1
 }
 
+# Where a project's own variables begin in .env.example. Everything declared
+# after this line belongs to the product built on the platform - the credentials
+# of the third parties IT talks to - and is handed to the backend as it is.
+PROJECT_MARKER='# == Project variables =='
+
+# The project's variables, as lines for backend/.env.local.
+#
+# Declared in .env.example (after the marker), valued in .env. The platform
+# does not know their names and must not need to: without this a project that
+# integrates anything has to edit this generator, and then every platform
+# update is a merge conflict in the one script that writes secrets to disk.
+project_variables() {
+  grep -qxF "$PROJECT_MARKER" "$ENV_EXAMPLE" || return 0
+
+  local key value past_marker=0 line
+  printf '\n# Project variables - declared after the marker in .env.example.\n'
+
+  while IFS= read -r line; do
+    if [ "$line" = "$PROJECT_MARKER" ]; then past_marker=1; continue; fi
+    [ "$past_marker" -eq 1 ] || continue
+
+    # Not every line is a variable - most are comments - and a grep that finds
+    # nothing must not end the script.
+    key="$(printf '%s\n' "$line" | grep -oE '^[A-Z_][A-Z0-9_]*=' | tr -d '=' || true)"
+    [ -n "$key" ] || continue
+
+    value="$(env_get "$key" "$ENV_FILE")"
+    # Single-quoted, so Symfony's dotenv reads it literally: no `$` expansion,
+    # no escapes. The one character that cannot be written that way is refused
+    # here rather than silently mangled into a different secret.
+    case "$value" in
+      *"'"*) die "$key contains a single quote" "it cannot be passed to the backend as it is; choose a value without one" ;;
+    esac
+    printf "%s='%s'\n" "$key" "$value"
+  done < "$ENV_EXAMPLE"
+}
+
 env_set() {
   local key="$1" val="$2" file="$3"
   local esc; esc=$(printf '%s' "$val" | sed -e 's/[\/&|]/\\&/g')
@@ -169,6 +206,8 @@ SITE_URL=${site_url}
 SENTRY_DSN=${SENTRY_DSN}
 OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
 EOF
+
+  project_variables >> "$ROOT/backend/.env.local"
 
   # Symfony deliberately skips .env.local when APP_ENV=test, so the test suite
   # never inherits a developer's machine. It does load .env.test.local, which is
