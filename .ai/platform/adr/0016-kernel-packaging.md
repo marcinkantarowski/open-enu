@@ -56,3 +56,21 @@ The rename exposed a hole the invariant had: framework identifiers **outside**
 `selftest` checked the package names and nothing that used them. It now counts every
 framework identifier before and after init. See
 [the spec](../specs/2026-09-17-open-enu-and-shared-edge.md).
+
+## Amendment - 2026-10-07: the update path exists, and it is not composer
+
+"Later: a project may replace the path repository with a versioned tag" described updating
+the kernel alone. The first project built from the platform showed that the kernel is the
+smallest part of what has to move: fixes landed in scripts, compose files, platform modules
+and `.ai/platform/` just as often, and none of those is a composer package.
+
+`make platform-update` updates all of it at once, as a three-way merge between two versions
+of the platform that have each been run through `init` with the project's name
+([`docs/updating.md`](../docs/updating.md)). The kernel stays a path repository; the
+identity rules above are what make that merge possible, because the kernel's names are the
+part of the tree `init` never rewrites and so never conflicts.
+
+`.project.json` gains `platform_ref` and `platform_source`. `make selftest` builds a
+platform and a project from this checkout and proves the update arrives renamed, leaves the
+kernel's name alone, keeps the project's own changes, reports a conflict instead of
+choosing, and refuses a dirty tree.
