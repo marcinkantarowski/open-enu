@@ -61,6 +61,25 @@ Security tokens (verification, reset, invitation) are stored as SHA-256 and exis
 only in the email. A lost reset link cannot be recovered by support, which is the correct
 answer.
 
+### Callbacks from third parties
+
+`^/api/callbacks/` is the other public prefix: where a payment provider confirms a payment or
+a messaging provider reports a delivery. The caller is a server with no session and no token
+of ours, so the firewall lets it through - and **the action authenticates it instead**, by the
+provider's signature or shared secret, before it reads the body as fact.
+
+The rules for anything placed there:
+
+- Verify first, in the provider's adapter. A callback that is believed without proof and
+  credits an account is a way to print money.
+- Answer a forged or malformed call with a refusal and change nothing; a functional test of
+  each callback shows exactly that.
+- Be idempotent. Providers repeat callbacks, and the second one must find the work done.
+- Take nothing from the body that the signature does not cover.
+
+Name the route `/api/callbacks/<module>/<provider>`. `AccessControlCoverageTest` exempts the
+prefix from `#[IsGranted]` - there is no user to grant anything to - and nothing else.
+
 ---
 
 ## Permissions
