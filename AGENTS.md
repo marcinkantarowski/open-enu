@@ -289,6 +289,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Declaring a feature flag so an operator can switch it | `backend/src/Module/Example/Service/ExampleFlags.php`, then `make flags` |
 | Background work: a job, a worker, a progress bar | `OpenEnu\Kernel\Message\JobInterface` + `Example/Handler/ArchiveProjectsJobHandler.php` |
 | **Anything in the three Nuxt apps** | [`.ai/platform/docs/frontend-conventions.md`](.ai/platform/docs/frontend-conventions.md) - then copy `frontend/app/modules/example/pages/example/index.vue` |
+| Giving a module operator screens, or a card on the operator's tenant page | `make manager-module NAME=X`, then `frontend-conventions.md` → *Screens for an operator* |
 | Calling the API from the browser; 401 refresh; typed errors | `ui-kit/app/composables/useApi.ts` |
 | Login, tenant switching, what the session holds | `ui-kit/app/stores/auth.ts` + `ui-kit/app/composables/useAuth.ts` |
 | Live updates in the UI | `ui-kit/app/composables/useAppEvent.ts` |

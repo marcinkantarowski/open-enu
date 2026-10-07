@@ -64,6 +64,8 @@ This is why routes are loaded by a module-aware loader and not by a glob: a glob
 | To… | Hook |
 |---|---|
 | Add pages, components, composables | a module layer under `frontend/app/modules/<name>/` - auto-registered |
+| Add operator screens | a layer under `manager/app/modules/<name>/` - `make manager-module NAME=X` |
+| Add a card to the operator's tenant page | `defineInjection('manager.tenant', Card)` in that layer's `injections.ts`; it receives `tenantId` |
 | Add menu entries | `navigation.ts` in the module layer |
 | Override a `ui-kit` component | same path in your app layer; the original stays importable for wrapping |
 | Fill a layout region | `<Injection spot="…">` |

@@ -187,7 +187,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module backend/composer.json backend/composer.lock AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml scripts/dev .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml scripts/dev .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -252,6 +252,27 @@ fails_when "module-check catches a module missing from the Task Router" \
 fails_when "i18n-check catches a key present in one locale only" \
   "$WORK/scripts/dev/check-i18n.sh" \
   "printf '{\"scratch.title\":\"Scratch\",\"scratch.only_en\":\"x\"}' > '$WORK/backend/src/Module/Scratch/i18n/messages.en.json'"
+
+# An operator layer is the third place a module keeps strings, and the newest:
+# a check that covered backend/ and frontend/ and forgot manager/ would let an
+# operator's screen ship half-translated.
+if NAME=Scratch "$WORK/scripts/dev/manager-module.sh" >/dev/null 2>&1 \
+   && [ -f "$WORK/manager/app/modules/scratch/nuxt.config.ts" ] \
+   && [ -f "$WORK/manager/app/modules/scratch/navigation.ts" ]; then
+  ok "make manager-module gives an existing module an operator layer"
+else
+  bad "make manager-module gives an existing module an operator layer" "a layer under manager/app/modules/scratch" "none"
+fi
+
+if NAME=Nowhere "$WORK/scripts/dev/manager-module.sh" >/dev/null 2>&1; then
+  bad "make manager-module refuses a module that does not exist" "a refusal" "it created one"
+else
+  ok "make manager-module refuses a module that does not exist"
+fi
+
+fails_when "i18n-check catches a key present in one locale only, in an operator layer" \
+  "$WORK/scripts/dev/check-i18n.sh" \
+  "printf '{\"scratch.title\":\"Scratch\",\"scratch.only_en\":\"x\"}' > '$WORK/manager/app/modules/scratch/i18n/locales/en.json'"
 
 # check-i18n deliberately skips a directory whose base catalogue is absent, so a
 # WRONGLY-NAMED file is invisible to it. That gap is covered by check-modules,

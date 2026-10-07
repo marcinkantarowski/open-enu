@@ -79,6 +79,9 @@ done
 for d in "$ROOT"/frontend/app/modules/*/i18n/locales; do
   compare "frontend/$(basename "$(dirname "$(dirname "$d")")")" "$d" ""
 done
+for d in "$ROOT"/manager/app/modules/*/i18n/locales; do
+  compare "manager/$(basename "$(dirname "$(dirname "$d")")")" "$d" ""
+done
 for app in ui-kit frontend manager landing; do
   d="$ROOT/$app/i18n/locales"
   [ -d "$d" ] && compare "$app" "$d" ""

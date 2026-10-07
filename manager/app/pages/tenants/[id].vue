@@ -120,5 +120,10 @@ async function viewAs(member: Member) {
         </template>
       </UiTable>
     </UiCard>
+
+    <!-- What each module knows about this tenant - its balance, its limits, its
+         pending requests - added by the module, without this page learning that
+         the module exists. Rendered once the tenant is known to exist. -->
+    <InjectionPoint v-if="data" name="manager.tenant" :context="{ tenantId: data.id }" />
   </div>
 </template>

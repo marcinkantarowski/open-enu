@@ -8,6 +8,24 @@
 //  operator's screens one router mistake away from a tenant's browser.
 // =============================================================================
 
+import { existsSync, readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+const modulesDir = fileURLToPath(new URL('./app/modules', import.meta.url))
+
+/**
+ * A module may bring operator screens, as a layer - discovered, never listed,
+ * for the same reason as in the tenant app (ADR-0010). Most modules have none:
+ * only a feature with something for an OPERATOR to do gets a directory here,
+ * and `make manager-module NAME=X` is what creates it.
+ */
+const moduleLayers = existsSync(modulesDir)
+  ? readdirSync(modulesDir, { withFileTypes: true })
+      .filter(entry => entry.isDirectory() && existsSync(`${modulesDir}/${entry.name}/nuxt.config.ts`))
+      .map(entry => `./app/modules/${entry.name}`)
+      .sort()
+  : []
+
 export default defineNuxtConfig({
   /**
    * The marker the smoke test looks for.
@@ -33,7 +51,8 @@ export default defineNuxtConfig({
   // so a layer that sets `srcDir` would move it out from under the app.
   srcDir: 'app',
 
-  extends: ['@open-enu/ui-kit'],
+  // Module layers after the shared one, so their pages can use what it provides.
+  extends: ['@open-enu/ui-kit', ...moduleLayers],
 
   // Same reasoning as the tenant app: the token is held in memory, so there is
   // no session to render on the server.

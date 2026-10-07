@@ -1,16 +1,29 @@
 <script setup lang="ts">
+import type { NavigationItem } from '@ui-kit/composables/defineNavigation'
 import { useAuthStore } from '@ui-kit/stores/auth'
 
 const auth = useAuthStore()
 const { logout } = useOperator()
 const { t } = useI18n()
 
+// The console's own four screens, then whatever the modules add. Found by glob
+// for the reason the tenant app's menu is: a central list is the file two
+// branches both edit and the one somebody forgets. No permission filter - an
+// operator has a role, not a permission list, and the realm is the gate.
+const moduleNavigation = import.meta.glob<{ default: NavigationItem[] }>(
+  '../modules/*/navigation.ts',
+  { eager: true },
+)
+
 const links = computed(() => [
-  { to: '/', label: t('manager.tenants') },
-  { to: '/audit', label: t('manager.audit') },
-  { to: '/flags', label: t('manager.flags') },
-  { to: '/workers', label: t('manager.workers') },
-])
+  { to: '/', label: t('manager.tenants'), order: 10 },
+  { to: '/audit', label: t('manager.audit'), order: 20 },
+  { to: '/flags', label: t('manager.flags'), order: 30 },
+  { to: '/workers', label: t('manager.workers'), order: 40 },
+  ...Object.values(moduleNavigation)
+    .flatMap(mod => mod.default ?? [])
+    .map(item => ({ to: item.to, label: t(item.label), order: item.order ?? 100 })),
+].sort((a, b) => a.order - b.order))
 
 function signOut() {
   logout()

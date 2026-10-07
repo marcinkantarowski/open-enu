@@ -51,6 +51,29 @@ The `.ts` beside each `.json` catalogue is a two-line re-export and is not optio
 the i18n loader at a `.json` puts Vite's json plugin around the module's own transform and
 breaks server rendering. The `.json` stays because the parity check reads it as data.
 
+### Screens for an operator
+
+Most features have nothing for an operator to do, so `make module` writes no operator half.
+When one does - a balance to credit, a request to approve - `make manager-module NAME=Billing`
+gives the existing module a layer in the console:
+
+```
+manager/app/modules/billing/
+├── nuxt.config.ts       the layer manifest - i18n only, never paths
+├── navigation.ts        defineNavigation([...]) - entries after the console's own; may be empty
+├── injections.ts        defineInjection('manager.tenant', Card) - optional
+├── pages/billing/       optional; the directory IS the URL
+├── components/
+└── i18n/locales/{en,pl}.{json,ts}
+```
+
+Same discovery, same rules, two differences. There is no `permission` to filter by: an operator
+has a role, and the realm is the gate, so every endpoint a layer calls is `/api/manager/...`
+behind `ROLE_PLATFORM_MANAGER`. And the usual way in is not a page but a card on the tenant
+page: `<InjectionPoint name="manager.tenant">` renders whatever modules registered and hands
+each one `tenantId`. A tenant's balance, limits and pending requests then sit where the
+operator already is, and the tenant page never learns which modules exist.
+
 **The screen to copy is `frontend/app/modules/example/pages/example/index.vue`.** It is the only
 place where optimistic locking, the conflict bar, a realtime refresh, an upload and a
 flag-guarded action are all shown working against the real API at once.
