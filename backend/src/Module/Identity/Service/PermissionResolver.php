@@ -47,9 +47,11 @@ final readonly class PermissionResolver
         return match ($role) {
             Membership::ROLE_OWNER => true,
             Membership::ROLE_ADMIN => !\in_array($permission, self::OWNER_ONLY, true),
-            // A plain member reads. Anything that changes state needs a role
-            // someone deliberately granted.
-            Membership::ROLE_MEMBER => str_ends_with($permission, '.view'),
+            // A plain member reads, and does the everyday work a module was
+            // built for - which the module says by naming a permission `.use`.
+            // Anything else that changes state needs a role someone
+            // deliberately granted.
+            Membership::ROLE_MEMBER => str_ends_with($permission, '.view') || str_ends_with($permission, '.use'),
             default => false,
         };
     }
