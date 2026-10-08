@@ -114,6 +114,9 @@ declare(strict_types=1);
  *
  * Permissions are global: the kernel refuses to boot if two modules declare the
  * same string, because a permission with two owners has no meaning.
+ *
+ * A plain member holds whatever ends in \`.view\` or \`.use\`; everything else
+ * needs an admin. Add \`$SLUG.use\` only for work every member of a team does.
  */
 return [
     '$SLUG.view',

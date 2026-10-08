@@ -95,7 +95,12 @@ Roles map to permissions in exactly one place - `Identity\Service\PermissionReso
 |---|---|
 | `owner` | everything |
 | `admin` | everything except `tenant.delete` and `api_key.manage` |
-| `member` | anything ending in `.view` |
+| `member` | anything ending in `.view` or `.use` |
+
+`.view` reads. `.use` is the everyday work a module exists for, when that work is something
+every member of a team does - sending the message, logging the hours. A module declares it
+only when it means that; everything else stays `.manage` and needs an admin. The suffix is
+the whole mechanism: there is no per-member grant and no role editor.
 
 Both callers that need this answer use that class: the voter, which enforces it, and the
 session payload, which tells the UI which buttons to render. Computing it twice would

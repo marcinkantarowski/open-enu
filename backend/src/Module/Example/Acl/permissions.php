@@ -10,7 +10,8 @@ declare(strict_types=1);
  *
  * Two is the right number for most modules. `.view` is granted to every role by
  * PermissionResolver's rule that a plain member reads; anything not ending in
- * `.view` needs a role somebody deliberately granted.
+ * `.view` needs a role somebody deliberately granted - except `.use`, which a
+ * module declares for the everyday work every member does (see auth.md).
  */
 return [
     'example.view',
