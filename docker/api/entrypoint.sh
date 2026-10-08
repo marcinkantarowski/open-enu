@@ -14,6 +14,20 @@
 # =============================================================================
 set -e
 
+# The code has to be there. In development /app is a bind mount, and a Docker
+# daemon that starts its containers before the host directory is reachable -
+# Docker Desktop on WSL2 does exactly that after a reboot - mounts an EMPTY
+# directory instead. Everything then "runs": php-fpm answers 404 for every
+# path, a worker loops on "Could not open input file", and the only symptom is
+# an unhealthy API with nothing wrong in its log.
+#
+# Exiting here is the fix, not just the report: every service has a restart
+# policy, a restart mounts the directory again, and by then it is there.
+if [ ! -f /app/composer.json ]; then
+  echo "[entrypoint] /app has no composer.json - the code is not mounted (yet). Exiting so the restart policy tries again." >&2
+  exit 1
+fi
+
 for d in /app/var /app/vendor; do
   mkdir -p "$d"
   if [ "$(stat -c %U "$d")" != "www-data" ]; then
