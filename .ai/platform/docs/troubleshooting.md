@@ -82,6 +82,29 @@ v3.3 fails against Docker 29.
 
 ---
 
+## After a reboot the API is unhealthy and every path answers 404 (WSL2)
+
+Docker Desktop restarts the containers before WSL has made the project directory reachable,
+so the bind mount comes up **empty**. php-fpm then answers 404 for everything and a console
+command says `Could not open input file: bin/console`, with nothing wrong in any log.
+
+The API image's entrypoint now refuses to start without `/app/composer.json` and exits, so the
+restart policy tries again until the directory is there - the stack heals by itself within
+seconds. If you still see it (an image built before that change): `make up`, which rebuilds,
+or `make restart`.
+
+## Random tests fail with "Invalid JWT Token", a different one each run (WSL2)
+
+The WSL clock is stepping backwards. A token issued a moment before a step carries an `iat`
+that is now in the future, and the next request is refused. Check:
+
+```bash
+dmesg | grep -c "Time jumped backwards"     # anything but 0, and growing
+```
+
+It happens after the host sleeps or Docker Desktop is restarted. `wsl --shutdown` from
+PowerShell, start Docker Desktop again, `make up`. Nothing in the repository is wrong.
+
 ## The API returns HTML errors, or "Unable to create the cache directory"
 
 **Cause.** `/app/var` and `/app/vendor` are named volumes. Docker creates a named volume
