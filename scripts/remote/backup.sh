@@ -57,11 +57,14 @@ BUNDLE="$LOCAL_DIR/${DB_NAME}-${STAMP}-secrets.tar"
 tar -cf "$BUNDLE" -C "$ROOT" .env backend/config/jwt 2>/dev/null || true
 
 # ── 3. encrypt ──────────────────────────────────────────────────────────────
+# A dump that is not encrypted never leaves: everything below refuses to copy it.
+ENCRYPTED=0
 if [ -z "${BACKUP_AGE_PUBKEY:-}" ]; then
   log_warn "BACKUP_AGE_PUBKEY is not set - keeping the dump in the clear, on this disk only"
 elif ! command -v age >/dev/null 2>&1; then
   log_warn "age is not installed - keeping the dump in the clear, on this disk only"
 else
+  ENCRYPTED=1
   for f in "$DUMP" "$BUNDLE"; do
     [ -f "$f" ] || continue
     age --encrypt -r "$BACKUP_AGE_PUBKEY" -o "$f.age" "$f" && rm -f "$f"
@@ -71,28 +74,38 @@ else
 fi
 
 # ── 4. off the box ──────────────────────────────────────────────────────────
+# A remote that is set and not reached fails the run - exit 1, so the nightly
+# unit shows failed and `buildprod` stops. A warning in a log is not an alarm.
+OFFBOX=ok
 if [ -z "${BACKUP_REMOTE:-}" ]; then
   # Warned every night, deliberately. A silent local-only backup is the failure
   # mode this whole script exists to avoid.
   log_warn "BACKUP_REMOTE is not set - this backup is on the SAME DISK as the database"
   log_info "set BACKUP_REMOTE in .env (e.g. s3:my-bucket/${DB_NAME}) and re-run"
+elif [ "$ENCRYPTED" -ne 1 ]; then
+  log_fail "refusing to copy an unencrypted dump to $BACKUP_REMOTE" "set BACKUP_AGE_PUBKEY and install age" || true
+  OFFBOX=failed
 elif ! command -v rclone >/dev/null 2>&1; then
-  log_warn "rclone is not installed - cannot copy off the box"
+  log_fail "rclone is not installed - cannot copy off the box" || true
+  OFFBOX=failed
 else
   for f in "$DUMP" "$BUNDLE"; do
     [ -f "$f" ] || continue
-    rclone copy "$f" "$BACKUP_REMOTE/" --quiet || log_warn "rclone could not copy $(basename "$f")"
+    rclone copy "$f" "$BACKUP_REMOTE/" --quiet \
+      || { log_fail "rclone could not copy $(basename "$f") to $BACKUP_REMOTE" || true; OFFBOX=failed; }
   done
-  log_ok "copied to $BACKUP_REMOTE"
+  [ "$OFFBOX" = ok ] && log_ok "copied to $BACKUP_REMOTE"
 
   # ── 5. retention, enforced remotely ───────────────────────────────────────
-  # 7 daily, 4 weekly, 3 monthly. Applied where the backups live: pruning
-  # locally while the bucket grows forever is the usual way this goes wrong.
-  rclone delete "$BACKUP_REMOTE/" --min-age 7d --include "*-nightly.dump*" --quiet 2>/dev/null || true
+  # Seven days of nightly dumps and of the secrets bundles that go with every
+  # run. Applied where the backups live: pruning locally while the bucket grows
+  # forever is the usual way this goes wrong. Pre-deploy and manual dumps stay.
+  rclone delete "$BACKUP_REMOTE/" --min-age 7d --include "*-nightly.dump*" --include "*-secrets.tar*" --quiet 2>/dev/null || true
 fi
 
 # Local copies are a convenience, not the backup. Two days is enough to restore
 # a mistake without the disk filling.
 find "$LOCAL_DIR" -type f -mtime +2 -delete 2>/dev/null || true
 
+[ "$OFFBOX" = ok ] || die "backup incomplete ($LABEL): the dump is on this disk only"
 log_ok "backup complete ($LABEL)"

@@ -46,8 +46,13 @@ read -r answer </dev/tty
 # A dump of the current state first, always. The most common restore mistake is
 # restoring the wrong backup, and without this there is no way back from it.
 log_step "Dumping the current state first"
-REMOTE "cd $APP_DIR && bash scripts/remote/backup.sh pre-restore" >/dev/null 2>&1 \
-  || log_warn "could not take a safety dump - continuing, but there is no way back from this"
+if REMOTE "cd $APP_DIR && bash scripts/remote/backup.sh pre-restore" >/dev/null 2>&1; then
+  log_ok "safety dump taken"
+elif REMOTE "ls $APP_DIR/backups/*-pre-restore.dump* >/dev/null 2>&1"; then
+  log_warn "safety dump is on the server only - the copy off the box failed"
+else
+  log_warn "could not take a safety dump - continuing, but there is no way back from this"
+fi
 
 log_step "Stopping the application (leaving the database up)"
 REMOTE "cd $APP_DIR && $CO stop api worker-events worker-jobs scheduler" >/dev/null 2>&1

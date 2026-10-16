@@ -80,6 +80,23 @@ else
   log_ok "docker installed"
 fi
 
+# The nightly backup encrypts with age and leaves with rclone. Without them it
+# keeps the dump on the same disk and says so in a log nobody reads - so they are
+# installed here, not left for somebody to remember. Separate from Docker: a
+# server image with Docker already on it has neither.
+if REMOTE "command -v age >/dev/null 2>&1 && command -v rclone >/dev/null 2>&1"; then
+  log_skip "age and rclone already installed"
+else
+  REMOTE "set -e
+    SUDO=\$([ \$(id -u) -eq 0 ] && echo '' || echo sudo)
+    export DEBIAN_FRONTEND=noninteractive
+    \$SUDO apt-get update -qq
+    \$SUDO apt-get install -y -qq age rclone
+  " || die "installing age and rclone failed" \
+         "they need root on the server, like Docker: run once as root@, or give $DEPLOY_USER passwordless sudo"
+  log_ok "age and rclone installed"
+fi
+
 # ── 2. the deploy user, created in lockout-safe order ───────────────────────
 # The order is the whole point. Create the user, install the key, PROVE a second
 # login works - and only then touch sshd_config. Hardening first and verifying
@@ -307,6 +324,30 @@ if [ -z "$BACKUP_REMOTE" ]; then
     exit 1
   fi
   log_warn "BACKUP_REMOTE is not set - local dumps only, and the nightly timer will warn until it is"
+elif [ "$STAGE" = production ]; then
+  # Set is not working. A remote nobody can log in to, or a dump that left in the
+  # clear, looks exactly like a backup until the night it is needed - so one is
+  # taken now and looked for where it is supposed to be.
+  if [ -z "$AGE_PUB" ]; then
+    log_fail "BACKUP_AGE_PUBKEY is not set - the dump would leave this server unencrypted" \
+      "generate the pair on YOUR machine:  age-keygen -o ~/.config/age/<project>.txt" \
+      "put the public half (age1...) in .env on the server; the private half never goes there"
+    exit 1
+  fi
+  log_step "Proving the off-box backup"
+  if ! REMOTE "cd $APP_DIR && bash scripts/remote/backup.sh manual" >/dev/null 2>&1; then
+    log_fail "the backup did not reach $BACKUP_REMOTE" \
+      "see why:  ssh $HOST 'cd $APP_DIR && bash scripts/remote/backup.sh manual'" \
+      "the rclone remote belongs to the deploy user:  ssh $HOST rclone config"
+    exit 1
+  fi
+  FOUND="$(REMOTE "rclone lsf '$BACKUP_REMOTE/' --include '*-manual.dump.age' 2>/dev/null | wc -l" || echo 0)"
+  if [ "${FOUND:-0}" -eq 0 ]; then
+    log_fail "the backup reported success but nothing is listed at $BACKUP_REMOTE" \
+      "look by hand:  ssh $HOST \"rclone lsf '$BACKUP_REMOTE/'\""
+    exit 1
+  fi
+  log_ok "an encrypted backup is at $BACKUP_REMOTE"
 fi
 
 echo

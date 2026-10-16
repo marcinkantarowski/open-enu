@@ -52,8 +52,15 @@ case "$STAGE" in
     "${COMPOSE[@]}" build --quiet || fail "build failed - the running stack is untouched"
 
     log_step "Backup, then migrate"
-    bash scripts/remote/backup.sh pre-deploy >/dev/null 2>&1 \
-      && log_ok "pre-deploy dump taken" || log_skip "no database to dump yet"
+    # A failed copy off the box does not stop a deploy: the dump a rollback
+    # needs is the local one. It is said, though, not hidden behind "no database".
+    if bash scripts/remote/backup.sh pre-deploy >/dev/null 2>&1; then
+      log_ok "pre-deploy dump taken"
+    elif ls "$ROOT"/backups/*-pre-deploy.dump* >/dev/null 2>&1; then
+      log_warn "pre-deploy dump is on this disk only - the copy off the box failed (bash scripts/remote/backup.sh manual says why)"
+    else
+      log_skip "no database to dump yet"
+    fi
     "${COMPOSE[@]}" run --rm -T api php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration >/dev/null \
       || fail "migrations failed - nothing was restarted, the old containers are still serving" \
               "the pre-deploy dump is in $ROOT/backups"
