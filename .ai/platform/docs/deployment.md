@@ -96,7 +96,7 @@ deliberately not in v1.
 | Overwrite a secret | `.env` is created once and read forever after. Regenerating `APP_SECRET` invalidates every session; regenerating `APP_ENCRYPTION_KEY` makes every encrypted column unreadable, permanently |
 | Expose staging to everyone | It is the dev stack: the profiler shows environment variables and Vite serves source files. `edge.sh` refuses to register it with an empty `STAGING_ALLOW_FROM`, and `prod-check` fails if a staging router lacks the allowlist or the stack publishes a port |
 | Overwrite work on staging | `deploystaging`, `promote` and a re-run `buildstaging` all refuse to touch uncommitted or unpushed changes in the staging checkout |
-| Call `buildprod` finished without an off-box backup | The stack comes up, then the command exits non-zero naming the variable to set. A `pg_dump` on the same disk as the database is a hope, not a backup |
+| Call `buildprod` finished without an off-box backup | The stack comes up, then the command exits non-zero naming what is missing. With `BACKUP_REMOTE` and `BACKUP_AGE_PUBKEY` set it takes a real backup and looks for it on the remote - set is not the same as working. A `pg_dump` on the same disk as the database is a hope, not a backup |
 | Migrate without dumping first | Backup, then migrate, in that order, every time |
 
 ## Preflight, check by check
@@ -137,6 +137,21 @@ every encrypted column is lost.
 
 **The private half of the age key is deliberately not on the server.** A backup that an
 attacker holding the server can decrypt protects against disk failure and nothing else.
+
+**Setting it up.** `buildprod` installs `age` and `rclone` on the server; the rest is three
+things only you can provide:
+
+1. A key pair, made on your machine: `age-keygen -o ~/.config/age/<project>.txt`. The
+   public half (`age1...`) goes in `.env` on the server as `BACKUP_AGE_PUBKEY`.
+2. An rclone remote for the **deploy user** (the nightly unit runs as it):
+   `ssh deploy@… rclone config`. Give it the narrowest access the storage offers - the token
+   sits on the server, and whoever takes the server takes the token.
+3. `BACKUP_REMOTE=<remote>:<path>` in `.env`, then `buildprod` again. It takes a backup
+   and fails unless the encrypted dump is listed on the remote.
+
+A backup run that cannot reach the remote, or would send a dump in the clear, exits 1: the
+nightly unit shows failed instead of logging a warning nobody reads. Seven days of nightly
+dumps and secrets bundles are kept on the remote; pre-deploy and manual dumps are not pruned.
 
 ```bash
 make backup-verify HOST=deploy@…    # pulls the latest REMOTE dump, restores it into a
