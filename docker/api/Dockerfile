@@ -24,6 +24,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY docker/api/nginx/default.conf /etc/nginx/http.d/default.conf
 COPY docker/api/supervisord.conf   /etc/supervisord.conf
+COPY docker/api/php/fpm-pool.conf  /usr/local/etc/php-fpm.d/zz-app.conf
 
 WORKDIR /app
 
