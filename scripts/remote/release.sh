@@ -49,7 +49,11 @@ log_step "Releasing $AT to $STACK ($STAGE)"
 case "$STAGE" in
   production)
     log_step "Building"
-    "${COMPOSE[@]}" build --quiet || fail "build failed - the running stack is untouched"
+    # --pull: fetch the newest php/node base images first. Without it a release
+    # rebuilds on whatever the server pulled last time, and PHP security
+    # releases never reach it (every other EnuSoft host sat on a July PHP on
+    # the day of the 2026-10-21 critical release).
+    "${COMPOSE[@]}" build --pull --quiet || fail "build failed - the running stack is untouched"
 
     log_step "Backup, then migrate"
     # A failed copy off the box does not stop a deploy: the dump a rollback

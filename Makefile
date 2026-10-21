@@ -186,7 +186,7 @@ restart: ## Restart every container
 
 .PHONY: rebuild
 rebuild: ## Rebuild images from scratch and restart
-	@$(COMPOSE) build --no-cache
+	@$(COMPOSE) build --pull --no-cache
 	@$(COMPOSE) up -d --remove-orphans
 	@$(DEV)/edge.sh attach
 
