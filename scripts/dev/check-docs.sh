@@ -77,7 +77,7 @@ fi
 # is read from .project.json, never judged.
 log_step "Platform and project knowledge"
 
-initialized="$(sed -n 's/.*"initialized"[[:space:]]*:[[:space:]]*\(true\|false\).*/\1/p' "$ROOT/.project.json" 2>/dev/null | head -1)"
+initialized="$(sed -nE 's/.*"initialized"[[:space:]]*:[[:space:]]*(true|false).*/\1/p' "$ROOT/.project.json" 2>/dev/null | head -1)"
 if [ -z "$initialized" ]; then
   log_fail ".project.json does not say whether this is the platform or a project" \
     "it must carry \"initialized\": true or false" || true

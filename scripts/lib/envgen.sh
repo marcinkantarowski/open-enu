@@ -19,7 +19,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 # shellcheck source=log.sh
-. "$HERE/log.sh"; . "$HERE/secrets.sh"
+. "$HERE/log.sh"; . "$HERE/secrets.sh"; . "$HERE/os.sh"
 
 ENV_FILE="$ROOT/.env"
 ENV_EXAMPLE="$ROOT/.env.example"
@@ -76,7 +76,7 @@ env_set() {
   local key="$1" val="$2" file="$3"
   local esc; esc=$(printf '%s' "$val" | sed -e 's/[\/&|]/\\&/g')
   if grep -qE "^${key}=" "$file"; then
-    sed -i "s|^${key}=.*|${key}=${esc}|" "$file"
+    sed_inplace "s|^${key}=.*|${key}=${esc}|" "$file"
   else
     printf '%s=%s\n' "$key" "$val" >> "$file"
   fi

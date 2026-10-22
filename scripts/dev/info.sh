@@ -8,7 +8,7 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 m() { sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$ROOT/.project.json" | head -1; }
 SLUG="$(m slug)"; NAME="$(m name)"; DOM="$(m domain)"
 # Read the boolean, never compare the slug to a literal - init rewrites literals.
-INITIALIZED="$(sed -n 's/.*"initialized"[[:space:]]*:[[:space:]]*\(true\|false\).*/\1/p' "$ROOT/.project.json" | head -1)"
+INITIALIZED="$(sed -nE 's/.*"initialized"[[:space:]]*:[[:space:]]*(true|false).*/\1/p' "$ROOT/.project.json" | head -1)"
 
 log_step "Project"
 log_info "name    $NAME"

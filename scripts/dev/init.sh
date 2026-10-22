@@ -36,7 +36,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 # shellcheck source=../lib/log.sh
-. "$HERE/../lib/log.sh"
+. "$HERE/../lib/log.sh"; . "$HERE/../lib/os.sh"
 
 MANIFEST="$ROOT/.project.json"
 [ -f "$MANIFEST" ] || die ".project.json is missing" "this does not look like a OpenEnu checkout"
@@ -153,7 +153,7 @@ for f in "${FILES[@]}"; do
   [ "$f" = "$MANIFEST" ] && continue        # rewritten explicitly below
   grep -qF -e "$OLD_SLUG" -e "$OLD_NAME" -e "$OLD_DOMAIN" "$f" 2>/dev/null || continue
   before="$(cksum < "$f")"
-  sed -i -f "$SED_SCRIPT" "$f"
+  sed_inplace -f "$SED_SCRIPT" "$f"
   [ "$(cksum < "$f")" != "$before" ] && { changed=$((changed + 1)); log_info "  ${f#$ROOT/}"; }
 done
 
@@ -171,7 +171,7 @@ done < <(find "$ROOT" \( -path '*/.git' -o -path '*/node_modules' -o -path '*/ve
 # ── database identifiers (underscore form, never the dashed slug) ───────────
 for envf in "$ROOT/.env.example" "$ROOT/.env"; do
   [ -f "$envf" ] || continue
-  sed -i -e "s|^DB_NAME=.*|DB_NAME=${NEW_DB}|" -e "s|^DB_USER=.*|DB_USER=${NEW_DB}|" "$envf"
+  sed_inplace -e "s|^DB_NAME=.*|DB_NAME=${NEW_DB}|" -e "s|^DB_USER=.*|DB_USER=${NEW_DB}|" "$envf"
 done
 log_ok "database identifiers set to '${NEW_DB}'"
 

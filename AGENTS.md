@@ -215,6 +215,10 @@ exist yet is still not to be improvised. Say so instead.
   Enforced by `make prod-check`.
 - Never add a `sleep` to make a step wait. Wait on a healthcheck; a sleep is a race you
   have decided not to look at.
+- Never call `sed -i` under `scripts/dev` or `scripts/lib`; use `sed_inplace` from
+  `scripts/lib/os.sh`. BSD sed on macOS reads the expression as a backup suffix and the
+  file as the script. Enforced by `make shell-check`.
+  See [[a-dev-script-runs-on-hosts-it-was-not-written-on]].
 - **Never let a build command mutate DNS or register a credential as a side effect.** It
   diagnoses and generates the fix; `dns-apply` and `deploy-key` are separate, deliberate
   acts (.ai/platform/PLAN.md §10.5).
