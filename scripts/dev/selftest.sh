@@ -13,7 +13,8 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-. "$HERE/../lib/log.sh"
+. "$HERE/../lib/log.sh"; . "$HERE/../lib/os.sh"
+export -f sed_inplace   # the fixtures below run under bash -c
 
 PASS=0; FAIL=0
 ok()   { PASS=$((PASS+1)); printf '%s  ✓%s %s\n' "$C_GRN" "$C_RESET" "$1"; }
@@ -71,8 +72,8 @@ assert_eq "app requires the kernel"   "@dev"             "$(j backend/composer.j
 assert_eq "ui-kit npm package"        "@open-enu/ui-kit" "$(j ui-kit/package.json name)"
 assert_contains "kernel PSR-4 prefix"  "$(php -r '$j=json_decode(file_get_contents("backend/kernel/composer.json"),true); echo array_key_first($j["autoload"]["psr-4"]);')" 'OpenEnu\Kernel\'
 assert_eq "Kernel.php namespace"      "namespace OpenEnu\\Kernel;" "$(grep '^namespace' backend/kernel/src/Kernel.php)"
-assert_eq "Kernel::NAME constant"     "open-enu/kernel"  "$(grep -oP "NAME = '\K[^']+" backend/kernel/src/Kernel.php)"
-assert_eq "kernel source untouched"   "0" "$(grep -rlF 'acme' backend/kernel/ 2>/dev/null | wc -l)"
+assert_eq "Kernel::NAME constant"     "open-enu/kernel"  "$(sed -n "s/.*NAME = '\([^']*\)'.*/\1/p" backend/kernel/src/Kernel.php | head -1)"
+assert_eq "kernel source untouched"   "0" "$(grep -rlF 'acme' backend/kernel/ 2>/dev/null | wc -l | tr -d ' ')"
 assert_contains "bundles.php names the kernel bundle" "$(cat backend/config/bundles.php)" 'OpenEnu\Kernel\OpenEnuKernelBundle::class'
 assert_contains "routes.yaml uses the kernel's loader" "$(cat backend/config/routes.yaml)" 'type: open_enu_modules'
 
@@ -152,7 +153,7 @@ out="$(./scripts/lib/envgen.sh generate 2>&1)"
 assert_contains "new variable reported" "$out" "NEW_UPSTREAM_KEY"
 assert_eq "new variable added to .env" "default" "$(sed -n 's/^NEW_UPSTREAM_KEY=//p' .env)"
 
-sed -i '/^NEW_UPSTREAM_KEY/d' .env
+sed_inplace '/^NEW_UPSTREAM_KEY/d' .env
 out="$(./scripts/lib/envgen.sh check 2>&1 || true)"
 assert_contains "env-check detects the gap" "$out" "NEW_UPSTREAM_KEY"
 
@@ -162,7 +163,7 @@ printf 'APP_STAGE=production\n' >> .env.example
 out="$(./scripts/lib/envgen.sh check 2>&1 || true)"
 assert_contains "env-check catches a variable declared twice" "$out" "more than once"
 assert_contains "env-check names the variable declared twice" "$out" "APP_STAGE"
-sed -i '$d' .env.example
+sed_inplace '$d' .env.example
 out="$(./scripts/lib/envgen.sh check 2>&1 || true)"
 case "$out" in
   *"more than once"*) bad "env-check is quiet about a file with no duplicates" "no complaint" "$out" ;;
@@ -172,23 +173,23 @@ esac
 # A project's own variable - the credential of something only IT talks to -
 # reaches the backend without the generator being edited, and literally: a `$`
 # in a token must arrive as a `$`, not as the expansion of whatever follows it.
-sed -i '/^NEW_UPSTREAM_KEY/d' .env.example
+sed_inplace '/^NEW_UPSTREAM_KEY/d' .env.example
 grep -qxF '# == Project variables ==' .env.example || printf '\n# == Project variables ==\n' >> .env.example
 printf '# a third party the product talks to\nSELFTEST_PARTNER_TOKEN=\n' >> .env.example
 ./scripts/lib/envgen.sh generate >/dev/null 2>&1
-sed -i 's|^SELFTEST_PARTNER_TOKEN=.*|SELFTEST_PARTNER_TOKEN=abc$HOME#1|' .env
+sed_inplace 's|^SELFTEST_PARTNER_TOKEN=.*|SELFTEST_PARTNER_TOKEN=abc$HOME#1|' .env
 ./scripts/lib/envgen.sh generate >/dev/null 2>&1
 # shellcheck disable=SC2016 # the dollar sign is the point: it must arrive unexpanded
 assert_contains "a project variable reaches the backend literally" \
   "$(cat backend/.env.local)" 'SELFTEST_PARTNER_TOKEN='"'"'abc$HOME#1'"'"
 assert_eq "a platform variable above the marker is not passed a second time" "1" \
   "$(grep -c '^APP_SECRET=' backend/.env.local)"
-sed -i '/SELFTEST_PARTNER_TOKEN/d; /a third party the product talks to/d' .env.example .env
+sed_inplace '/SELFTEST_PARTNER_TOKEN/d; /a third party the product talks to/d' .env.example .env
 
 # ═══════════════════════════════════════════════════════════════════════════
 log_step "envgen - derived files agree with each other"
 # ═══════════════════════════════════════════════════════════════════════════
-sed -i '/^NEW_UPSTREAM_KEY/d' .env.example
+sed_inplace '/^NEW_UPSTREAM_KEY/d' .env.example
 ./scripts/lib/envgen.sh generate >/dev/null 2>&1
 # APP_URL and MANAGER_URL *are* the CORS allowlist - nelmio_cors names them
 # directly, so the origins a browser may call from cannot drift from the URLs
@@ -268,7 +269,7 @@ fails_when "module-check catches a missing MODULE.md" \
 
 fails_when "module-check catches a name/directory mismatch" \
   "$WORK/scripts/dev/check-modules.sh" \
-  "sed -i 's/^name: Scratch/name: Renamed/' '$WORK/backend/src/Module/Scratch/module.yaml'"
+  "sed_inplace 's/^name: Scratch/name: Renamed/' '$WORK/backend/src/Module/Scratch/module.yaml'"
 
 fails_when "module-check catches an invented directory" \
   "$WORK/scripts/dev/check-modules.sh" \
@@ -276,7 +277,7 @@ fails_when "module-check catches an invented directory" \
 
 fails_when "module-check catches a module missing from the Task Router" \
   "$WORK/scripts/dev/check-modules.sh" \
-  "sed -i '/backend\/src\/Module\/Scratch\/MODULE.md/d' '$WORK/AGENTS.md'"
+  "sed_inplace '/backend\/src\/Module\/Scratch\/MODULE.md/d' '$WORK/AGENTS.md'"
 
 fails_when "i18n-check catches a key present in one locale only" \
   "$WORK/scripts/dev/check-i18n.sh" \
@@ -337,23 +338,25 @@ fails_when "docs-check catches a project record missing from its index" \
 
 fails_when "docs-check catches a project record in the platform's repository" \
   "$WORK/scripts/dev/check-docs.sh" \
-  "sed -i 's/\"initialized\": true/\"initialized\": false/' '$WORK/.project.json'"
+  "sed_inplace 's/\"initialized\": true/\"initialized\": false/' '$WORK/.project.json'"
 
 fails_when "seo-check catches a page with no usable description" \
   "$WORK/scripts/dev/check-landing-seo.sh" \
-  "sed -i 's/^description: .*/description: Too short./' '$WORK/landing/content/en/contact.md'"
+  "sed_inplace 's/^description: .*/description: Too short./' '$WORK/landing/content/en/contact.md'"
 
 fails_when "seo-check catches a second h1 in a page body" \
   "$WORK/scripts/dev/check-landing-seo.sh" \
   "printf '\\n# Another title\\n' >> '$WORK/landing/content/pl/privacy.md'"
 
+# "First match only" is awk here, not sed's 0,/re/ address: that address is a GNU
+# extension, and BSD sed on macOS rejects it - the fixture then changes nothing.
 fails_when "symfony-check catches a component on the next major" \
   "$WORK/scripts/dev/check-symfony-line.sh" \
-  "sed -i '0,/\"name\": \"symfony\/var-exporter\"/{n;s/\"version\": \"v7\.4\.[0-9]*\"/\"version\": \"v8.0.16\"/}' '$WORK/backend/composer.lock'"
+  "awk '/\"name\": \"symfony\/var-exporter\"/ && !f {f=1; print; next} f && !d {sub(/v7\.4\.[0-9]*/, \"v8.0.16\"); d=1} {print}' '$WORK/backend/composer.lock' > '$WORK/lock.tmp' && mv '$WORK/lock.tmp' '$WORK/backend/composer.lock'"
 
 fails_when "symfony-check catches a component with no conflict fence" \
   "$WORK/scripts/dev/check-symfony-line.sh" \
-  "sed -i '/\"symfony\/var-exporter\": \">=8.0\",/d' '$WORK/backend/composer.json'"
+  "sed_inplace '/\"symfony\/var-exporter\": \">=8.0\",/d' '$WORK/backend/composer.json'"
 
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.
@@ -363,25 +366,25 @@ fails_when "typography-check catches a long dash" \
 
 fails_when "prod-check catches a published database port" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
-  "sed -i 's|^  postgres:|  postgres:\\n    ports: [\"5432:5432\"]|' '$WORK/docker/compose.prod.yml'"
+  "sed_inplace 's|^  postgres:|  postgres:\\n    ports: [\"5432:5432\"]|' '$WORK/docker/compose.prod.yml'"
 
 # Whatever tag is pinned today: Dependabot moves it, and a fixture that names
 # the version stops matching on the next bump.
 fails_when "prod-check catches an unpinned image" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
-  "sed -i -E 's|image: redis:[^[:space:]]+|image: redis:latest|' '$WORK/docker/compose.prod.yml'"
+  "sed_inplace -E 's|image: redis:[^[:space:]]+|image: redis:latest|' '$WORK/docker/compose.prod.yml'"
 
 fails_when "prod-check catches a router with no certificate resolver" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
-  "sed -i '0,/tls.certresolver=letsencrypt/{/tls.certresolver=letsencrypt/d}' '$WORK/docker/compose.prod.yml'"
+  "awk '!d && /tls.certresolver=letsencrypt/ {d=1; next} {print}' '$WORK/docker/compose.prod.yml' > '$WORK/prod.tmp' && mv '$WORK/prod.tmp' '$WORK/docker/compose.prod.yml'"
 
 fails_when "prod-check catches a staging stack that publishes the database port" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
-  "sed -i '/ports: !reset \\[\\]/d' '$WORK/docker/compose.staging.yml'"
+  "sed_inplace '/ports: !reset \\[\\]/d' '$WORK/docker/compose.staging.yml'"
 
 fails_when "prod-check catches a staging router outside the allowlist" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
-  "sed -i '/routers.\\\${STACK}-api.middlewares/d' '$WORK/docker/compose.staging.yml'"
+  "sed_inplace '/routers.\\\${STACK}-api.middlewares/d' '$WORK/docker/compose.staging.yml'"
 
 fails_when "prod-check catches a script that drops the staging override" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
@@ -389,11 +392,18 @@ fails_when "prod-check catches a script that drops the staging override" \
 
 fails_when "prod-check catches a development worker that will not see code changes" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
-  "sed -i 's|command: sh /worker-dev.sh jobs|command: php bin/console messenger:consume jobs|' '$WORK/docker/compose.dev.yml'"
+  "sed_inplace 's|command: sh /worker-dev.sh jobs|command: php bin/console messenger:consume jobs|' '$WORK/docker/compose.dev.yml'"
 
 fails_when "shell-check catches a broken script" \
   "$WORK/scripts/dev/check-shell.sh" \
   "printf '#!/usr/bin/env bash\\ncd \$1\\n' > '$WORK/scripts/dev/broken-fixture.sh'"
+
+# The flag is glued to the newline escape on purpose: this file is scanned by
+# the very check it is proving, and "nsed" is not "sed".
+fails_when "shell-check catches a bare in-place sed" \
+  "$WORK/scripts/dev/check-shell.sh" \
+  "printf '#!/usr/bin/env bash\\nsed -i s/a/b/ \"\$1\"\\n' > '$WORK/scripts/dev/sed-fixture.sh'"
+
 
 fails_when "agents-budget catches an oversized MODULE.md" \
   "$WORK/scripts/dev/agents-budget.sh" \
@@ -425,9 +435,9 @@ mkdir "$UPD/platform"
 tar --exclude=.git --exclude=vendor --exclude=node_modules --exclude=.idea --exclude='.out' --exclude=.env \
     -C "$ROOT" -cf - . | tar -C "$UPD/platform" -xf -
 # The platform side is, by definition, not a project yet.
-sed -i 's/"initialized"[[:space:]]*:[[:space:]]*true/"initialized": false/' "$UPD/platform/.project.json"
-sed -i '/"platform_ref"/d; /"platform_source"/d' "$UPD/platform/.project.json"
-sed -i 's/"db": \("[^"]*"\),$/"db": \1/' "$UPD/platform/.project.json"
+sed_inplace 's/"initialized"[[:space:]]*:[[:space:]]*true/"initialized": false/' "$UPD/platform/.project.json"
+sed_inplace '/"platform_ref"/d; /"platform_source"/d' "$UPD/platform/.project.json"
+sed_inplace 's/"db": \("[^"]*"\),$/"db": \1/' "$UPD/platform/.project.json"
 "${GT[@]}" -C "$UPD/platform" init -q
 "${GT[@]}" -C "$UPD/platform" add -A -f . >/dev/null
 "${GT[@]}" -C "$UPD/platform" commit -q -m "platform, as cloned"
@@ -461,9 +471,9 @@ assert_eq "nothing is committed for the user" "the project, renamed" "$("${GT[@]
 "${GT[@]}" -C "$UPD/project" commit -q -m "platform update"
 
 # Both sides change the same line: the update must stop and say where, not pick.
-sed -i '1s/.*/# changed by the platform/' "$UPD/platform/README.md"
+sed_inplace '1s/.*/# changed by the platform/' "$UPD/platform/README.md"
 "${GT[@]}" -C "$UPD/platform" commit -q -am "the platform edits a line"
-sed -i '1s/.*/# changed by the project/' "$UPD/project/README.md"
+sed_inplace '1s/.*/# changed by the project/' "$UPD/project/README.md"
 "${GT[@]}" -C "$UPD/project" commit -q -am "the project edits the same line"
 if out="$(cd "$UPD/project" && make platform-update 2>&1)"; then
   bad "a change on both sides is reported as a conflict" "non-zero exit" "exit 0"

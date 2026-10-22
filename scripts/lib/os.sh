@@ -34,3 +34,13 @@ win_exe() {
 inotify_watches() {
   cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo 0
 }
+
+# In-place sed, on either host. GNU sed takes an optional backup suffix glued
+# to -i; BSD sed (macOS) demands one, and given none it reads the expression as
+# the suffix and the file name as the script - `make env` died on the first
+# developer Mac with "invalid command code m", the m being /Users/m... Every
+# script that edits a file in place goes through this; `make shell-check`
+# refuses a bare call.
+sed_inplace() {
+  if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi
+}

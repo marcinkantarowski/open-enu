@@ -359,7 +359,7 @@ fi
 # added to the platform itself is specified with the platform (ADR-0023).
 # .project.json says which this is.
 SPEC_DIR=".ai/specs"
-if [ "$(sed -n 's/.*"initialized"[[:space:]]*:[[:space:]]*\(true\|false\).*/\1/p' "$ROOT/.project.json" | head -1)" = false ]; then
+if [ "$(sed -nE 's/.*"initialized"[[:space:]]*:[[:space:]]*(true|false).*/\1/p' "$ROOT/.project.json" | head -1)" = false ]; then
   SPEC_DIR=".ai/platform/specs"
 fi
 SPEC="$ROOT/$SPEC_DIR/${TODAY}-${KEBAB}.md"

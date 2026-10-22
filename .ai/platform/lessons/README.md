@@ -27,3 +27,4 @@ edits these - see [`.ai/README.md`](../../README.md).
 | [Unflushed work does not survive a scope crossing](unflushed-work-does-not-survive-rununscoped.md) | Calling anything that uses `runUnscoped()`, or any `$em->clear()`, with entities you still mean to save |
 | [A worker runs the code it started with](a-worker-runs-the-code-it-started-with.md) | Adding or editing a job, an event listener, a scheduled task - anything that runs in a long-lived process rather than per request |
 | [A class nobody scans is a style nobody gets](a-class-nobody-scans-is-a-style-nobody-gets.md) | Adding a component to `ui-kit`, or anything looking unstyled with no error anywhere |
+| [A dev script runs on hosts it was not written on](a-dev-script-runs-on-hosts-it-was-not-written-on.md) | Writing any shell under `scripts/dev` or `scripts/lib` - `sed -i`, `grep -P` and friends are GNU-only, and the first Mac finds them |

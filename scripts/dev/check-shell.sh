@@ -25,6 +25,22 @@ IMAGE="koalaman/shellcheck:stable"
 
 log_step "ShellCheck"
 
+# A bare in-place sed is GNU-only: BSD sed (macOS) reads the expression as the
+# backup suffix and the file name as the script, and `make env` died that way
+# on the first developer Mac. scripts/lib/os.sh has sed_inplace for it.
+# scripts/remote is not scanned: its sed runs on the Linux server, over ssh.
+# Comment lines are skipped, and so is the helper's own definition.
+bare="$(cd "$ROOT" && grep -rnE '(^|[^[:alnum:]_])sed +-[A-Za-z]*i( |$)' scripts/dev scripts/lib --include='*.sh' \
+        | grep -v '^scripts/lib/os.sh:' | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)"
+if [ -n "$bare" ]; then
+  printf '%s\n' "$bare" >&2
+  echo
+  log_fail "a bare in-place sed in the scripts above - BSD sed on macOS rejects it" \
+    "call sed_inplace from scripts/lib/os.sh instead (source it first)"
+  exit 1
+fi
+log_ok "every in-place sed goes through sed_inplace"
+
 command -v docker >/dev/null 2>&1 || die "docker is required to run shellcheck"
 
 mapfile -t FILES < <(cd "$ROOT" && find scripts docker -name '*.sh' -not -path '*/node_modules/*' | sort)
