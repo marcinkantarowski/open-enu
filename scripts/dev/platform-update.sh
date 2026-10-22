@@ -20,7 +20,8 @@
 #    1. export the platform at the commit the project last had (BASE) and at
 #       the one it wants (REF)
 #    2. run each export through its OWN `init`, with this project's name - so
-#       both are spelled the way the project is
+#       both are spelled the way the project is (a version whose init cannot
+#       run on this host is renamed by the target's init, and the run says so)
 #    3. take the difference between those two and apply it to the project as a
 #       three-way merge
 #
@@ -147,20 +148,37 @@ fi
 # ── both versions, spelled the way this project is ──────────────────────────
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 
-render() { # <commit> <dir>
-  mkdir -p "$2"
+export_at() { # <commit> <dir>
+  rm -rf "$2"; mkdir -p "$2"
   git -C "$FROM" archive "$1" | tar -x -C "$2"
+}
+
+render() { # <commit> <dir> [<init.sh to fall back to>]
+  export_at "$1" "$2"
   # Each version's own init: if init itself changed between the two, the
   # difference in what it renames is part of the update.
-  ( cd "$2" && NAME="$SLUG" DOMAIN="$DOMAIN" bash scripts/dev/init.sh >/dev/null 2>&1 ) \
-    || die "could not rename the platform at $(git -C "$FROM" rev-parse --short "$1") into '$SLUG'" \
-         "its scripts/dev/init.sh failed - run it by hand in a scratch copy to see why"
+  if ! ( cd "$2" && NAME="$SLUG" DOMAIN="$DOMAIN" bash scripts/dev/init.sh >/dev/null 2>&1 ); then
+    # A version from before a portability fix cannot rename itself on the host
+    # that needed the fix. The target's init can, pointed at a fresh export of
+    # this version, with the target's own helpers.
+    [ -n "${3:-}" ] || die "could not rename the platform at $(git -C "$FROM" rev-parse --short "$1") into '$SLUG'" \
+      "its scripts/dev/init.sh failed - run it by hand in a scratch copy to see why"
+    # An init that does not take INIT_ROOT would rename its own tree again and
+    # leave this one as the platform spells it - a wrong diff with no error.
+    grep -q 'INIT_ROOT' "$3" || die "could not rename the platform at $(git -C "$FROM" rev-parse --short "$1") into '$SLUG'" \
+      "its own scripts/dev/init.sh failed here, and the target's init predates INIT_ROOT - update to a newer target"
+    export_at "$1" "$2"
+    INIT_ROOT="$2" NAME="$SLUG" DOMAIN="$DOMAIN" bash "$3" >/dev/null 2>&1 \
+      || die "could not rename the platform at $(git -C "$FROM" rev-parse --short "$1") into '$SLUG'" \
+           "neither its own scripts/dev/init.sh nor the target's could run here - run one by hand in a scratch copy to see why"
+    log_warn "the platform at $(git -C "$FROM" rev-parse --short "$1") cannot run its own init on this host - renamed with the target's init instead"
+  fi
   # The manifest is the project's identity, not something the platform updates.
   rm -f "$2/.project.json"
 }
 
-render "$BASE" "$WORK/base"
 render "$TARGET" "$WORK/target"
+render "$BASE"   "$WORK/base" "$WORK/target/scripts/dev/init.sh"
 
 # A throwaway repository holding exactly two commits, so git can do the merge:
 # base, and target on top of it.
