@@ -490,6 +490,24 @@ if out="$(cd "$UPD/project" && make platform-update 2>&1)"; then
 else
   assert_contains "an update over uncommitted work is refused" "$out" "uncommitted"
 fi
+
+# The base's own init cannot run on this host - a platform from before a
+# portability fix, rendered on the host that needed it. The target's init
+# renames it instead, and the run says so.
+"${GT[@]}" -C "$UPD/project" reset -q --hard
+printf '#!/usr/bin/env bash\nexit 7\n' > "$UPD/platform/scripts/dev/init.sh"
+"${GT[@]}" -C "$UPD/platform" commit -q -am "the platform breaks its init"
+upd_broken="$("${GT[@]}" -C "$UPD/platform" rev-parse HEAD)"
+"${GT[@]}" -C "$UPD/platform" checkout -q "$upd_next" -- scripts/dev/init.sh
+"${GT[@]}" -C "$UPD/platform" commit -q -am "the platform repairs its init"
+upd_repaired="$("${GT[@]}" -C "$UPD/platform" rev-parse HEAD)"
+if out="$(cd "$UPD/project" && make platform-update BASE="$upd_broken" 2>&1)"; then
+  ok "a base whose own init cannot run is rendered with the target's"
+  assert_contains "the fallback is reported"      "$out" "target's init"
+  assert_eq "the repaired commit is recorded" "$upd_repaired" "$(j "$UPD/project/.project.json" platform_ref)"
+else
+  bad "a base whose own init cannot run is rendered with the target's" "exit 0" "$out"
+fi
 rm -rf "$UPD"
 
 # ═══════════════════════════════════════════════════════════════════════════

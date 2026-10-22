@@ -31,6 +31,10 @@ Using each version's own `init` matters. When `init` itself changes - it once re
 things inside `.ai/platform/` and now does not - the difference in what it renames is part
 of the update, and arrives with it.
 
+One exception: when a version's own `init` cannot run on this host at all (a platform from
+before a portability fix, updated from the host that needed it), the target's `init` renames
+that export instead, through `INIT_ROOT`, and the run says so with a warning.
+
 ## What you get
 
 - A file the project never changed is updated silently.

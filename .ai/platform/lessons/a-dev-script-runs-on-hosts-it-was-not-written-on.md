@@ -47,3 +47,7 @@ Linux too. A portability rule has to be a static check, not a test.
 - BSD `wc -l` pads its count with spaces: compare it through `tr -d ' '`, or use `grep -c`.
 - `timeout` is not on macOS by default; `check-ports.sh` already falls back when it is absent.
 - Anything inside a container is fine: the containers are Linux whatever the host is.
+- `make platform-update` renders OLD commits with their own `init`, so the fix has to reach
+  back: `platform-update.sh` falls back to the target's `init` (`INIT_ROOT`) when a version
+  cannot rename itself here. A project made before the fix still needs the new
+  `platform-update.sh` copied in by hand once, because its own copy is the old one.

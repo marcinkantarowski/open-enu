@@ -34,7 +34,10 @@
 # =============================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$HERE/../.." && pwd)"
+# INIT_ROOT: rename THAT tree instead of this one. platform-update uses it when
+# an older platform's own init cannot run on this host; the libraries still
+# come from next to this script, so the rename runs with this version's helpers.
+ROOT="${INIT_ROOT:-$(cd "$HERE/../.." && pwd)}"
 # shellcheck source=../lib/log.sh
 . "$HERE/../lib/log.sh"; . "$HERE/../lib/os.sh"
 
