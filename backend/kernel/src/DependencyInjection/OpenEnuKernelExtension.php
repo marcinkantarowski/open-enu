@@ -20,6 +20,8 @@ use OpenEnu\Kernel\Module\ModuleDeclarations;
 use OpenEnu\Kernel\Notification\NotificationProviderInterface;
 use OpenEnu\Kernel\Module\ModuleRegistry;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\Config\Resource\GlobResource;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Argument\BoundArgument;
 use Symfony\Component\DependencyInjection\Definition;
@@ -376,11 +378,14 @@ final class OpenEnuKernelExtension extends Extension implements PrependExtension
             $this->modules = (new ModuleLocator($dir))->locate();
 
             // Discovery reads the filesystem, so the container must rebuild when
-            // a module is added, removed, or its manifest edited.
-            $container->addResource(new \Symfony\Component\Config\Resource\DirectoryResource(
-                \dirname($dir) . '/Module',
-                '/module\.yaml$/',
-            ));
+            // a module is added, removed, or its manifest edited. Debug checks
+            // this on every request, so it watches the manifests and nothing
+            // else: a DirectoryResource stats the whole module tree even with a
+            // pattern, most of a second per request through a macOS bind mount.
+            $container->addResource(new GlobResource($dir, '/*/module.yaml', false));
+            foreach ((glob($dir . '/*/module.yaml') ?: []) as $manifest) {
+                $container->addResource(new FileResource($manifest));
+            }
         }
 
         return $this->modules;
