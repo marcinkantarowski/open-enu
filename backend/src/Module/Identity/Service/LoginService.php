@@ -56,6 +56,32 @@ final readonly class LoginService
             throw new UnauthorizedHttpException('Bearer', 'Those credentials are not valid.');
         }
 
+        return $this->open($user, $tenantId);
+    }
+
+    /**
+     * A session for a person another module has already authenticated
+     * (`SessionMinterInterface::startSession()`). Everything after the password
+     * check is the same as a login, so it is the same code.
+     *
+     * @return array{token: string, expiresIn: int, cookie: \Symfony\Component\HttpFoundation\Cookie, tenantId: ?string, user: User}
+     */
+    #[InfrastructureWrite(reason: 'session issuance and a last-login stamp, as for a login')]
+    public function startFor(string $userId, ?string $tenantId): array
+    {
+        $user = $this->users->get($userId);
+
+        if ($user === null || !$user->isActive()) {
+            throw new UnauthorizedHttpException('Bearer', 'Those credentials are not valid.');
+        }
+
+        return $this->open($user, $tenantId);
+    }
+
+    /** @return array{token: string, expiresIn: int, cookie: \Symfony\Component\HttpFoundation\Cookie, tenantId: ?string, user: User} */
+    #[InfrastructureWrite(reason: 'session issuance and a last-login stamp')]
+    private function open(User $user, ?string $tenantId): array
+    {
         $membership = $this->pickMembership($user, $tenantId);
 
         $user->recordLogin();

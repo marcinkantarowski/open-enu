@@ -15,9 +15,14 @@ Owns people, their membership of tenants, and everything that authenticates one.
 
 ## Public contracts
 
-- `Contract\SessionMinterInterface` - mints an impersonation session for a user.
-  The split matters: the Manager module decides *whether* an operator may impersonate;
-  this module decides *what a session for a user looks like*. Manager never touches a `User`.
+- `Contract\SessionMinterInterface` - sessions for a user another module vouches for.
+  - `mintImpersonationSession()`: the Manager module decides *whether* an operator may
+    impersonate; this module decides *what a session for a user looks like*. Manager never
+    touches a `User`.
+  - `startSession(userId, tenantId)`: an ordinary session - the login's response, refresh
+    cookie included - for a person a module authenticated by other means (single sign-on, a
+    mailed link, credentials from a replaced system). That module rate-limits its endpoint
+    and answers every failure alike; its page goes in `<InjectionPoint name="auth.login.methods">`.
 - `Contract\UserDirectoryInterface` - who belongs to a tenant, as rows. Used by the operator
   console to pick someone to view as.
 

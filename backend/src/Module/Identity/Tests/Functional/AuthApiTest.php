@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Module\Identity\Tests\Functional;
 
+use App\Module\Identity\Contract\SessionMinterInterface;
 use App\Module\Identity\Entity\Membership;
 use App\Module\Identity\Entity\RefreshToken;
 use App\Module\Identity\Entity\SecurityToken;
 use App\Module\Identity\Service\SecurityTokenIssuer;
 use App\Tests\Support\ApiTestCase;
 use OpenEnu\Kernel\Doctrine\ScopeContext;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 /**
  * Everything that establishes or ends a session, through real HTTP.
@@ -122,6 +124,57 @@ final class AuthApiTest extends ApiTestCase
         $this->post('/api/auth/switch-tenant', ['tenantId' => $stranger]);
 
         self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testAModuleThatAuthenticatedSomebodyStartsTheSessionALoginWould(): void
+    {
+        $tenantId = $this->givenATenant();
+        $user = $this->makeUser('vouched@example.test', Membership::ROLE_MEMBER);
+        $minter = self::getContainer()->get(SessionMinterInterface::class);
+        \assert($minter instanceof SessionMinterInterface);
+
+        $started = $minter->startSession((string) $user->id(), null);
+        $this->post('/api/auth/login', ['email' => 'vouched@example.test', 'password' => self::PASSWORD]);
+        $login = $this->client->getResponse();
+
+        // The same answer as a login, so the browser needs no second path.
+        self::assertSame(200, $started->getStatusCode());
+        $body = json_decode((string) $started->getContent(), true);
+        \assert(\is_array($body));
+        self::assertSame(array_keys($this->json()), array_keys($body));
+        self::assertSame($tenantId, $body['tenantId']);
+        self::assertSame('member', $body['role']);
+
+        // And a real session: its refresh cookie renews it.
+        $cookie = $started->headers->getCookies()[0] ?? null;
+        self::assertNotNull($cookie);
+        self::assertSame($login->headers->getCookies()[0]->getName(), $cookie->getName());
+        $this->client->setServerParameter('HTTP_AUTHORIZATION', '');
+        $this->client->request('POST', '/api/auth/refresh', [], [], ['HTTP_COOKIE' => $cookie->getName() . '=' . $cookie->getValue()]);
+        self::assertResponseIsSuccessful();
+        self::assertSame($tenantId, $this->json()['tenantId']);
+    }
+
+    public function testASessionIsNotStartedForAStrangerOrAnInactiveUser(): void
+    {
+        $this->givenATenant('alpha');
+        $user = $this->makeUser('vouched@example.test', verified: false);
+        $stranger = $this->givenATenant('somebody-elses');
+        $minter = self::getContainer()->get(SessionMinterInterface::class);
+        \assert($minter instanceof SessionMinterInterface);
+
+        foreach ([[(string) $user->id(), null], [str_repeat('0', 8) . '-0000-7000-8000-000000000000', null]] as [$userId, $tenant]) {
+            try {
+                $minter->startSession($userId, $tenant);
+                self::fail('Refused, expected.');
+            } catch (UnauthorizedHttpException) {
+            }
+        }
+
+        $user->verify();
+        $this->em->flush();
+        $this->expectException(UnauthorizedHttpException::class);
+        $minter->startSession((string) $user->id(), $stranger);
     }
 
     public function testLogoutClearsTheRefreshCookie(): void

@@ -15,7 +15,6 @@ use App\Module\Identity\Service\SessionPayload;
 use OpenEnu\Kernel\Command\CommandBusInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\Attribute\Target;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -91,7 +90,7 @@ final readonly class AuthController
             tenantId: \is_string($body['tenantId'] ?? null) ? $body['tenantId'] : null,
         );
 
-        return $this->sessionResponse($session, $session['user']);
+        return $this->payload->response($session, $session['user']);
     }
 
     #[Route('/api/auth/refresh', name: 'auth_refresh', methods: ['POST'])]
@@ -105,7 +104,7 @@ final readonly class AuthController
             throw new UnauthorizedHttpException('Bearer', $e->getMessage(), $e);
         }
 
-        return $this->sessionResponse($session, $session['user']);
+        return $this->payload->response($session, $session['user']);
     }
 
     #[Route('/api/auth/switch-tenant', name: 'auth_switch_tenant', methods: ['POST'])]
@@ -124,7 +123,7 @@ final readonly class AuthController
             throw new UnauthorizedHttpException('Bearer', $e->getMessage(), $e);
         }
 
-        return $this->sessionResponse($session, $session['user']);
+        return $this->payload->response($session, $session['user']);
     }
 
     #[Route('/api/auth/logout', name: 'auth_logout', methods: ['POST'])]
@@ -162,28 +161,6 @@ final readonly class AuthController
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────
-
-    /** @param array{token: string, expiresIn: int, cookie: Cookie, tenantId: ?string} $session */
-    private function sessionResponse(array $session, User $user): JsonResponse
-    {
-        $response = new JsonResponse([
-            // The access token goes in the BODY for the client to keep in
-            // memory. Deliberately not a cookie: a cookie is sent automatically
-            // and would need CSRF protection (ADR-0006).
-            'token' => $session['token'],
-            'expiresIn' => $session['expiresIn'],
-            'tenantId' => $session['tenantId'],
-            // One shape for every endpoint that establishes a session - login,
-            // refresh, switch-tenant and impersonation - so the client has one
-            // code path for "I now have a session" rather than four that differ
-            // in small ways nobody wrote down.
-            ...$this->payload->for($user, $session['tenantId']),
-        ]);
-
-        $response->headers->setCookie($session['cookie']);
-
-        return $response;
-    }
 
     /** @return array<string, mixed> */
     private function body(Request $request): array

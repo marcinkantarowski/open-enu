@@ -9,9 +9,11 @@ use App\Module\Identity\Repository\UserRepository;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use OpenEnu\Kernel\Security\Impersonation;
 use OpenEnu\Kernel\Security\TokenAudience;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Mints an impersonation session.
+ * Mints an impersonation session, and starts an ordinary one for a person
+ * another module has authenticated.
  *
  * Note what the token is and is not:
  *
@@ -29,7 +31,15 @@ final readonly class SessionMinter implements SessionMinterInterface
         private UserRepository $users,
         private JWTTokenManagerInterface $jwt,
         private SessionPayload $payload,
+        private LoginService $logins,
     ) {
+    }
+
+    public function startSession(string $userId, ?string $tenantId): Response
+    {
+        $session = $this->logins->startFor($userId, $tenantId);
+
+        return $this->payload->response($session, $session['user']);
     }
 
     public function mintImpersonationSession(string $userId, string $tenantId, array $actor): array
