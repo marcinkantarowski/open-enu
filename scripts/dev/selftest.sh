@@ -217,7 +217,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml scripts/dev .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -385,6 +385,17 @@ fails_when "prod-check catches a staging stack that publishes the database port"
 fails_when "prod-check catches a staging router outside the allowlist" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "sed_inplace '/routers.\\\${STACK}-api.middlewares/d' '$WORK/docker/compose.staging.yml'"
+
+# A project's own files (docker/project/) ride along with the platform's, so
+# their routers answer to the same rules - or a project route is the one that
+# reaches production with the wrong certificate, or staging without a guard.
+fails_when "prod-check holds a project's production router to a certificate resolver" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "mkdir -p '$WORK/docker/project' && printf 'services:\\n  api:\\n    labels:\\n      - traefik.http.routers.selftest-extra.rule=Host(\\x60extra.test\\x60)\\n' > '$WORK/docker/project/compose.prod.yml'"
+
+fails_when "prod-check holds a project's staging router to the allowlist" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "mkdir -p '$WORK/docker/project' && printf 'services:\\n  api:\\n    labels:\\n      - traefik.http.routers.selftest-extra.rule=Host(\\x60extra.test\\x60)\\n' > '$WORK/docker/project/compose.dev.yml'"
 
 fails_when "prod-check catches a script that drops the staging override" \
   "$WORK/scripts/dev/check-prod-compose.sh" \

@@ -283,6 +283,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Routing and TLS in dev; two projects on one Docker host | `docker/edge/` + `scripts/dev/edge.sh` - one shared Traefik; name routers `${PROJECT_SLUG}-<service>` |
 | **Something in the stack is broken** | [`.ai/platform/docs/troubleshooting.md`](.ai/platform/docs/troubleshooting.md) - symptoms first |
 | Adding a service, a host, or a healthcheck | `docker/compose.dev.yml` + add a target to `scripts/dev/smoke.sh` in the same change |
+| A service or route of the project's own, not the platform's | `docker/project/compose.<stage file>.yml` - `.ai/platform/docs/deployment.md` → *A project's own services and routes* |
 | Why a capability is deliberately absent | `.ai/platform/adr/` - especially 0013 (custom fields), 0014 (hierarchical orgs), 0015 (undo) |
 | Tenancy, scope, `runUnscoped()`, what breaks isolation | [`.ai/platform/docs/tenancy.md`](.ai/platform/docs/tenancy.md) |
 | Authentication, sessions, tokens, realms, permissions | [`.ai/platform/docs/auth.md`](.ai/platform/docs/auth.md) |

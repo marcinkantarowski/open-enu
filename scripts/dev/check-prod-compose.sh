@@ -31,11 +31,24 @@ FILE="$ROOT/docker/compose.prod.yml"
 fails=0
 bad() { log_fail "$@" || true; fails=$((fails + 1)); }
 
+# with_project <file>... → `-f` for each, followed by the project's file of the
+# same name in docker/project/ (scripts/lib/compose.sh). Checked as it runs: a
+# project's router is held to the same rules as the platform's.
+with_project() {
+  local f
+  for f in "$@"; do
+    printf -- '-f\n%s\n' "$f"
+    [ -f "$ROOT/docker/project/${f##*/}" ] && printf -- '-f\n%s\n' "$ROOT/docker/project/${f##*/}"
+  done
+  return 0
+}
+mapfile -t PROD_FILES < <(with_project "$FILE")
+
 log_step "Production stack invariants"
 
 # Rendered rather than grepped: compose resolves anchors, extends and variables,
 # and a rule applied to the raw YAML checks the text instead of the stack.
-CONFIG="$(docker compose --project-directory "$ROOT" --env-file "$ROOT/.env" -f "$FILE" config 2>/dev/null)" \
+CONFIG="$(docker compose --project-directory "$ROOT" --env-file "$ROOT/.env" "${PROD_FILES[@]}" config 2>/dev/null)" \
   || { log_fail "compose.prod.yml does not parse" "run: docker compose -f docker/compose.prod.yml config"; exit 1; }
 
 # ── 1. no source bind-mounts ────────────────────────────────────────────────
@@ -116,8 +129,9 @@ grep -q 'dashboard: true' "$ROOT/docker/edge/traefik.server.yml" 2>/dev/null \
 log_step "Staging stack invariants"
 SFILE="$ROOT/docker/compose.staging.yml"
 [ -f "$SFILE" ] || { bad "docker/compose.staging.yml is missing" "staging would run the dev stack unguarded"; }
+mapfile -t STAGING_FILES < <(with_project "$ROOT/docker/compose.dev.yml" "$SFILE")
 SCONFIG="$(STACK=check-staging docker compose --project-directory "$ROOT" --env-file "$ROOT/.env" \
-            -f "$ROOT/docker/compose.dev.yml" -f "$SFILE" --profile e2e config 2>/dev/null)" \
+            "${STAGING_FILES[@]}" --profile e2e config 2>/dev/null)" \
   || { log_fail "compose.dev.yml + compose.staging.yml do not parse" || true; exit 1; }
 
 # ── 6. no published port ────────────────────────────────────────────────────
@@ -138,7 +152,7 @@ unguarded=0
 for router in "${srouters[@]}"; do
   grep -E "traefik\.http\.routers\.$router\.middlewares: .*check-staging-allow@file" <<<"$SCONFIG" >/dev/null \
     || { bad "staging router $router is not behind the allowlist" \
-             "add it to docker/compose.staging.yml: \${STACK}-allow@file,noindex@file"; unguarded=1; }
+             "add it to docker/compose.staging.yml (a project's router: docker/project/compose.staging.yml): \${STACK}-allow@file,noindex@file"; unguarded=1; }
 done
 [ "$unguarded" -eq 0 ] && log_ok "every staging router is behind the allowlist (${#srouters[@]})"
 
