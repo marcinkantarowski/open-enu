@@ -163,6 +163,17 @@ make restore HOST=deploy@…          # destructive; asks for the database name,
 `backup-verify` reads the remote object, not a local copy - the remote one is what exists
 after the disk dies.
 
+## A project's own services and routes
+
+`docker/project/` is the project's, and no update touches it. Next to every compose file the
+stage uses goes the project's file of the same name, when there is one -
+`docker/project/compose.prod.yml` after `compose.prod.yml`, `docker/project/compose.dev.yml`
+after `compose.dev.yml` - through `scripts/lib/compose.sh` and the `Makefile`. Write a router
+there as the platform's file next to it does: `tls.certresolver=letsencrypt` in production,
+`tls=true` in dev, and on staging its `${STACK}-allow@file,noindex@file` middlewares in
+`docker/project/compose.staging.yml`. `prod-check` holds them to the same rules as the
+platform's routers. A bare `docker compose` does not read these files; `make` does.
+
 ## When it goes wrong
 
 | Symptom | Look at |
@@ -186,7 +197,8 @@ after the disk dies.
 third-party image pinned, every public router resolving a certificate, no development
 services - and the **staging** stack's: no published port, every router behind the allowlist,
 and no script that names `compose.dev.yml` itself (which would drop the staging override on
-the server). `make selftest` proves each of those fails when broken.
+the server). The project's files in `docker/project/` are rendered in, so its routers answer
+to the same rules. `make selftest` proves each of those fails when broken.
 
 `shell-check` runs ShellCheck over every script at `-S warning`, because the shell here is
 what runs against real servers with root.

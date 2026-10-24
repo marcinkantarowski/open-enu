@@ -27,9 +27,11 @@ PROJECT_SLUG ?= open-enu
 DOMAIN       ?= open-enu.local
 
 # COMPOSE_FILE comes from .env: the dev file locally, dev + the staging override
-# on a staging server. Never name the files here - see scripts/lib/compose.sh.
+# on a staging server. Never name the files here - see scripts/lib/compose.sh,
+# which also explains the project's own files in docker/project/.
 COMPOSE := docker compose --project-directory $(ROOT) --env-file $(ROOT)/.env \
-           $(foreach f,$(subst :, ,$(or $(COMPOSE_FILE),docker/compose.dev.yml)),-f $(ROOT)/$(f))
+           $(foreach f,$(subst :, ,$(or $(COMPOSE_FILE),docker/compose.dev.yml)),-f $(ROOT)/$(f) \
+             $(addprefix -f ,$(wildcard $(ROOT)/docker/project/$(notdir $(f)))))
 
 # Everything that can write into the bind-mounted source runs as www-data, which
 # the dev image remaps to your uid. Running as root instead leaves files you

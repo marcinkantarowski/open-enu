@@ -38,6 +38,8 @@ that export instead, through `INIT_ROOT`, and the run says so with a warning.
 ## What you get
 
 - A file the project never changed is updated silently.
+- `docker/project/` is the project's own (`deployment.md` → *A project's own services and
+  routes*): the platform ships nothing there, so an update never touches it.
 - A file both sides changed is merged; where they changed the same lines it is a
   **conflict**, marked in the file, and the command exits non-zero naming each one. Edit it,
   then `git add` it.
