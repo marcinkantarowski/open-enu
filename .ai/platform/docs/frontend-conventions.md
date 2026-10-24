@@ -51,6 +51,14 @@ The `.ts` beside each `.json` catalogue is a two-line re-export and is not optio
 the i18n loader at a `.json` puts Vite's json plugin around the module's own transform and
 breaks server rendering. The `.json` stays because the parity check reads it as data.
 
+### Other ways to sign in
+
+`login.vue` checks an email and a password, and below the form renders
+`<InjectionPoint name="auth.login.methods">`. A module that signs people in another way
+registers a link to its own page there, and its endpoint ends in Identity's
+`SessionMinterInterface::startSession()`, so the browser gets a login's answer and keeps the
+session with `useAuthStore().setSession()`.
+
 ### The dashboard, and the reference module
 
 The dashboard (`frontend/app/pages/index.vue`) has no content of its own: a greeting and

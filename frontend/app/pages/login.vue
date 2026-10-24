@@ -72,6 +72,9 @@ async function submit() {
       </UiButton>
     </form>
 
+    <!-- Other ways in, from the modules that check them: single sign-on, a mailed link... -->
+    <InjectionPoint name="auth.login.methods" />
+
     <p class="mt-8 text-center text-sm text-fg-muted">
       {{ t('app.login.noAccount') }}
       <NuxtLink to="/register" class="font-medium text-brand-700 hover:underline">{{ t('app.register') }}</NuxtLink>

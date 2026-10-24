@@ -6,6 +6,8 @@ namespace App\Module\Identity\Service;
 
 use App\Module\Identity\Entity\User;
 use App\Module\Tenant\Contract\TenantReaderInterface;
+use Symfony\Component\HttpFoundation\Cookie;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
  * The shape every endpoint that establishes a session returns.
@@ -20,6 +22,28 @@ final readonly class SessionPayload
         private TenantReaderInterface $tenants,
         private PermissionResolver $permissions,
     ) {
+    }
+
+    /**
+     * The answer of every endpoint that establishes a session.
+     *
+     * @param array{token: string, expiresIn: int, cookie: Cookie, tenantId: ?string} $session
+     */
+    public function response(array $session, User $user): JsonResponse
+    {
+        $response = new JsonResponse([
+            // The access token goes in the BODY for the client to keep in
+            // memory. Deliberately not a cookie: a cookie is sent automatically
+            // and would need CSRF protection (ADR-0006).
+            'token' => $session['token'],
+            'expiresIn' => $session['expiresIn'],
+            'tenantId' => $session['tenantId'],
+            ...$this->for($user, $session['tenantId']),
+        ]);
+
+        $response->headers->setCookie($session['cookie']);
+
+        return $response;
     }
 
     /**
