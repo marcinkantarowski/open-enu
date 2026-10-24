@@ -28,4 +28,4 @@ edits these - see [`.ai/README.md`](../../README.md).
 | [A worker runs the code it started with](a-worker-runs-the-code-it-started-with.md) | Adding or editing a job, an event listener, a scheduled task - anything that runs in a long-lived process rather than per request |
 | [A class nobody scans is a style nobody gets](a-class-nobody-scans-is-a-style-nobody-gets.md) | Adding a component to `ui-kit`, or anything looking unstyled with no error anywhere |
 | [A dev script runs on hosts it was not written on](a-dev-script-runs-on-hosts-it-was-not-written-on.md) | Writing any shell under `scripts/dev` or `scripts/lib` - `sed -i`, `grep -P` and friends are GNU-only, and the first Mac finds them |
-| [A freshness check runs on every request](a-freshness-check-runs-on-every-request.md) | Adding a resource to the container (`addResource`), or a dev stack that is slow even on a 404 |
+| [A freshness check runs on every request](a-freshness-check-runs-on-every-request.md) | Adding a resource to the container (`addResource`), registering classes by glob, or a dev stack that is slow even on a 404 |

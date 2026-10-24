@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace OpenEnu\Kernel;
 
 use OpenEnu\Kernel\Crypto\Encryptor;
+use OpenEnu\Kernel\DependencyInjection\GuardGlobResourcesPass;
 use OpenEnu\Kernel\DependencyInjection\OpenEnuKernelExtension;
 use OpenEnu\Kernel\Doctrine\ScopeContext;
 use OpenEnu\Kernel\Doctrine\Type\EncryptedStringType;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
@@ -32,6 +35,12 @@ final class OpenEnuKernelBundle extends Bundle
         }
 
         return $this->extension;
+    }
+
+    public function build(ContainerBuilder $container): void
+    {
+        // Last, so it sees every glob any bundle or extension registered.
+        $container->addCompilerPass(new GuardGlobResourcesPass(), PassConfig::TYPE_AFTER_REMOVING, -1024);
     }
 
     /**
