@@ -35,3 +35,17 @@ module's code - rather than its manifest - invalidates the container.
 **How to recognise it.** A dev request that is slow even when it answers 404. Time
 `$kernel->boot()` separately from `$kernel->handle()`; if boot dominates, call `isFresh()`
 on each entry of `var/cache/dev/*Container.php.meta` and see which one costs.
+
+**The second time (2026-10-24).** After that fix a dev request still took about 0.3 s, and
+the same `isFresh()` walk found the rest: 196 `GlobResource`s from service discovery -
+`registerClasses()` adds one per module directory (`Service/`, `Handler/`, `Security/`, ...)
+- each listing its directories again on every request, about a millisecond a directory
+through the bind mount. A stat there is close to free; a listing is not. So a glob now sits
+behind `GuardedGlobResource` (added by `GuardGlobResourcesPass`): while every directory
+under it keeps its build-time mtime nothing can have appeared or vanished, and the listing
+is skipped; otherwise the glob decides, as before. `/health` went from 0.30 s to 0.07 s,
+and signing in to the app's first screen from 3.4 s to 1.4 s.
+`kernel/tests/DependencyInjection/GuardedGlobResourceTest.php` holds the cases where the
+guard must hand the question back. Known cost: Docker Desktop shows a directory's new mtime
+up to a second after a file appears in it, so a request inside that second may still see
+the old container.
