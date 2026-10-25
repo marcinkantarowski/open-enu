@@ -1,0 +1,47 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * usage: watch-source <worker-pid> <since> <seconds> <root>...
+ *
+ * Waits until the source under <root> changes, or the worker exits. Prints the
+ * changed path and exits 0 on a change; exits 1 when the worker is gone. Used
+ * by docker/api/worker-dev.sh; see OpenEnu\Kernel\Dev\SourceWatcher.
+ *
+ * The class is required by path, not autoloaded: a worker is restarted to pick
+ * up an edit, and that has to work while vendor/ or the edit is broken.
+ */
+
+require __DIR__ . '/../src/Dev/SourceWatcher.php';
+
+use OpenEnu\Kernel\Dev\SourceWatcher;
+
+[, $pid, $since, $seconds] = $argv + [null, '', '', ''];
+$roots = array_slice($argv, 4);
+if (!ctype_digit((string) $pid) || !ctype_digit((string) $since) || !is_numeric($seconds) || $roots === []) {
+    fwrite(\STDERR, "usage: watch-source <worker-pid> <since> <seconds> <root>...\n");
+    exit(2);
+}
+
+$watcher = new SourceWatcher($roots, ['php', 'yaml', 'yml', 'json'], (int) $since);
+
+// Gone, or a zombie its shell has not reaped yet: either way it runs no code.
+$running = static function () use ($pid): bool {
+    $stat = @file_get_contents("/proc/{$pid}/stat");
+
+    return \is_string($stat) && !preg_match('/^\d+ \(.*\) [ZX]/s', $stat);
+};
+
+while ($running()) {
+    $changed = $watcher->changed();
+    if ($changed !== null) {
+        echo $changed, "\n";
+        exit(0);
+    }
+    // How often the tree is looked at, not a wait for anything to become ready.
+    usleep((int) ((float) $seconds * 1_000_000));
+}
+
+exit(1);
