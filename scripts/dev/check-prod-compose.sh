@@ -103,18 +103,40 @@ fi
 # fixed list of names meets none of them - the check would skip every router
 # and report success. Finding no routers at all is a failure for the same
 # reason: a check with nothing to look at has not passed.
+#
+# Each names its entrypoint: a router that names none is attached to every
+# entrypoint, and since the edge's redirect to HTTPS sits below every router,
+# it would answer over plain HTTP. `websecure` needs a certificate; `web` is
+# plain HTTP on purpose - for a client that cannot follow a redirect - and is
+# named below so that nobody adds one without seeing it.
 mapfile -t routers < <(grep -oE 'traefik\.http\.routers\.[A-Za-z0-9_-]+\.rule' <<<"$CONFIG" \
                         | sed -E 's/^traefik\.http\.routers\.//; s/\.rule$//' | sort -u)
 missing=0
+plain=()
 if [ "${#routers[@]}" -eq 0 ]; then
   bad "no Traefik routers found in the production stack" "nothing is public, or the labels changed shape"
   missing=1
 fi
 for router in "${routers[@]}"; do
-  grep -qF "traefik.http.routers.$router.tls.certresolver" <<<"$CONFIG" \
-    || { bad "router $router has no certificate resolver" "it would answer on 443 with the wrong certificate"; missing=1; }
+  entrypoints="$(grep -oE "traefik\.http\.routers\.$router\.entrypoints: .*" <<<"$CONFIG" | sed -E 's/^[^:]+: //' || true)"
+  case "$entrypoints" in
+    websecure)
+      grep -qF "traefik.http.routers.$router.tls.certresolver" <<<"$CONFIG" \
+        || { bad "router $router has no certificate resolver" "it would answer on 443 with the wrong certificate"; missing=1; } ;;
+    web)
+      if grep -qE "traefik\.http\.routers\.$router\.tls" <<<"$CONFIG"; then
+        bad "router $router is on the plain-HTTP entrypoint with TLS settings" "a router on web serves HTTP; its HTTPS twin is a router of its own"
+        missing=1
+      fi
+      plain+=("$router") ;;
+    *)
+      bad "router $router does not name exactly one entrypoint (${entrypoints:-none})" \
+          "add traefik.http.routers.$router.entrypoints=websecure - with none it also answers over plain HTTP"
+      missing=1 ;;
+  esac
 done
 [ "$missing" -eq 0 ] && log_ok "every public router resolves a certificate (${#routers[@]})"
+[ "${#plain[@]}" -eq 0 ] || log_info "plain HTTP on purpose: ${plain[*]}"
 
 # ── 5. no dev-only services leaked in ───────────────────────────────────────
 for service in mailpit webhook-echo e2e; do

@@ -174,6 +174,14 @@ there as the platform's file next to it does: `tls.certresolver=letsencrypt` in 
 `docker/project/compose.staging.yml`. `prod-check` holds them to the same rules as the
 platform's routers. A bare `docker compose` does not read these files; `make` does.
 
+**Plain HTTP, on purpose.** Every request on port 80 is redirected to HTTPS - except one a
+router takes itself: the edge's redirect sits below every router (`priority: 1`), so a router
+with `entrypoints=web` answers over plain HTTP. That is for clients that cannot follow a
+redirect - a machine POSTing to an address it was given years ago - and for nothing else.
+Give such a route two routers, the usual one on `websecure` and a twin on `web` with no `tls`
+labels; `prod-check` fails a router that names no entrypoint (it would answer on both) or one
+on `web` with TLS settings, and lists the plain-HTTP routers it found.
+
 ## When it goes wrong
 
 | Symptom | Look at |
