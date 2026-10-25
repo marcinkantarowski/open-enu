@@ -40,12 +40,20 @@ on each entry of `var/cache/dev/*Container.php.meta` and see which one costs.
 the same `isFresh()` walk found the rest: 196 `GlobResource`s from service discovery -
 `registerClasses()` adds one per module directory (`Service/`, `Handler/`, `Security/`, ...)
 - each listing its directories again on every request, about a millisecond a directory
-through the bind mount. A stat there is close to free; a listing is not. So a glob now sits
-behind `GuardedGlobResource` (added by `GuardGlobResourcesPass`): while every directory
-under it keeps its build-time mtime nothing can have appeared or vanished, and the listing
-is skipped; otherwise the glob decides, as before. `/health` went from 0.30 s to 0.07 s,
-and signing in to the app's first screen from 3.4 s to 1.4 s.
-`kernel/tests/DependencyInjection/GuardedGlobResourceTest.php` holds the cases where the
-guard must hand the question back. Known cost: Docker Desktop shows a directory's new mtime
-up to a second after a file appears in it, so a request inside that second may still see
-the old container.
+through the bind mount. A stat there is close to free; a listing is not.
+
+The first fix skipped the listing while every directory kept its build-time mtime, and it
+was wrong: **through Docker Desktop's file sharing a directory's mtime can stay stale for
+hours after a file appears in it**, while its listing is current at once. A new service
+class was simply not registered. Measured, not assumed: the host showed the directory's new
+mtime, both containers the old one, minutes later. So the globs are now checked together
+by `ThrottledGlobResources`, at most once every two seconds, with the time of the last clean
+check kept in the cache directory (a volume, where mtimes hold). A new file is noticed up to
+two seconds late; `/health` went from 0.30 s to 0.05 s, and
+`kernel/tests/DependencyInjection/ThrottledGlobResourcesTest.php` holds the cases.
+
+**The rule, again:** on a bind mount, trust a listing and a file's own stat - never a
+directory's mtime as a summary of what is in it. The dev workers' change watcher
+(`OpenEnu\Kernel\Dev\SourceWatcher`) made the same mistake in its first version; a real
+file added on the host caught it, where a unit test in a temporary directory inside the
+container - where mtimes behave - had passed.

@@ -29,7 +29,8 @@ layer does not, because the list of layers is read once at startup.
 thing that changes its code, not by the person who changed it.
 
 - Development workers run under `docker/api/worker-dev.sh`, which polls the source tree and
-  restarts the worker on a change. `make prod-check` fails if a dev worker calls
+  restarts the worker on a change (`kernel/bin/watch-source`: every file stat-ed each two
+  seconds, every directory listed within ten - see `OpenEnu\Kernel\Dev\SourceWatcher`). `make prod-check` fails if a dev worker calls
   `messenger:consume` directly.
 - `make module` restarts the frontend, because a new layer is only discovered at startup.
 - Production is the opposite case and stays that way: an image's code cannot change

@@ -9,17 +9,17 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
- * Puts every glob the container was built from behind a directory-mtime guard.
+ * Puts every glob the container was built from behind one throttle.
  *
  * Service discovery registers each module directory with a glob (eight per
  * module), and in debug each is listed again on every request: two hundred
  * listings, a quarter of a second per request through a macOS bind mount, for
  * an answer that only changes when a file is added or removed. See
- * GuardedGlobResource for what still rebuilds the container, and when.
+ * ThrottledGlobResources for how late that answer may now be.
  *
  * Without debug the container tracks no resources and this changes nothing.
  */
-final class GuardGlobResourcesPass implements CompilerPassInterface
+final class ThrottleGlobResourcesPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
@@ -29,9 +29,20 @@ final class GuardGlobResourcesPass implements CompilerPassInterface
 
         // Keyed as addResource() keys them; getResources() drops the keys.
         $resources = [];
+        $globs = [];
         foreach ($container->getResources() as $resource) {
-            $resource = $resource instanceof GlobResource ? new GuardedGlobResource($resource) : $resource;
-            $resources[(string) $resource] = $resource;
+            if ($resource instanceof GlobResource) {
+                $globs[] = $resource;
+            } else {
+                $resources[(string) $resource] = $resource;
+            }
+        }
+
+        if ($globs !== []) {
+            $cacheDir = $container->getParameter('kernel.cache_dir');
+            \assert(\is_string($cacheDir));
+            $throttled = new ThrottledGlobResources($globs, $cacheDir . '/globs-checked');
+            $resources[(string) $throttled] = $throttled;
         }
 
         $container->setResources($resources);
