@@ -393,6 +393,16 @@ fails_when "prod-check holds a project's production router to a certificate reso
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "mkdir -p '$WORK/docker/project' && printf 'services:\\n  api:\\n    labels:\\n      - traefik.http.routers.selftest-extra.rule=Host(\\x60extra.test\\x60)\\n' > '$WORK/docker/project/compose.prod.yml'"
 
+# The edge's redirect to HTTPS sits below every router, so a router that names
+# no entrypoint answers over plain HTTP; one on `web` with TLS is a mix-up.
+fails_when "prod-check catches a router that names no entrypoint" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "sed_inplace '/-api.entrypoints=websecure/d' '$WORK/docker/compose.prod.yml'"
+
+fails_when "prod-check catches a plain-HTTP router with TLS settings" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "sed_inplace 's/-api.entrypoints=websecure/-api.entrypoints=web/' '$WORK/docker/compose.prod.yml'"
+
 fails_when "prod-check holds a project's staging router to the allowlist" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "mkdir -p '$WORK/docker/project' && printf 'services:\\n  api:\\n    labels:\\n      - traefik.http.routers.selftest-extra.rule=Host(\\x60extra.test\\x60)\\n' > '$WORK/docker/project/compose.dev.yml'"
