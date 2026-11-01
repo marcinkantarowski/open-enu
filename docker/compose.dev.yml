@@ -335,7 +335,7 @@ services:
   #  Mailpit - catches every outbound mail in dev. Nothing leaves the machine.
   # ───────────────────────────────────────────────────────────────────────────
   mailpit:
-    image: axllent/mailpit:v1.31.3
+    image: axllent/mailpit:v1.32.0
     container_name: ${STACK:-open-enu}-mailpit
     restart: unless-stopped
     environment:
