@@ -18,10 +18,10 @@
     "ci": "make ci"
   },
   "devDependencies": {
-    "@types/node": "^26.6.3",
-    "knip": "^6.38.0",
+    "@types/node": "^26.6.6",
+    "knip": "^6.43.0",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.0.0"
+    "vue-tsc": "^3.3.13"
   },
   "allowScripts": {
     "better-sqlite3": true,
