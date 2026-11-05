@@ -42,6 +42,7 @@ run "context budgets"   "$HERE/agents-budget.sh"
 run "typography"        "$HERE/check-typography.sh"
 run "landing SEO"       "$HERE/check-landing-seo.sh"
 run "Symfony line"      "$HERE/check-symfony-line.sh"
+run "test order"        "$HERE/check-test-order.sh"
 run "env completeness"  "$ROOT/scripts/lib/envgen.sh" check
 
 # Container-side. Skipped rather than failed when the stack is down: `make check`
