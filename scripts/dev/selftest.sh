@@ -217,7 +217,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock backend/phpunit.dist.xml AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -358,6 +358,10 @@ fails_when "symfony-check catches a component with no conflict fence" \
   "$WORK/scripts/dev/check-symfony-line.sh" \
   "sed_inplace '/\"symfony\/var-exporter\": \">=8.0\",/d' '$WORK/backend/composer.json'"
 
+fails_when "test-order-check catches a test order that puts the last failures first" \
+  "$WORK/scripts/dev/check-test-order.sh" \
+  "sed_inplace 's/executionOrder=\"depends\"/executionOrder=\"depends,defects\"/' '$WORK/backend/phpunit.dist.xml'"
+
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.
 fails_when "typography-check catches a long dash" \
@@ -432,7 +436,7 @@ fails_when "agents-budget catches an oversized MODULE.md" \
 
 # And the clean tree must still pass - a check that fails on everything is no
 # more useful than one that fails on nothing.
-for c in check-modules check-docs check-i18n check-typography check-landing-seo check-symfony-line agents-budget check-prod-compose; do
+for c in check-modules check-docs check-i18n check-typography check-landing-seo check-symfony-line check-test-order agents-budget check-prod-compose; do
   if "$WORK/scripts/dev/$c.sh" >/dev/null 2>&1; then
     ok "$c passes on a clean tree"
   else

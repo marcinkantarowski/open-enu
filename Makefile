@@ -113,6 +113,10 @@ typography-check: ## Fail on a long dash (U+2014) anywhere - this project writes
 seo-check: ## Landing pages: titles, descriptions, headings, alt text, URL-safe filenames
 	@$(DEV)/check-landing-seo.sh
 
+.PHONY: test-order-check
+test-order-check: ## PHPUnit runs the tests in one fixed order, never the last failures first
+	@$(DEV)/check-test-order.sh
+
 .PHONY: symfony-check
 symfony-check: ## Every Symfony component on the framework's line, fenced from the next major
 	@$(DEV)/check-symfony-line.sh
@@ -416,7 +420,7 @@ types: openapi ## Regenerate the frontend types from the spec
 	@echo "  ✓ ui-kit/types/api.d.ts"
 
 .PHONY: arch
-arch: stan test-kernel test-arch schema-check openapi-check module-check docs-check i18n-check typography-check seo-check symfony-check shell-check prod-check route-coverage inventory-check dead-code ## Every architectural guardrail
+arch: stan test-kernel test-arch schema-check openapi-check module-check docs-check i18n-check typography-check seo-check symfony-check test-order-check shell-check prod-check route-coverage inventory-check dead-code ## Every architectural guardrail
 
 .PHONY: check
 check: ## The inner loop - run after every edit (target: under 60s)
