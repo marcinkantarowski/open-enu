@@ -23,6 +23,7 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/log.sh"
+. "$HERE/../lib/net.sh"
 
 HOST="${1:-}"; REPO="${2:-}"; STAGE="${3:-production}"
 . "$HERE/../lib/stage.sh"
@@ -65,7 +66,7 @@ if [ -z "$EXPECTED" ]; then
     "check this machine's network, then re-run"
 fi
 
-SCANNED="$(REMOTE "ssh-keyscan -t ed25519 github.com 2>/dev/null" | head -1)"
+SCANNED="$(REMOTE "ssh-keyscan -t ed25519 github.com 2>/dev/null" | host_key_line)"
 [ -n "$SCANNED" ] || die "the server could not reach github.com on port 22" \
   "check its egress firewall - the clone will fail for the same reason"
 

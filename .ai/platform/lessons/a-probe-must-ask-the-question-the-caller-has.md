@@ -7,7 +7,7 @@ phase: 9
 
 ## What happened
 The first project to run `make preflight` against real servers was stopped three times, on
-two servers that were fine.
+two servers that were fine - and `deploy-key` a fourth.
 
 Staging, on `stg.example.com`: "no nameservers found - the domain is not delegated yet".
 The zone was delegated and every record was in place. Preflight had asked for the NS
@@ -21,6 +21,10 @@ deploy.
 Then, given the server by host name: five A records "wrong", each pointing at the right
 IPv4 address. `getent hosts` had resolved the dual-stack VPS to its IPv6 address, and the
 records were compared against that.
+
+`make deploy-key` then failed with "github.com host key does not match", got: empty. The
+server's OpenSSH 10 prints ssh-keyscan's `# github.com:22 SSH-2.0-...` banner on stdout;
+`head -1` took the banner for the key.
 
 ## Why it happened
 Both probes answered the question the tool asks instead of the one the caller has.
@@ -44,8 +48,9 @@ every developer machine they ran on had the stack up already.
 - `tcp_probe` returns `open`, `refused` or `filtered`. Preflight passes `refused` and fails
   only `filtered`.
 - `ipv4_of` asks for IPv4 only, because A records are what it is compared with.
+- `host_key_line` takes the first line that is a key, not the first line.
 
-`make net-check` proves all three offline, with a stand-in for dig and with ports on the local
+`make net-check` proves all of it offline, with a stand-in for dig and with ports on the local
 machine; `make selftest` proves it fails when any is broken.
 
 ## How it was caught

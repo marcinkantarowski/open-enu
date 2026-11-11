@@ -374,6 +374,10 @@ fails_when "net-check catches a server address that is not IPv4" \
   "$WORK/scripts/dev/check-net.sh" \
   "sed_inplace 's/getent ahostsv4/getent hosts/' '$WORK/scripts/lib/net.sh'"
 
+fails_when "net-check catches a host key read from the keyscan banner" \
+  "$WORK/scripts/dev/check-net.sh" \
+  "sed_inplace \"s/grep -m1 -E '\\^\\[\\^ #\\]+ (ssh-|ecdsa-)'/head -1/\" '$WORK/scripts/lib/net.sh'"
+
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.
 fails_when "typography-check catches a long dash" \
