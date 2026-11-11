@@ -13,7 +13,7 @@
   "dependencies": {
     "@lucide/vue": "^1.72.0",
     "@open-enu/ui-kit": "*",
-    "nuxt": "^4.0.0",
+    "nuxt": "^4.6.4",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"
   }
