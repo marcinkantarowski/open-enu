@@ -22,6 +22,15 @@ const moduleLayers = existsSync(modulesDir)
       .sort()
   : []
 
+/**
+ * The project's look, when it has one: `theme/` at the repository root (ADR-0024).
+ *
+ * Extended FIRST, so a component there - `BrandMark.vue` - replaces the platform's,
+ * and its `public/` serves the fonts, the favicons and the logo. The platform ships
+ * the directory with a README only, so an update never touches what a project put in it.
+ */
+const themeLayer = existsSync(fileURLToPath(new URL('../theme/nuxt.config.ts', import.meta.url))) ? ['../theme'] : []
+
 export default defineNuxtConfig({
   /**
    * The marker the smoke test looks for.
@@ -50,7 +59,7 @@ export default defineNuxtConfig({
   // Everything shared - dev server, HMR over TLS, design tokens, Pinia, i18n -
   // comes from the layer. Module layers come after it so their pages and
   // components can use what it provides.
-  extends: ['@open-enu/ui-kit', ...moduleLayers],
+  extends: [...themeLayer, '@open-enu/ui-kit', ...moduleLayers],
 
   /**
    * A single-page app, deliberately.

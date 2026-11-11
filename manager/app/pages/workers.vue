@@ -49,7 +49,7 @@ const rows = computed(() =>
       <UiCard :title="t('manager.failed')">
         <p
           class="text-4xl font-semibold tabular-nums"
-          :class="(data?.failed ?? 0) > 0 ? 'text-danger' : 'text-success'"
+          :class="(data?.failed ?? 0) > 0 ? 'text-crit' : 'text-ok'"
           data-testid="failed-count"
         >
           {{ data?.failed ?? 0 }}

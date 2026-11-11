@@ -59,15 +59,15 @@ const expanded = ref<string | null>(null)
           <!-- Both identities when one is acting for another: an impersonated
                change must never read as the customer's own (ADR-0008). -->
           <span class="font-mono text-xs">{{ row.actorId ?? '-' }}</span>
-          <span v-if="row.onBehalfOfId" class="ml-1 text-xs text-warning">
+          <span v-if="row.onBehalfOfId" class="ml-1 text-xs text-warn">
             {{ t('audit.onBehalfOf') }}
           </span>
         </template>
 
         <template #cell-succeeded="{ row }">
-          <UiBadge :tone="row.succeeded ? 'success' : 'danger'">
+          <UiStatus :tone="row.succeeded ? 'ok' : 'crit'">
             {{ row.succeeded ? t('audit.ok') : t('audit.failed') }}
-          </UiBadge>
+          </UiStatus>
         </template>
 
         <template #cell-details="{ row }">
@@ -84,7 +84,7 @@ const expanded = ref<string | null>(null)
       <div v-if="expanded" class="mt-4 grid gap-4 md:grid-cols-2">
         <div v-for="side in ['before', 'after'] as const" :key="side">
           <p class="mb-1 text-xs font-medium uppercase tracking-wide text-fg-muted">{{ t(`audit.${side}`) }}</p>
-          <pre class="overflow-x-auto rounded-lg bg-surface-sunken p-3 font-mono text-[11px] text-fg">{{
+          <pre class="overflow-x-auto rounded-lg bg-surface-subtle p-3 font-mono text-[11px] text-fg">{{
             JSON.stringify(data?.items.find(i => i.id === expanded)?.[side] ?? null, null, 2)
           }}</pre>
         </div>

@@ -6,8 +6,8 @@ defineProps<{ title?: string, description?: string }>()
   <section class="rounded-card border border-border bg-surface shadow-card">
     <header v-if="title || $slots.header" class="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
       <div>
-        <h2 v-if="title" class="text-sm font-semibold text-fg">{{ title }}</h2>
-        <p v-if="description" class="mt-0.5 text-xs text-fg-muted">{{ description }}</p>
+        <h2 v-if="title" class="text-base font-semibold text-fg">{{ title }}</h2>
+        <p v-if="description" class="mt-0.5 text-sm text-fg-muted">{{ description }}</p>
       </div>
       <slot name="header" />
     </header>

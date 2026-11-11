@@ -92,10 +92,10 @@ async function redeliver(delivery: Delivery) {
   }
 }
 
-const tones: Record<Delivery['status'], 'success' | 'warning' | 'danger'> = {
-  delivered: 'success',
-  pending: 'warning',
-  failed: 'danger',
+const tones: Record<Delivery['status'], 'ok' | 'warn' | 'crit'> = {
+  delivered: 'ok',
+  pending: 'warn',
+  failed: 'crit',
 }
 
 async function copySecret() {
@@ -140,9 +140,9 @@ async function copySecret() {
         </template>
 
         <template #cell-active="{ row }">
-          <UiBadge :tone="row.active ? 'success' : 'neutral'">
+          <UiStatus :tone="row.active ? 'ok' : 'neutral'">
             {{ row.active ? t('webhook.active') : t('webhook.inactive') }}
-          </UiBadge>
+          </UiStatus>
         </template>
 
         <template #cell-actions="{ row }">
@@ -180,7 +180,7 @@ async function copySecret() {
         </template>
 
         <template #cell-status="{ row }">
-          <UiBadge :tone="tones[row.status]" data-testid="delivery-status">{{ t(`webhook.status.${row.status}`) }}</UiBadge>
+          <UiStatus :tone="tones[row.status]" data-testid="delivery-status">{{ t(`webhook.status.${row.status}`) }}</UiStatus>
         </template>
 
         <template #cell-responseCode="{ row }">
@@ -201,7 +201,7 @@ async function copySecret() {
       </UiTable>
     </UiCard>
 
-    <UiModal v-model:open="creating" :title="t('webhook.add')">
+    <UiDialog v-model:open="creating" :title="t('webhook.add')">
       <div class="flex flex-col gap-4">
         <UiField v-slot="field" :label="t('webhook.url')" :hint="t('webhook.urlHint')" required>
           <UiInput
@@ -235,12 +235,12 @@ async function copySecret() {
           {{ t('common.save') }}
         </UiButton>
       </template>
-    </UiModal>
+    </UiDialog>
 
-    <UiModal :open="secret !== null" :title="t('webhook.secretTitle')" @update:open="secret = null">
+    <UiDialog :open="secret !== null" :title="t('webhook.secretTitle')" @update:open="secret = null">
       <div class="flex flex-col gap-3">
-        <UiAlert tone="warning">{{ t('webhook.secretWarning') }}</UiAlert>
-        <code class="block break-all rounded-lg bg-surface-sunken p-3 font-mono text-xs" data-testid="webhook-secret">
+        <UiAlert tone="warn">{{ t('webhook.secretWarning') }}</UiAlert>
+        <code class="block break-all rounded-lg bg-surface-subtle p-3 font-mono text-xs" data-testid="webhook-secret">
           {{ secret }}
         </code>
       </div>
@@ -249,6 +249,6 @@ async function copySecret() {
         <UiButton @click="copySecret">{{ t('common.copy') }}</UiButton>
         <UiButton variant="primary" @click="secret = null">{{ t('common.close') }}</UiButton>
       </template>
-    </UiModal>
+    </UiDialog>
   </div>
 </template>

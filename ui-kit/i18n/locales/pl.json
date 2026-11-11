@@ -58,5 +58,13 @@
   "progress.failed": "Niepowodzenie: {reason}",
 
   "realtime.connected": "Na żywo",
-  "realtime.disconnected": "Ponowne łączenie…"
+  "realtime.disconnected": "Ponowne łączenie…",
+
+  "common.required": "wymagane",
+  "table.sortBy": "Sortuj według: {column}",
+  "table.pagination": "Strony",
+  "table.previous": "Poprzednia strona",
+  "table.next": "Następna strona",
+  "shell.skipToContent": "Przejdź do treści",
+  "shell.dashboard": "Pulpit"
 }

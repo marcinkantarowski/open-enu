@@ -25,7 +25,7 @@ watch(job, (current) => {
     <UiProgressBar
       v-if="job"
       :percent="job.percent"
-      :tone="job.status === 'failed' ? 'danger' : job.status === 'done' ? 'success' : 'brand'"
+      :tone="job.status === 'failed' ? 'crit' : job.status === 'done' ? 'ok' : 'accent'"
       :label="job.status === 'running'
         ? t('progress.running', { done: job.done, total: job.total })
         : job.status === 'done'
@@ -33,6 +33,6 @@ watch(job, (current) => {
           : t('progress.failed', { reason: job.failureReason ?? '' })"
     />
 
-    <p v-if="error" class="text-xs text-danger" role="alert">{{ error }}</p>
+    <p v-if="error" class="text-xs text-crit" role="alert">{{ error }}</p>
   </div>
 </template>

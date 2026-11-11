@@ -210,9 +210,9 @@ async function onArchived(result: Record<string, unknown>) {
         </template>
 
         <template #cell-status="{ row }">
-          <UiBadge :tone="row.status === 'archived' ? 'neutral' : 'success'">
+          <UiStatus :tone="row.status === 'archived' ? 'neutral' : 'ok'">
             {{ t(`example.status.${row.status}`) }}
-          </UiBadge>
+          </UiStatus>
         </template>
 
         <template #cell-actions="{ row }">
@@ -232,7 +232,7 @@ async function onArchived(result: Record<string, unknown>) {
     <!-- Other modules may hang widgets here without this file knowing them. -->
     <InjectionPoint name="example.list.footer" />
 
-    <UiModal v-model:open="creating" :title="t('example.create')">
+    <UiDialog v-model:open="creating" :title="t('example.create')">
       <div class="flex flex-col gap-4">
         <UiField v-slot="field" :label="t('example.name')" required>
           <UiInput :id="field.id" v-model="draft.name" data-testid="example-name" :described-by="field.describedBy" />
@@ -255,9 +255,9 @@ async function onArchived(result: Record<string, unknown>) {
           {{ t('common.save') }}
         </UiButton>
       </template>
-    </UiModal>
+    </UiDialog>
 
-    <UiModal :open="editing !== null" :title="t('example.rename')" @update:open="editing = null">
+    <UiDialog :open="editing !== null" :title="t('example.rename')" @update:open="editing = null">
       <div class="flex flex-col gap-4">
         <!-- Inside the dialog, not behind it: `showModal()` makes the rest of
              the page inert, so a conflict bar on the page would be visible and
@@ -293,7 +293,7 @@ async function onArchived(result: Record<string, unknown>) {
         <UiButton variant="ghost" @click="editing = null">{{ t('common.cancel') }}</UiButton>
         <UiButton variant="primary" data-testid="example-rename-save" @click="save">{{ t('common.save') }}</UiButton>
       </template>
-    </UiModal>
+    </UiDialog>
     <UiCard v-if="feed.length > 0" :title="t('example.live')" :description="t('example.liveHint')">
       <ul class="flex flex-col gap-1 text-xs" data-testid="live-feed">
         <li v-for="(entry, index) in feed" :key="`${entry.at}-${index}`" class="font-mono text-fg">

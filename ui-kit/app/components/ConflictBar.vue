@@ -19,7 +19,7 @@ const { t } = useI18n()
 <template>
   <div
     v-if="props.conflict"
-    class="flex flex-col gap-3 rounded-card border border-warning bg-warning-soft px-4 py-3"
+    class="flex flex-col gap-3 rounded-card border border-warn bg-warn-soft px-4 py-3"
     role="alert"
     data-testid="conflict-bar"
   >

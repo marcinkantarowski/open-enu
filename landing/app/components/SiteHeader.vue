@@ -22,7 +22,7 @@ const nav = computed(() => [
 
       <button
         type="button"
-        class="rounded-md px-2 py-1 text-fg-muted hover:bg-surface-sunken md:hidden"
+        class="rounded-md px-2 py-1 text-fg-muted hover:bg-surface-subtle md:hidden"
         :aria-label="t('site.nav.menu')"
         :aria-expanded="open"
         @click="open = !open"
@@ -39,7 +39,7 @@ const nav = computed(() => [
           :key="item.to"
           :to="localePath(item.to)"
           class="py-2 text-sm font-medium text-fg-muted hover:text-fg md:py-0"
-          active-class="text-brand-700"
+          active-class="text-accent-700"
         >
           {{ item.label }}
         </NuxtLink>
@@ -57,12 +57,12 @@ const nav = computed(() => [
           </option>
         </select>
 
-        <a :href="`${cfg.appUrl}/login`" class="py-2 text-sm font-medium text-fg hover:text-brand-700 md:py-0" rel="nofollow">
+        <a :href="`${cfg.appUrl}/login`" class="py-2 text-sm font-medium text-fg hover:text-accent-700 md:py-0" rel="nofollow">
           {{ t('site.nav.signIn') }}
         </a>
         <a
           :href="`${cfg.appUrl}/register`"
-          class="rounded-lg bg-brand-600 px-3.5 py-2 text-center text-sm font-medium text-white hover:bg-brand-700"
+          class="rounded-lg bg-accent-600 px-3.5 py-2 text-center text-sm font-medium text-white hover:bg-accent-700"
           rel="nofollow"
         >
           {{ t('site.nav.getStarted') }}

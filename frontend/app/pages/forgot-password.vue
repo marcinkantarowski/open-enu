@@ -27,7 +27,7 @@ async function submit() {
   <div v-if="sent">
     <AuthHeading :title="t('app.forgot.sentTitle')" :subtitle="t('app.forgot.sent')" />
 
-    <NuxtLink to="/login" class="text-sm font-medium text-brand-700 hover:underline">
+    <NuxtLink to="/login" class="text-sm font-medium text-accent-700 hover:underline">
       {{ t('app.auth.backToLogin') }}
     </NuxtLink>
   </div>
@@ -44,7 +44,7 @@ async function submit() {
     </form>
 
     <p class="mt-8 text-center text-sm">
-      <NuxtLink to="/login" class="font-medium text-brand-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
+      <NuxtLink to="/login" class="font-medium text-accent-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
     </p>
   </div>
 </template>

@@ -24,14 +24,14 @@ onBeforeUnmount(() => {
 <template>
   <NuxtLink
     to="/notifications"
-    class="relative rounded-md px-2 py-1 text-fg-muted hover:bg-surface-sunken hover:text-fg"
+    class="relative rounded-md px-2 py-1 text-fg-muted hover:bg-surface-subtle hover:text-fg"
     :aria-label="t('notification.title')"
     data-testid="notification-bell"
   >
     🔔
     <span
       v-if="unread > 0"
-      class="absolute -right-1 -top-1 min-w-4 rounded-full bg-danger px-1 text-center text-[10px] font-semibold text-white"
+      class="absolute -right-1 -top-1 min-w-4 rounded-full bg-crit px-1 text-center text-[10px] font-semibold text-white"
       data-testid="notification-unread"
     >{{ unread }}</span>
   </NuxtLink>

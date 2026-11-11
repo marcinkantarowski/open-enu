@@ -32,7 +32,7 @@ onMounted(async () => {
 <template>
   <div>
     <div v-if="state === 'working'" class="flex items-center gap-3 text-sm text-fg-muted">
-      <UiSpinner class="size-5 text-brand-600" />
+      <UiSpinner class="size-5 text-accent-600" />
       {{ t('app.verify.working') }}
     </div>
 
@@ -43,9 +43,9 @@ onMounted(async () => {
 
     <template v-else>
       <AuthHeading :title="t('app.verify.failed')" />
-      <UiAlert tone="danger">{{ message }}</UiAlert>
+      <UiAlert tone="crit">{{ message }}</UiAlert>
       <p class="mt-8 text-sm">
-        <NuxtLink to="/login" class="font-medium text-brand-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
+        <NuxtLink to="/login" class="font-medium text-accent-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
       </p>
     </template>
   </div>

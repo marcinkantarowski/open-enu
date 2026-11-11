@@ -38,6 +38,8 @@ COPY ui-kit ./ui-kit
 COPY frontend ./frontend
 COPY manager ./manager
 COPY landing ./landing
+# The project's look (ADR-0024). Always present: the platform ships it with a README.
+COPY theme ./theme
 
 # `npm ci` and not `install`: the lockfile decides, and a deploy that silently
 # resolved a different dependency tree than CI tested is not a deploy.

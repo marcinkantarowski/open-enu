@@ -50,7 +50,7 @@ async function onPick(event: Event) {
 <template>
   <div class="flex flex-col gap-2">
     <label
-      class="flex cursor-pointer flex-col items-center gap-1 rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center hover:bg-surface-muted"
+      class="flex cursor-pointer flex-col items-center gap-1 rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center hover:bg-surface-subtle"
     >
       <span class="text-sm font-medium text-fg">{{ t('upload.choose') }}</span>
       <span class="text-xs text-fg-muted">{{ t('upload.drop') }}</span>
@@ -70,6 +70,6 @@ async function onPick(event: Event) {
       :label="t('upload.uploading', { percent: progress })"
     />
 
-    <p v-if="localError || error" class="text-xs text-danger" role="alert">{{ localError ?? error }}</p>
+    <p v-if="localError || error" class="text-xs text-crit" role="alert">{{ localError ?? error }}</p>
   </div>
 </template>

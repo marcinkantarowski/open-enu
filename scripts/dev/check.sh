@@ -44,6 +44,7 @@ run "landing SEO"       "$HERE/check-landing-seo.sh"
 run "Symfony line"      "$HERE/check-symfony-line.sh"
 run "test order"        "$HERE/check-test-order.sh"
 run "network probes"    "$HERE/check-net.sh"
+run "design tokens"     "$HERE/check-tokens.sh"
 run "env completeness"  "$ROOT/scripts/lib/envgen.sh" check
 
 # Container-side. Skipped rather than failed when the stack is down: `make check`

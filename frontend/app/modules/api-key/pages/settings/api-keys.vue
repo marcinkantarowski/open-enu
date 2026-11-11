@@ -112,7 +112,7 @@ async function copySecret() {
         </template>
 
         <template #cell-actions="{ row }">
-          <UiBadge v-if="row.revoked" tone="danger">{{ t('apiKey.revokedBadge') }}</UiBadge>
+          <UiStatus v-if="row.revoked" tone="crit">{{ t('apiKey.revokedBadge') }}</UiStatus>
           <UiButton
             v-else-if="auth.can('api_key.manage')"
             variant="ghost"
@@ -125,7 +125,7 @@ async function copySecret() {
       </UiTable>
     </UiCard>
 
-    <UiModal v-model:open="creating" :title="t('apiKey.create')">
+    <UiDialog v-model:open="creating" :title="t('apiKey.create')">
       <div class="flex flex-col gap-4">
         <UiField v-slot="field" :label="t('apiKey.name')" required>
           <UiInput :id="field.id" v-model="form.name" :described-by="field.describedBy" />
@@ -156,12 +156,12 @@ async function copySecret() {
           {{ t('apiKey.create') }}
         </UiButton>
       </template>
-    </UiModal>
+    </UiDialog>
 
-    <UiModal :open="secret !== null" :title="t('apiKey.secretTitle')" @update:open="secret = null">
+    <UiDialog :open="secret !== null" :title="t('apiKey.secretTitle')" @update:open="secret = null">
       <div class="flex flex-col gap-3">
-        <UiAlert tone="warning">{{ t('apiKey.secretWarning') }}</UiAlert>
-        <code class="block break-all rounded-lg bg-surface-sunken p-3 font-mono text-xs" data-testid="api-key-secret">
+        <UiAlert tone="warn">{{ t('apiKey.secretWarning') }}</UiAlert>
+        <code class="block break-all rounded-lg bg-surface-subtle p-3 font-mono text-xs" data-testid="api-key-secret">
           {{ secret }}
         </code>
       </div>
@@ -170,6 +170,6 @@ async function copySecret() {
         <UiButton @click="copySecret">{{ t('common.copy') }}</UiButton>
         <UiButton variant="primary" @click="secret = null">{{ t('common.close') }}</UiButton>
       </template>
-    </UiModal>
+    </UiDialog>
   </div>
 </template>

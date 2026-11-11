@@ -14,7 +14,7 @@ const { t } = useI18n()
   <span class="inline-flex items-center gap-1.5 text-xs text-fg-muted" data-testid="realtime-indicator">
     <span
       class="size-2 rounded-full"
-      :class="connected ? 'bg-success' : 'bg-warning animate-pulse'"
+      :class="connected ? 'bg-ok' : 'bg-warn animate-pulse'"
       aria-hidden="true"
     />
     {{ connected ? t('realtime.connected') : t('realtime.disconnected') }}

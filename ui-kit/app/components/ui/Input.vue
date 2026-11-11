@@ -8,7 +8,9 @@ defineProps<{
   type?: string
   placeholder?: string
   autocomplete?: string
+  inputmode?: 'text' | 'numeric' | 'decimal' | 'tel' | 'email' | 'url' | 'search' | 'none'
   disabled?: boolean
+  readonly?: boolean
   invalid?: boolean
   describedBy?: string
 }>()
@@ -21,10 +23,14 @@ defineProps<{
     :type="type ?? 'text'"
     :placeholder="placeholder"
     :autocomplete="autocomplete"
+    :inputmode="inputmode"
     :disabled="disabled"
+    :readonly="readonly"
     :aria-invalid="invalid || undefined"
     :aria-describedby="describedBy"
-    class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg shadow-card transition-colors placeholder:text-fg-muted/70 hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-3 focus:ring-brand-100 disabled:opacity-60"
-    :class="invalid ? 'border-danger' : ''"
+    :class="cn(
+      'h-control-md w-full rounded-control border border-border-input bg-surface px-3 text-sm text-fg transition-colors placeholder:text-fg-muted focus:border-focus focus:outline-2 focus:outline-offset-0 focus:outline-focus disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-70 read-only:bg-surface-subtle',
+      invalid && 'border-crit focus:border-crit focus:outline-crit',
+    )"
   >
 </template>

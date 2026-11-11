@@ -33,7 +33,7 @@ async function submit() {
       :subtitle="t('app.register.checkEmailBody', { email: form.email })"
     />
 
-    <NuxtLink to="/login" class="text-sm font-medium text-brand-700 hover:underline">
+    <NuxtLink to="/login" class="text-sm font-medium text-accent-700 hover:underline">
       {{ t('app.auth.backToLogin') }}
     </NuxtLink>
   </div>
@@ -69,14 +69,14 @@ async function submit() {
         />
       </UiField>
 
-      <UiAlert v-if="error" tone="danger">{{ error }}</UiAlert>
+      <UiAlert v-if="error" tone="crit">{{ error }}</UiAlert>
 
       <UiButton type="submit" variant="primary" size="lg" :loading="busy">{{ t('app.register.submit') }}</UiButton>
     </form>
 
     <p class="mt-8 text-center text-sm text-fg-muted">
       {{ t('app.register.haveAccount') }}
-      <NuxtLink to="/login" class="font-medium text-brand-700 hover:underline">{{ t('auth.signIn') }}</NuxtLink>
+      <NuxtLink to="/login" class="font-medium text-accent-700 hover:underline">{{ t('auth.signIn') }}</NuxtLink>
     </p>
   </div>
 </template>

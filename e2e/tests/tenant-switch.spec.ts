@@ -20,7 +20,9 @@ test('switching workspace re-issues the session and re-scopes the UI', async ({ 
 
   // Selecting triggers a full reload - everything already fetched belongs to the
   // workspace being left.
-  await switcher.selectOption({ label: SECOND_TENANT.name })
+  // A combobox, not a native <select>: open it, then pick the option by name.
+  await switcher.click()
+  await page.getByRole('option', { name: SECOND_TENANT.name }).click()
   await page.waitForURL('**/')
 
   await expect(page.getByTestId('current-tenant')).toHaveText(SECOND_TENANT.name)

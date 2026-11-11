@@ -119,6 +119,34 @@ flag-guarded action are all shown working against the real API at once.
 | Telling the user something | `useToast()` - errors stay until dismissed |
 | A feature flag | `useFlags()` - advisory; the server still 404s a disabled route |
 
+## Components, tokens and the theme
+
+`ui-kit/app/components/ui/` is the component set (ADR-0024): `UiButton`, `UiField`, `UiInput`,
+`UiTextarea`, `UiSelect`, `UiCheckbox`, `UiRadioGroup`, `UiSwitch`, `UiStatus`, `UiTag`,
+`UiAlert`, `UiDialog`, `UiDrawer`, `UiTabs`, `UiTooltip`, `UiDropdownMenu`, `UiTable`,
+`UiPagination`, `UiCard`, `UiEmptyState`, `UiSkeleton`, `UiSpinner`, `UiProgressBar`. The
+interactive ones are Reka UI underneath - focus, keyboard and ARIA come from there; the
+table is TanStack Table. Icons are `@lucide/vue`, imported one at a time.
+
+- **A colour is a role.** `bg-accent`, `bg-canvas`, `bg-surface`, `text-fg-muted`,
+  `border-border-input`, `text-ok`, `bg-crit-soft` - never `bg-blue-600`, which no theme and
+  no tenant can change. `make tokens-check` fails on a raw palette colour and on a token the
+  platform removed. The roles are listed in `ui-kit/app/assets/css/main.css`.
+- **A status is `<UiStatus>`**: icon, colour and the status's own word, always all three.
+  A label that is not a state ("Overridden") is `<UiTag>`.
+- **A sortable table sorts on the server.** Bind `v-model:sort` and ask the API for that
+  order; `UiTable` never sorts the page it was handed.
+- **`cn()`** joins classes and lets the caller's win: `cn('px-4', props.class)`.
+
+**A project's look is `theme/`**, a Nuxt layer at the repository root that every app extends
+before `ui-kit`. The platform ships it with a README only. Put there: `assets/theme.css`
+setting the role tokens unlayered on `:root`, `public/` with fonts, logo and favicons,
+`components/BrandMark.vue` to replace the platform's mark, and a `nuxt.config.ts` that loads
+the CSS. Nothing in a platform file changes, so `make platform-update` never conflicts with it.
+
+`e2e/tests/a11y.spec.ts` runs axe-core (WCAG 2.1 AA) over sign-in, the shell, a list with a
+dialog open and the operator console, and saves each screen to `e2e/.results/screens/`.
+
 ## Permissions
 
 `auth.can('example.manage')` decides what to **render**. It never decides what is allowed -
