@@ -130,7 +130,7 @@ final class CreateUserCommand extends Command
         if ($input->getOption('seed') === true) {
             // In the tenant's scope, or every hook's "have I already done this?"
             // read returns nothing and re-running duplicates the examples.
-            $this->scope->enter([ScopeContext::TENANT => $tenantId]);
+            $this->scope->enterTenant($tenantId);
             $this->setup->onTenantCreated($tenantId);
             $this->setup->seedExamples($tenantId);
             $io->writeln('  seeded example rows');

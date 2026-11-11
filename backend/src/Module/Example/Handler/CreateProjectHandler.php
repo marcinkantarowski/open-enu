@@ -43,6 +43,8 @@ final readonly class CreateProjectHandler
         $project->setDescription($command->description);
         $project->setClientReference($command->clientReference);
         $project->setAttributes($command->attributes);
+        // Into a unit the caller cannot see is refused by UnitWriteGuard, on persist.
+        $project->placeIn($command->unitId);
 
         $this->em->persist($project);
         $this->em->flush();

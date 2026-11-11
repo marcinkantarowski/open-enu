@@ -171,7 +171,7 @@ final class SearchTest extends KernelTestCase
 
     private function asTenant(string $tenantId, callable $work): void
     {
-        $this->scope->enter([ScopeContext::TENANT => $tenantId]);
+        $this->scope->enterTenant($tenantId);
         $work();
         $this->scope->reset();
     }

@@ -74,7 +74,7 @@ final class CreateApiKeyCommand extends Command
 
         // The handler reads the tenant from the ambient scope: a key belongs to
         // exactly one workspace, and there is no session here to establish that.
-        $this->scope->enter([ScopeContext::TENANT => $tenantId]);
+        $this->scope->enterTenant($tenantId);
 
         /** @var array<string, mixed> $key */
         $key = $this->commands->dispatch(new CreateApiKey(

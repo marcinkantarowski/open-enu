@@ -39,7 +39,7 @@ trait BuildsScopeContext
         $scope = new ScopeContext($em);
 
         if ($tenantId !== null) {
-            $scope->enter([ScopeContext::TENANT => $tenantId]);
+            $scope->enterTenant($tenantId);
         }
 
         return $scope;

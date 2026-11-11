@@ -46,7 +46,7 @@ final class ProgressApiTest extends ApiTestCase
         $stranger = $this->givenATenant('beta');
         $id = $this->makeJob($stranger, total: 4, done: 4);
 
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $this->scope->enterTenant($this->tenantId);
         $this->get('/api/progress/' . $id);
 
         // Not found rather than forbidden: the scope filter removes the row, so

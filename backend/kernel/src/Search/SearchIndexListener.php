@@ -10,6 +10,7 @@ use Doctrine\ORM\Event\PostRemoveEventArgs;
 use Doctrine\ORM\Event\PostUpdateEventArgs;
 use Doctrine\ORM\Events;
 use OpenEnu\Kernel\Contract\TenantScopedInterface;
+use OpenEnu\Kernel\Contract\UnitScopedInterface;
 
 /**
  * Keeps the index in step with the database, on write.
@@ -84,7 +85,14 @@ final readonly class SearchIndexListener
             $values[$field] = \is_scalar($value) ? (string) $value : '';
         }
 
-        $this->indexer->index($entity::class, $this->identify($entity), $values, $entity->tenantId());
+        $this->indexer->index(
+            $entity::class,
+            $this->identify($entity),
+            $values,
+            $entity->tenantId(),
+            $entity instanceof UnitScopedInterface,
+            $entity instanceof UnitScopedInterface ? $entity->unitId() : null,
+        );
     }
 
     private function identify(object $entity): string

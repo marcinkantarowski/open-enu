@@ -53,6 +53,13 @@ test('a list, and a dialog open over it', async ({ page }) => {
   await audit(page, 'example-dialog')
 })
 
+test('a tree in settings', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/structure')
+  await expect(page.getByTestId('unit-new')).toBeVisible()
+  await audit(page, 'settings-structure')
+})
+
 test('the operator console', async ({ page }) => {
   await signInAsOperator(page, managerUrl, OPERATOR.email, OPERATOR.password)
   await audit(page, 'manager-tenants')

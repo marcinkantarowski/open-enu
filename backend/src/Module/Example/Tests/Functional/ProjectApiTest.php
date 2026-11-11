@@ -73,7 +73,7 @@ final class ProjectApiTest extends WebTestCase
         // Project is tenant-scoped, so without a scope every query returns
         // nothing - which is the filter working, and would make this whole suite
         // assert on empty results.
-        $scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $scope->enterTenant($this->tenantId);
 
         (new ProjectFixtures($this->em))->load($this->tenantId);
         $this->em->persist(new ApiKey($this->tenantId, 'reporting', hash('sha256', self::KEY), substr(self::KEY, 0, 12), ['example.view']));
@@ -244,7 +244,7 @@ final class ProjectApiTest extends WebTestCase
         // Logging in reset the scope the fixtures rely on.
         $scope = self::getContainer()->get(ScopeContext::class);
         \assert($scope instanceof ScopeContext);
-        $scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $scope->enterTenant($this->tenantId);
     }
 
     /** @param array<string, mixed> $payload */

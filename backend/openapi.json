@@ -517,6 +517,85 @@
         }
       }
     },
+    "/api/units": {
+      "get": {
+        "operationId": "get_unit_index",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "The whole tree, flat, parents before children; the client nests it by `parentId`."
+      },
+      "post": {
+        "operationId": "post_unit_create",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/units/{id}": {
+      "patch": {
+        "operationId": "patch_unit_rename",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/units/{id}/archive": {
+      "post": {
+        "operationId": "post_unit_archive",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/units/{id}/move": {
+      "post": {
+        "operationId": "post_unit_move",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/webhooks": {
       "get": {
         "operationId": "get_webhook_index",

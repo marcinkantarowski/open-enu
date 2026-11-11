@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Module\Identity\Security;
 
 use App\Module\Identity\Entity\User;
+use App\Module\Unit\Contract\UnitTreeInterface;
 use OpenEnu\Kernel\Doctrine\ScopeContext;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -30,6 +31,7 @@ final readonly class ScopeListener
     public function __construct(
         private Security $security,
         private ScopeContext $scope,
+        private UnitTreeInterface $units,
     ) {
     }
 
@@ -42,11 +44,28 @@ final readonly class ScopeListener
 
         $user = $this->security->getUser();
 
-        if ($user instanceof User && $user->sessionTenantId() !== null) {
-            $this->scope->enter([ScopeContext::TENANT => $user->sessionTenantId()]);
-        }
+        $tenantId = $user instanceof User ? $user->sessionTenantId() : null;
 
         // No token, or a token with no tenant: the scope stays empty, and the
         // filter returns nothing for scoped entities. Fail closed (ADR-0004).
+        if ($tenantId === null) {
+            return;
+        }
+
+        // The whole tenant first: the tree is tenant-scoped, and reading it
+        // needs the tenant in scope.
+        $this->scope->enterTenant($tenantId);
+
+        $membership = $user->membershipIn($tenantId);
+        // No active membership: no units either, rather than all of them.
+        $unitIds = $membership !== null ? $membership->unitIds() : [];
+
+        // Narrowed, with each unit's subtree, from the tree as it is NOW - so
+        // a moved unit or a narrowed membership applies to this very request,
+        // not when the token expires (ADR-0025). A membership whose units
+        // were all removed expands to nothing, and sees nothing.
+        if ($unitIds !== null) {
+            $this->scope->enterUnits($tenantId, $this->units->expand($unitIds));
+        }
     }
 }

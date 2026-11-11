@@ -7,7 +7,7 @@ namespace App\Module\Example\Entity;
 use App\Module\Example\Repository\ProjectRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use OpenEnu\Kernel\Contract\TenantScopedInterface;
+use OpenEnu\Kernel\Contract\UnitScopedInterface;
 use OpenEnu\Kernel\Contract\VersionedInterface;
 use OpenEnu\Kernel\Doctrine\Type\EncryptedTenantStringType;
 use Symfony\Component\Uid\Uuid;
@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: ProjectRepository::class)]
 #[ORM\Table(name: 'example_project')]
 #[ORM\Index(columns: ['tenant_id'], name: 'idx_example_project_tenant')]
-class Project implements VersionedInterface, TenantScopedInterface
+class Project implements VersionedInterface, UnitScopedInterface
 {
     public const string STATUS_ACTIVE = 'active';
     public const string STATUS_ARCHIVED = 'archived';
@@ -53,6 +53,10 @@ class Project implements VersionedInterface, TenantScopedInterface
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]
     private Uuid $id;
+
+    /** Unit scoping (ADR-0025): null is the whole tenant's, seen only by those who see all of it. */
+    #[ORM\Column(name: 'unit_id', type: 'uuid', nullable: true)]
+    private ?Uuid $unitId = null;
 
     #[ORM\Column(type: Types::STRING, length: 200)]
     private string $name;
@@ -111,6 +115,16 @@ class Project implements VersionedInterface, TenantScopedInterface
     public function id(): Uuid
     {
         return $this->id;
+    }
+
+    public function unitId(): ?string
+    {
+        return $this->unitId?->toRfc4122();
+    }
+
+    public function placeIn(?string $unitId): void
+    {
+        $this->unitId = $unitId !== null ? Uuid::fromString($unitId) : null;
     }
 
     public function tenantId(): string
@@ -174,6 +188,7 @@ class Project implements VersionedInterface, TenantScopedInterface
     {
         return [
             'id' => (string) $this->id,
+            'unitId' => $this->unitId(),
             'name' => $this->name,
             'description' => $this->description,
             // The encrypted column is deliberately absent from the list shape;

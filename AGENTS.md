@@ -36,8 +36,8 @@ full-text search, tenant setup hooks, GDPR export/erase, progress and feature fl
 Read [`.ai/platform/docs/platform-services.md`](.ai/platform/docs/platform-services.md) **before** adding any
 infrastructure to a module.
 
-**Eleven modules are live**: Tenant, Identity, ApiKey, Audit, Attachment, Progress,
-Manager, Settings, Notification, Webhook and the `Example` reference. A user can register, verify by email, log in, switch tenant and reset
+**Twelve modules are live**: Tenant, Identity, ApiKey, Audit, Attachment, Progress,
+Manager, Settings, Notification, Webhook, Unit and the `Example` reference. A user can register, verify by email, log in, switch tenant and reset
 their password; a machine can authenticate with a scoped API key; every write is audited
 with before/after snapshots against a real actor and tenant.
 
@@ -285,6 +285,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Adding a service, a host, or a healthcheck | `docker/compose.dev.yml` + add a target to `scripts/dev/smoke.sh` in the same change |
 | A service or route of the project's own, not the platform's | `docker/project/compose.<stage file>.yml` - `.ai/platform/docs/deployment.md` → *A project's own services and routes* |
 | Why a capability is deliberately absent | `.ai/platform/adr/` - especially 0013 (custom fields), 0014 (hierarchical orgs), 0015 (undo) |
+| Branches, departments, sites; narrowing rows to a unit | `.ai/platform/docs/tenancy.md` → *Units inside a tenant* + [ADR-0025](.ai/platform/adr/0025-units-and-tenant-defined-roles.md) |
 | Tenancy, scope, `runUnscoped()`, what breaks isolation | [`.ai/platform/docs/tenancy.md`](.ai/platform/docs/tenancy.md) |
 | Authentication, sessions, tokens, realms, permissions | [`.ai/platform/docs/auth.md`](.ai/platform/docs/auth.md) |
 | Machine clients and scoped credentials | `backend/src/Module/ApiKey/MODULE.md` |
@@ -326,6 +327,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Example - example | `backend/src/Module/Example/MODULE.md` |
 | Webhook - webhook | `backend/src/Module/Webhook/MODULE.md` |
 | Notification - notification | `backend/src/Module/Notification/MODULE.md` |
+| Unit - unit | `backend/src/Module/Unit/MODULE.md` |
 <!-- module-rows: make module inserts here, keep this comment -->
 
 ---

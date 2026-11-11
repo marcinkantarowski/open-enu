@@ -63,7 +63,7 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
         $this->em->flush();
 
         // A key carries its own tenant; there is no session to take it from.
-        $this->scope->enter([ScopeContext::TENANT => $key->tenantId()]);
+        $this->scope->enterTenant($key->tenantId());
 
         $user = new ApiKeyUser((string) $key->id(), $key->tenantId(), $key->permissions());
 

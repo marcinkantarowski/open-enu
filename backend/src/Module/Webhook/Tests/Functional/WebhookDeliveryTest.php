@@ -67,7 +67,7 @@ final class WebhookDeliveryTest extends KernelTestCase
         $this->em->flush();
 
         $this->tenantId = (string) $tenant->id();
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $this->scope->enterTenant($this->tenantId);
     }
 
     public function testASubscribedEventBecomesASignedRequestTheReceiverCanVerify(): void

@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use OpenEnu\Kernel\Contract\TenantScopedInterface;
+use OpenEnu\Kernel\Contract\UnitScopedInterface;
 use OpenEnu\Kernel\Doctrine\ScopeContext;
 use OpenEnu\Kernel\Doctrine\ScopeFilter;
 
@@ -92,6 +93,40 @@ final class ScopeFilterTest extends TestCase
             $filter->addFilterConstraint($this->metadataFor(UnscopedFixture::class), 't'),
         );
     }
+    public function testAUnitScopedEntityIsNarrowedToTheUnitsInScope(): void
+    {
+        $filter = $this->filter();
+        $filter->setScope([ScopeContext::TENANT => 't1', ScopeContext::UNITS => 'u1,u2']);
+
+        self::assertSame(
+            "t.tenant_id = 't1' AND t.unit_id IN ('u1', 'u2')",
+            $filter->addFilterConstraint($this->metadataFor(UnitScopedFixture::class), 't'),
+        );
+    }
+
+    public function testEveryUnitIsSaidExplicitly(): void
+    {
+        $filter = $this->filter();
+        $filter->setScope([ScopeContext::TENANT => 't1', ScopeContext::UNITS => ScopeContext::ALL_UNITS]);
+
+        self::assertSame(
+            "t.tenant_id = 't1'",
+            $filter->addFilterConstraint($this->metadataFor(UnitScopedFixture::class), 't'),
+        );
+    }
+
+    public function testATenantWithNoUnitSetMatchesNoUnitScopedRow(): void
+    {
+        // Entering a tenant without saying which units is a forgotten scope, not
+        // "all of them" - the same fail-closed rule as a missing tenant.
+        foreach ([[ScopeContext::TENANT => 't1'], [ScopeContext::TENANT => 't1', ScopeContext::UNITS => '']] as $scope) {
+            $filter = $this->filter();
+            $filter->setScope($scope);
+
+            self::assertSame('1 = 0', $filter->addFilterConstraint($this->metadataFor(UnitScopedFixture::class), 't'));
+            self::assertSame("t.tenant_id = 't1'", $filter->addFilterConstraint($this->metadataFor(ScopedFixture::class), 't'));
+        }
+    }
 }
 
 final class ScopedFixture implements TenantScopedInterface
@@ -104,4 +139,21 @@ final class ScopedFixture implements TenantScopedInterface
 
 final class UnscopedFixture
 {
+}
+
+final class UnitScopedFixture implements UnitScopedInterface
+{
+    public function __construct(private ?string $unit = 'u1')
+    {
+    }
+
+    public function tenantId(): string
+    {
+        return 't1';
+    }
+
+    public function unitId(): ?string
+    {
+        return $this->unit;
+    }
 }

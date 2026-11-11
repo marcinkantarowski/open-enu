@@ -7,6 +7,7 @@ namespace OpenEnu\Kernel\Doctrine;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query\Filter\SQLFilter;
 use OpenEnu\Kernel\Contract\TenantScopedInterface;
+use OpenEnu\Kernel\Contract\UnitScopedInterface;
 
 /**
  * Narrows every query on a scoped entity to the current tenant.
@@ -17,7 +18,8 @@ use OpenEnu\Kernel\Contract\TenantScopedInterface;
  * when the scope is unknown - means those same mistakes return *every tenant's
  * data*, and they look identical in a code review (ADR-0004).
  *
- * Written for N dimensions. Today the map has one entry.
+ * Written for N dimensions (ADR-0014): the tenant, and the units inside it
+ * (ADR-0025). A unit dimension holds a SET - `IN (...)` - or ALL_UNITS.
  *
  * Three things this filter cannot see, closed elsewhere:
  *   • native SQL and DBAL - RawSqlRule confines it to Repository/ with #[Unscoped]
@@ -35,6 +37,7 @@ final class ScopeFilter extends SQLFilter
      */
     private const array DIMENSIONS = [
         TenantScopedInterface::class => ScopeContext::TENANT,
+        UnitScopedInterface::class => ScopeContext::UNITS,
     ];
 
     /** @var array<string, string>|null */
@@ -70,11 +73,25 @@ final class ScopeFilter extends SQLFilter
                 return '1 = 0';
             }
 
+            if ($column !== ScopeContext::UNITS) {
+                $predicates[] = sprintf('%s.%s = %s', $targetTableAlias, $column, $this->getConnection()->quote($value));
+                continue;
+            }
+
+            if ($value === ScopeContext::ALL_UNITS) {
+                // The whole tenant, said explicitly - including rows with no unit.
+                continue;
+            }
+
+            if ($value === '') {
+                return '1 = 0';
+            }
+
             $predicates[] = sprintf(
-                '%s.%s = %s',
+                '%s.%s IN (%s)',
                 $targetTableAlias,
                 $column,
-                $this->getConnection()->quote($value),
+                implode(', ', array_map($this->getConnection()->quote(...), explode(',', $value))),
             );
         }
 

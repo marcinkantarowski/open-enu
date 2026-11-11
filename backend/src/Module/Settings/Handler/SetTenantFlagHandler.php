@@ -38,7 +38,7 @@ final readonly class SetTenantFlagHandler
         // write happens in that tenant's scope rather than the caller's - which
         // is also what makes the override row carry the right tenant_id.
         $previous = $this->scope->all();
-        $this->scope->enter([ScopeContext::TENANT => $command->tenantId]);
+        $this->scope->enterTenant($command->tenantId);
 
         try {
             $override = $this->overrides->forSetting($setting);
