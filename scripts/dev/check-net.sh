@@ -52,6 +52,10 @@ expect "an undelegated name has no zone"       ""          "$(dns_zone_of nowher
 # that turned a dual-stack VPS into five "wrong" A records.
 expect "a host name resolves to its IPv4 address" 127.0.0.1 "$(ipv4_of localhost)"
 
+# ── ssh-keyscan: the key, not the banner OpenSSH 10 prints before it ────────
+scan="$(printf '# github.com:22 SSH-2.0-babeld\ngithub.com ssh-ed25519 AAAAC3Nza\n' | host_key_line)"
+expect "a keyscan banner is skipped, the key line kept" "github.com ssh-ed25519 AAAAC3Nza" "$scan"
+
 # ── ports on this machine ───────────────────────────────────────────────────
 # A port nothing listens on: the kernel answers with a reset. Picked by asking
 # for one and closing it, so nothing else on the host can be holding it.

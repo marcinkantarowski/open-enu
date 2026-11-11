@@ -63,3 +63,12 @@ tcp_probe() {
     echo filtered
   fi
 }
+
+# host_key_line < ssh-keyscan output -> the first key line, or nothing
+#
+# ssh-keyscan prints a `# host:22 SSH-2.0-...` banner before the keys, and
+# OpenSSH 10 prints it on stdout where older versions used stderr - so
+# `2>/dev/null | head -1` takes the banner for the key and pins nothing.
+host_key_line() {
+  grep -m1 -E '^[^ #]+ (ssh-|ecdsa-)'
+}
