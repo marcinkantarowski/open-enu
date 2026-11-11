@@ -41,7 +41,7 @@ onMounted(async () => {
 
 <template>
   <div class="flex min-h-screen items-center justify-center p-6">
-    <UiAlert v-if="failed" tone="danger">{{ t('app.impersonate.failed') }}</UiAlert>
-    <UiSpinner v-else class="size-6 text-brand-600" />
+    <UiAlert v-if="failed" tone="crit">{{ t('app.impersonate.failed') }}</UiAlert>
+    <UiSpinner v-else class="size-6 text-accent-600" />
   </div>
 </template>

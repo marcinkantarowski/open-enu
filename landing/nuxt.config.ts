@@ -10,6 +10,18 @@
 //  the i18n catalogue like every other user-facing string.
 // =============================================================================
 
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+/**
+ * The project's look, when it has one: `theme/` at the repository root (ADR-0024).
+ *
+ * Extended FIRST, so a component there - `BrandMark.vue` - replaces the platform's,
+ * and its `public/` serves the fonts, the favicons and the logo. The platform ships
+ * the directory with a README only, so an update never touches what a project put in it.
+ */
+const themeLayer = existsSync(fileURLToPath(new URL('../theme/nuxt.config.ts', import.meta.url))) ? ['../theme'] : []
+
 export default defineNuxtConfig({
   /**
    * The marker the smoke test looks for - a ROLE, never the project name, which
@@ -25,7 +37,7 @@ export default defineNuxtConfig({
   // Pinned, as in the other two apps: layer configs merge into this one.
   srcDir: 'app',
 
-  extends: ['@open-enu/ui-kit'],
+  extends: [...themeLayer, '@open-enu/ui-kit'],
 
   modules: ['@nuxt/content'],
 

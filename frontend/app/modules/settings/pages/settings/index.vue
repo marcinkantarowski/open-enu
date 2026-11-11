@@ -65,11 +65,11 @@ async function save(setting: Setting, value: unknown) {
           </div>
 
           <div class="flex shrink-0 items-center gap-2">
-            <UiBadge v-if="setting.overridden" tone="brand">{{ t('settings.overridden') }}</UiBadge>
+            <UiTag v-if="setting.overridden" tone="accent">{{ t('settings.overridden') }}</UiTag>
 
-            <UiBadge v-if="!setting.tenantEditable" tone="neutral">
+            <UiTag v-if="!setting.tenantEditable">
               {{ t('settings.platformManaged') }}
-            </UiBadge>
+            </UiTag>
 
             <input
               v-else-if="setting.type === 'bool'"

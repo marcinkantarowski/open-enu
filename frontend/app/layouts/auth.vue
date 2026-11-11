@@ -7,13 +7,13 @@ const { t } = useI18n()
   <!-- Two halves from `lg` up: what this is on the left, what to do on the right.
        Below that the left half is decoration and goes, so a phone gets the form. -->
   <div class="grid min-h-screen lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-    <aside class="relative hidden overflow-hidden bg-brand-800 lg:flex lg:flex-col lg:justify-between lg:p-12">
+    <aside class="relative hidden overflow-hidden bg-accent-800 lg:flex lg:flex-col lg:justify-between lg:p-12">
       <div
-        class="pointer-events-none absolute inset-0 bg-linear-to-br from-brand-600 via-brand-700 to-brand-900"
+        class="pointer-events-none absolute inset-0 bg-linear-to-br from-accent-600 via-accent-700 to-accent-900"
         aria-hidden="true"
       />
       <div class="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
-      <div class="pointer-events-none absolute -bottom-32 -left-16 size-112 rounded-full bg-brand-400/20 blur-3xl" aria-hidden="true" />
+      <div class="pointer-events-none absolute -bottom-32 -left-16 size-112 rounded-full bg-accent-400/20 blur-3xl" aria-hidden="true" />
 
       <BrandMark class="relative" :name="String(cfg.appName)" tone="inverse" />
 

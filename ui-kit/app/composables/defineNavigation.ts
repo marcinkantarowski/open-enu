@@ -1,3 +1,5 @@
+import type { Component } from 'vue'
+
 /**
  * A module contributes menu entries by exporting these from its layer.
  *
@@ -9,7 +11,8 @@ export interface NavigationItem {
   /** Translation key, never a literal - raw strings fail lint (ADR-0020). */
   label: string
   to: string
-  icon?: string
+  /** A Lucide icon component, imported one by one: `import { Wallet } from '@lucide/vue'`. */
+  icon?: Component
   /** Hidden unless the session grants it. The server still enforces it. */
   permission?: string
   order?: number

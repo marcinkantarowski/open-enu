@@ -59,7 +59,7 @@ async function submit() {
         />
       </UiField>
 
-      <UiAlert v-if="error" tone="danger" data-testid="login-error">{{ error }}</UiAlert>
+      <UiAlert v-if="error" tone="crit" data-testid="login-error">{{ error }}</UiAlert>
 
       <UiButton type="submit" variant="primary" size="lg" :loading="busy" data-testid="login-submit">
         {{ busy ? t('auth.signingIn') : t('auth.signIn') }}

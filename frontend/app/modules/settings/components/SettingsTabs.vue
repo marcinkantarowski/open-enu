@@ -13,7 +13,7 @@ const { t } = useI18n()
         :key="tab.to"
         :to="tab.to"
         class="-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-fg-muted hover:text-fg"
-        active-class="border-brand-600 text-brand-700"
+        active-class="border-accent-600 text-accent-700"
       >
         {{ tab.label }}
       </NuxtLink>

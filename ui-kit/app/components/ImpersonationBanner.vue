@@ -26,7 +26,7 @@ function exit() {
 <template>
   <div
     v-if="auth.impersonating"
-    class="flex flex-wrap items-center justify-between gap-3 bg-warning px-4 py-2 text-sm text-black"
+    class="flex flex-wrap items-center justify-between gap-3 bg-warn px-4 py-2 text-sm text-black"
     role="alert"
     data-testid="impersonation-banner"
   >

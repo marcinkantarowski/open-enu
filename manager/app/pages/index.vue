@@ -31,10 +31,10 @@ const { data, pending } = await useAsyncData(
 
 const pages = computed(() => Math.max(1, Math.ceil((data.value?.meta.total ?? 0) / (data.value?.meta.size ?? 25))))
 
-const tones: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
-  active: 'success',
-  pending: 'warning',
-  suspended: 'danger',
+const tones: Record<string, 'ok' | 'warn' | 'crit' | 'neutral'> = {
+  active: 'ok',
+  pending: 'warn',
+  suspended: 'crit',
 }
 </script>
 
@@ -58,13 +58,13 @@ const tones: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
         :empty-title="t('manager.noTenants')"
       >
         <template #cell-name="{ row }">
-          <NuxtLink :to="`/tenants/${row.id}`" class="text-brand-700 hover:underline" data-testid="tenant-link">
+          <NuxtLink :to="`/tenants/${row.id}`" class="text-accent-700 hover:underline" data-testid="tenant-link">
             {{ row.name }}
           </NuxtLink>
         </template>
 
         <template #cell-status="{ row }">
-          <UiBadge :tone="tones[String(row.status)] ?? 'neutral'">{{ row.status }}</UiBadge>
+          <UiStatus :tone="tones[String(row.status)] ?? 'neutral'">{{ row.status }}</UiStatus>
         </template>
 
       </UiTable>

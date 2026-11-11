@@ -58,5 +58,13 @@
   "progress.failed": "Failed: {reason}",
 
   "realtime.connected": "Live",
-  "realtime.disconnected": "Reconnecting…"
+  "realtime.disconnected": "Reconnecting…",
+
+  "common.required": "required",
+  "table.sortBy": "Sort by {column}",
+  "table.pagination": "Pages",
+  "table.previous": "Previous page",
+  "table.next": "Next page",
+  "shell.skipToContent": "Skip to content",
+  "shell.dashboard": "Dashboard"
 }

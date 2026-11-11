@@ -15,6 +15,7 @@ const props = defineProps<{
   required?: boolean
 }>()
 
+const { t } = useI18n()
 const id = useId()
 const describedBy = computed(() => {
   const ids = []
@@ -28,12 +29,13 @@ const describedBy = computed(() => {
   <div class="flex flex-col gap-1.5">
     <label :for="id" class="text-sm font-medium text-fg">
       {{ props.label }}
-      <span v-if="props.required" class="text-danger" aria-hidden="true">*</span>
+      <span v-if="props.required" class="text-crit" aria-hidden="true">*</span>
+      <span v-if="props.required" class="sr-only">({{ t('common.required') }})</span>
     </label>
 
     <slot :id="id" :described-by="describedBy" :invalid="Boolean(props.error)" />
 
-    <p v-if="props.error" :id="`${id}-error`" class="text-xs text-danger">{{ props.error }}</p>
+    <p v-if="props.error" :id="`${id}-error`" class="text-xs font-medium text-crit">{{ props.error }}</p>
     <p v-else-if="props.hint" :id="`${id}-hint`" class="text-xs text-fg-muted">{{ props.hint }}</p>
   </div>
 </template>

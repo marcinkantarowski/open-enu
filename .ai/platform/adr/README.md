@@ -32,5 +32,6 @@ accepted one; supersede by reference.
 | [0021](0021-search-tsvector-only.md) | Search interface with one Postgres driver |
 | [0022](0022-exact-origin-cors.md) | CORS is an exact-origin allowlist, never a pattern |
 | [0023](0023-platform-and-project-knowledge-are-separate-trees.md) | The platform's knowledge lives in `.ai/platform/`; the rest of `.ai/` is the project's |
+| [0024](0024-ui-components-on-reka-styled-by-role-tokens.md) | UI components on Reka UI, styled by role tokens; a project's look is its `theme/` layer |
 
 **Bold** records explain a deliberate absence. If something seems missing, look there first.

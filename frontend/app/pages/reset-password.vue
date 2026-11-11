@@ -32,7 +32,7 @@ async function submit() {
     <AuthHeading :title="t('app.reset.title')" :subtitle="t('app.reset.subtitle')" />
 
     <form class="flex flex-col gap-5" @submit.prevent="submit">
-      <UiAlert v-if="!token" tone="warning">{{ t('app.reset.missingToken') }}</UiAlert>
+      <UiAlert v-if="!token" tone="warn">{{ t('app.reset.missingToken') }}</UiAlert>
 
       <UiField v-slot="field" :label="t('app.reset.newPassword')" :hint="t('app.register.passwordHint')">
         <UiInput
@@ -44,7 +44,7 @@ async function submit() {
         />
       </UiField>
 
-      <UiAlert v-if="error" tone="danger">{{ error }}</UiAlert>
+      <UiAlert v-if="error" tone="crit">{{ error }}</UiAlert>
 
       <UiButton type="submit" variant="primary" size="lg" :loading="busy" :disabled="!token">
         {{ t('app.reset.submit') }}
@@ -52,7 +52,7 @@ async function submit() {
     </form>
 
     <p class="mt-8 text-center text-sm">
-      <NuxtLink to="/login" class="font-medium text-brand-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
+      <NuxtLink to="/login" class="font-medium text-accent-700 hover:underline">{{ t('app.auth.backToLogin') }}</NuxtLink>
     </p>
   </div>
 </template>

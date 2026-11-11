@@ -36,14 +36,14 @@
 .prose-site li + li { margin-top: 0.375rem; }
 
 .prose-site a {
-  color: var(--color-brand-600);
+  color: var(--color-accent-600);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .prose-site code {
   border-radius: 0.25rem;
-  background: var(--color-surface-sunken);
+  background: var(--color-surface-subtle);
   padding: 0.125rem 0.375rem;
   font-family: var(--font-mono);
   font-size: 0.875em;
@@ -52,7 +52,7 @@
 .prose-site pre {
   overflow-x: auto;
   border-radius: var(--radius-card);
-  background: var(--color-surface-sunken);
+  background: var(--color-surface-subtle);
   padding: 1rem;
 }
 

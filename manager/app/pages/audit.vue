@@ -69,13 +69,13 @@ const { data, pending, refresh } = await useAsyncData(
           <span class="font-mono text-xs">{{ row.actorId ?? '-' }}</span>
           <!-- The distinction the tenant-facing view cannot make: which of these
                changes an operator made while wearing someone else's face. -->
-          <UiBadge v-if="row.onBehalfOfId" tone="warning" class="ml-1">{{ t('manager.impersonated') }}</UiBadge>
+          <UiStatus v-if="row.onBehalfOfId" tone="warn" class="ml-1">{{ t('manager.impersonated') }}</UiStatus>
         </template>
 
         <template #cell-succeeded="{ row }">
-          <UiBadge :tone="row.succeeded ? 'success' : 'danger'">
+          <UiStatus :tone="row.succeeded ? 'ok' : 'crit'">
             {{ row.succeeded ? t('manager.outcomeOk') : t('manager.outcomeFailed') }}
-          </UiBadge>
+          </UiStatus>
         </template>
 
         <template #cell-requestId="{ row }">

@@ -92,9 +92,9 @@ async function override(setting: Setting, value: unknown) {
         </template>
 
         <template #cell-tenantEditable="{ row }">
-          <UiBadge :tone="row.tenantEditable ? 'neutral' : 'warning'">
+          <UiStatus :tone="row.tenantEditable ? 'neutral' : 'warn'">
             {{ row.tenantEditable ? t('common.yes') : t('manager.operatorOnly') }}
-          </UiBadge>
+          </UiStatus>
         </template>
 
         <template #cell-actions="{ row }">

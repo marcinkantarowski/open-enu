@@ -217,7 +217,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock backend/phpunit.dist.xml AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev scripts/lib .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock backend/phpunit.dist.xml AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev scripts/lib ui-kit/app .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -377,6 +377,14 @@ fails_when "net-check catches a server address that is not IPv4" \
 fails_when "net-check catches a host key read from the keyscan banner" \
   "$WORK/scripts/dev/check-net.sh" \
   "sed_inplace \"s/grep -m1 -E '\\^\\[\\^ #\\]+ (ssh-|ecdsa-)'/head -1/\" '$WORK/scripts/lib/net.sh'"
+
+fails_when "tokens-check catches a raw palette colour" \
+  "$WORK/scripts/dev/check-tokens.sh" \
+  "sed_inplace 's/bg-surface shadow-card/bg-slate-50 shadow-card/' '$WORK/ui-kit/app/components/ui/Card.vue'"
+
+fails_when "tokens-check catches a token the platform removed" \
+  "$WORK/scripts/dev/check-tokens.sh" \
+  "sed_inplace 's/bg-surface shadow-card/bg-surface-muted shadow-card/' '$WORK/ui-kit/app/components/ui/Card.vue'"
 
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.

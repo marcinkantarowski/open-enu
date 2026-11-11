@@ -11,11 +11,11 @@ const { t } = useI18n()
       v-for="plan in plans"
       :key="plan.name"
       class="flex flex-col rounded-card border bg-surface p-8 shadow-sm"
-      :class="plan.highlighted ? 'border-brand-500 ring-2 ring-brand-500' : 'border-border'"
+      :class="plan.highlighted ? 'border-accent-500 ring-2 ring-accent-500' : 'border-border'"
     >
       <div class="flex items-center justify-between gap-2">
         <h2 class="text-lg font-semibold text-fg">{{ plan.name }}</h2>
-        <span v-if="plan.highlighted" class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+        <span v-if="plan.highlighted" class="rounded-full bg-accent-50 px-2.5 py-0.5 text-xs font-semibold text-accent-700">
           {{ t('site.pricing.popular') }}
         </span>
       </div>
@@ -26,14 +26,14 @@ const { t } = useI18n()
 
       <ul class="mt-6 flex-1 space-y-2">
         <li v-for="feature in plan.features" :key="feature" class="flex gap-2 text-sm text-fg-muted">
-          <span class="text-success" aria-hidden="true">✓</span>{{ feature }}
+          <span class="text-ok" aria-hidden="true">✓</span>{{ feature }}
         </li>
       </ul>
 
       <SiteLink
         :to="plan.cta.to"
         class="mt-8 rounded-lg px-4 py-2.5 text-center text-sm font-semibold"
-        :class="plan.highlighted ? 'bg-brand-600 text-white hover:bg-brand-700' : 'border border-border text-fg hover:bg-surface-sunken'"
+        :class="plan.highlighted ? 'bg-accent-600 text-white hover:bg-accent-700' : 'border border-border text-fg hover:bg-surface-subtle'"
       >
         {{ plan.cta.label }}
       </SiteLink>

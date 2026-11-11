@@ -11,6 +11,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@lucide/vue": "^1.72.0",
     "@open-enu/ui-kit": "*",
     "nuxt": "^4.0.0",
     "vue": "^3.5.43",

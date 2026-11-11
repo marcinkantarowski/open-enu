@@ -60,12 +60,12 @@ async function submit() {
       </UiField>
 
       <div class="-mt-2 text-right text-sm">
-        <NuxtLink to="/forgot-password" class="font-medium text-brand-700 hover:underline">
+        <NuxtLink to="/forgot-password" class="font-medium text-accent-700 hover:underline">
           {{ t('auth.forgotPassword') }}
         </NuxtLink>
       </div>
 
-      <UiAlert v-if="error" tone="danger" data-testid="login-error">{{ error }}</UiAlert>
+      <UiAlert v-if="error" tone="crit" data-testid="login-error">{{ error }}</UiAlert>
 
       <UiButton type="submit" variant="primary" size="lg" :loading="busy" data-testid="login-submit">
         {{ busy ? t('auth.signingIn') : t('auth.signIn') }}
@@ -77,7 +77,7 @@ async function submit() {
 
     <p class="mt-8 text-center text-sm text-fg-muted">
       {{ t('app.login.noAccount') }}
-      <NuxtLink to="/register" class="font-medium text-brand-700 hover:underline">{{ t('app.register') }}</NuxtLink>
+      <NuxtLink to="/register" class="font-medium text-accent-700 hover:underline">{{ t('app.register') }}</NuxtLink>
     </p>
   </div>
 </template>
