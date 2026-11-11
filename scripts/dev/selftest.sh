@@ -217,7 +217,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock backend/phpunit.dist.xml AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock backend/phpunit.dist.xml AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev scripts/lib .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -361,6 +361,18 @@ fails_when "symfony-check catches a component with no conflict fence" \
 fails_when "test-order-check catches a test order that puts the last failures first" \
   "$WORK/scripts/dev/check-test-order.sh" \
   "sed_inplace 's/executionOrder=\"depends\"/executionOrder=\"depends,defects\"/' '$WORK/backend/phpunit.dist.xml'"
+
+fails_when "net-check catches a preflight that calls an empty server firewalled" \
+  "$WORK/scripts/dev/check-net.sh" \
+  "sed_inplace 's/echo refused/echo filtered/' '$WORK/scripts/lib/net.sh'"
+
+fails_when "net-check catches a zone lookup that stops at the staging name" \
+  "$WORK/scripts/dev/check-net.sh" \
+  "sed_inplace 's/name=\"\${name#\*.}\"/return 1/' '$WORK/scripts/lib/net.sh'"
+
+fails_when "net-check catches a server address that is not IPv4" \
+  "$WORK/scripts/dev/check-net.sh" \
+  "sed_inplace 's/getent ahostsv4/getent hosts/' '$WORK/scripts/lib/net.sh'"
 
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.

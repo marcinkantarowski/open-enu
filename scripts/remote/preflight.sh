@@ -15,6 +15,7 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/log.sh"
+. "$HERE/../lib/net.sh"
 
 HOST="${1:-}"; DOMAIN="${2:-}"; REPO="${3:-}"; REF="${4:-main}"
 [ -n "$HOST" ] && [ -n "$DOMAIN" ] || die \
@@ -31,7 +32,7 @@ HOSTPART="${HOST#*@}"
 if [[ "$HOSTPART" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   TARGET="$HOSTPART"
 else
-  TARGET="$(getent hosts "$HOSTPART" 2>/dev/null | awk '{print $1; exit}')"
+  TARGET="$(ipv4_of "$HOSTPART")"
   [ -n "$TARGET" ] || die "cannot resolve $HOSTPART to an IP" \
     "preflight compares DNS against the server's address, so it needs one"
 fi
@@ -59,17 +60,22 @@ fi
 
 # ── 5. the ports ACME and the apps need ─────────────────────────────────────
 log_step "Ports on $TARGET"
+# `refused` is the answer a fresh server gives: the packet got through and
+# nothing is listening yet. Only `filtered` - no answer at all - is a firewall.
 for port in 80 443; do
-  # bash's /dev/tcp: no netcat dependency, and it is the same TCP connect.
-  if timeout 5 bash -c "exec 3<>/dev/tcp/$TARGET/$port" 2>/dev/null; then
-    log_ok "$port open"
-  elif [ "$port" = 80 ]; then
-    die "port 80 is closed on $TARGET" \
-      "Let's Encrypt HTTP-01 validation connects here - check ufw and the cloud security group" \
-      "this fails at certificate issuance, long after the stack looks up"
-  else
-    warn "port 443 is closed on $TARGET - expected before the first deploy, a problem after it"
-  fi
+  state="$(tcp_probe "$TARGET" "$port")"
+  case "$state:$port" in
+    open:*)
+      log_ok "$port open" ;;
+    refused:*)
+      log_ok "$port reachable - nothing listens yet, which is right before the first deploy" ;;
+    filtered:80)
+      die "port 80 is filtered on $TARGET - nothing answered" \
+        "Let's Encrypt HTTP-01 validation connects here - check ufw and the cloud security group" \
+        "this fails at certificate issuance, long after the stack looks up" ;;
+    filtered:*)
+      warn "port $port is filtered on $TARGET - check ufw and the cloud security group" ;;
+  esac
 done
 
 # ── 6. ssh ──────────────────────────────────────────────────────────────────

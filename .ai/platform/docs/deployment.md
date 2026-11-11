@@ -114,6 +114,16 @@ When DNS is wrong, `dns-check` writes `.out/dns/${DOMAIN}/`:
   `CF_API_TOKEN` with `Zone:DNS:Edit` on that one zone.
 - **`records.json`** - the same desired state for Terraform, Route 53 or your own tooling.
 
+**A staging name is not a zone.** `stg.example.com` lives in the zone `example.com`, so
+preflight finds the nameservers, the CAA record and the Cloudflare zone by walking up from
+the name (`dns_zone_of` in `scripts/lib/net.sh`). Add the staging records inside the apex
+zone; there is nothing to delegate.
+
+**Port 80 refused is a pass; port 80 silent is a failure.** On a fresh server nothing
+listens yet, so the kernel answers with a reset: the firewall let the packet through, which
+is all HTTP-01 needs. Only no answer at all - a firewall or a cloud security group dropping
+the packet - stops preflight. `make net-check` proves both distinctions offline.
+
 **Leave Cloudflare's proxy off.** It breaks Mercure SSE and hides the origin from HTTP-01
 validation. Preflight warns when `api.` (which serves Mercure) resolves into a Cloudflare range.
 

@@ -21,6 +21,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 . "$HERE/../lib/log.sh"
+. "$HERE/../lib/net.sh"
 
 DOMAIN="${1:-}"
 TARGET="${2:-}"
@@ -44,7 +45,7 @@ done
 # format is how a preflight ends up checking the wrong address.
 TARGET="${TARGET#*@}"
 if ! [[ "$TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  resolved="$(getent hosts "$TARGET" 2>/dev/null | awk '{print $1; exit}')"
+  resolved="$(ipv4_of "$TARGET")"
   [ -n "$resolved" ] || die "cannot resolve $TARGET to an IP" \
     "DNS is compared against the server's address, so one is needed"
   TARGET="$resolved"
@@ -57,11 +58,15 @@ SUBDOMAINS=(www app manager api)
 # ── the authoritative nameserver ────────────────────────────────────────────
 # Asked once and reused: every subsequent lookup goes straight to the source of
 # truth rather than through whatever this machine happens to cache.
-NS="$(dig +short NS "$DOMAIN" 2>/dev/null | head -1)"
+# Asked of the ZONE, not of DOMAIN: a staging stack on `stg.example.com` lives
+# in the zone `example.com`, and its own name has no nameservers to ask.
+ZONE="$(dns_zone_of "$DOMAIN")"
+NS=""
+[ -n "$ZONE" ] && NS="$(dig +short NS "$ZONE" 2>/dev/null | head -1)"
 if [ -z "$NS" ]; then
   # No NS at all usually means the domain is not delegated yet - a different
   # problem from a missing record, and worth saying so plainly.
-  log_fail "no nameservers found for $DOMAIN" \
+  log_fail "no nameservers found for $DOMAIN or any zone above it" \
     "the domain is not delegated yet, or the name is wrong" \
     "check it is registered and its nameservers are set at the registrar"
   exit 1
@@ -89,7 +94,7 @@ for _ in "${WANT_NAME[@]}"; do WANT_TYPE+=("A"); done
 declare -a ROWS=()
 missing=0; wrong=0; ok=0
 
-log_step "DNS for $DOMAIN → $TARGET   (mode: $MODE, authoritative: $NS)"
+log_step "DNS for $DOMAIN → $TARGET   (zone: $ZONE, mode: $MODE, authoritative: $NS)"
 
 for i in "${!WANT_NAME[@]}"; do
   name="${WANT_NAME[$i]}"
@@ -113,7 +118,17 @@ done
 # ── CAA: the one that fails silently ────────────────────────────────────────
 # A CAA record that names some other CA does not warn anybody. Issuance simply
 # never succeeds, and the error surfaces hours later inside Traefik's ACME log.
-caa="$(dig +short "@${NS}" CAA "$DOMAIN" 2>/dev/null)"
+#
+# A CA reads the closest CAA set walking up from the name to the zone apex
+# (RFC 8659), so a record on the apex governs every subdomain beneath it. Read
+# it the same way, or a blocking CAA on `example.com` passes for `stg.`.
+caa=""
+caa_at="$DOMAIN"
+while :; do
+  caa="$(dig +short "@${NS}" CAA "$caa_at" 2>/dev/null)"
+  if [ -n "$caa" ] || [ "$caa_at" = "$ZONE" ] || [[ "$caa_at" != *.* ]]; then break; fi
+  caa_at="${caa_at#*.}"
+done
 caa_blocks=0
 if [ -n "$caa" ]; then
   if grep -qi 'letsencrypt\.org' <<<"$caa"; then
@@ -154,7 +169,7 @@ fi
 # ── remediation, in three formats ───────────────────────────────────────────
 # A diagnosis you have to retype into a DNS panel is half a tool.
 mkdir -p "$OUT"
-"$HERE/dns-emit.sh" "$DOMAIN" "$TARGET" "$TTL" "$MODE" "$OUT" "${ROWS[@]}"
+DNS_ZONE="$ZONE" "$HERE/dns-emit.sh" "$DOMAIN" "$TARGET" "$TTL" "$MODE" "$OUT" "${ROWS[@]}"
 
 # Everything from here to stderr, so the diagnosis and its remedy stay in one
 # stream and cannot interleave when the caller pipes stdout somewhere.
