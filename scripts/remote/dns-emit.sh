@@ -16,6 +16,9 @@
 set -uo pipefail
 
 DOMAIN="$1"; TARGET="$2"; TTL="$3"; MODE="$4"; OUT="$5"; shift 5
+# The zone the records live in. Equal to DOMAIN for an apex; for `stg.example.com`
+# it is `example.com`, and that is the zone Cloudflare knows the records by.
+ZONE="${DNS_ZONE:-$DOMAIN}"
 ROWS=("$@")
 TODAY="$(date +%F)"
 
@@ -86,18 +89,19 @@ set -uo pipefail
 
 API="https://api.cloudflare.com/client/v4"
 DOMAIN="$DOMAIN"
+ZONE="$ZONE"
 TARGET="$TARGET"
 TTL=$TTL
 APPLY=0
 [ "\${1:-}" = "--apply" ] && APPLY=1
 
-: "\${CF_API_TOKEN:?set CF_API_TOKEN - create one at https://dash.cloudflare.com/profile/api-tokens with Zone:DNS:Edit on $DOMAIN}"
+: "\${CF_API_TOKEN:?set CF_API_TOKEN - create one at https://dash.cloudflare.com/profile/api-tokens with Zone:DNS:Edit on $ZONE}"
 
 cf() { curl -s -H "Authorization: Bearer \$CF_API_TOKEN" -H 'Content-Type: application/json' "\$@"; }
 
-zone_id="\$(cf "\$API/zones?name=\$DOMAIN" | python3 -c 'import json,sys; z=json.load(sys.stdin)["result"]; print(z[0]["id"] if z else "")')"
+zone_id="\$(cf "\$API/zones?name=\$ZONE" | python3 -c 'import json,sys; z=json.load(sys.stdin)["result"]; print(z[0]["id"] if z else "")')"
 if [ -z "\$zone_id" ]; then
-  echo "  ✗ no Cloudflare zone for \$DOMAIN, or the token cannot see it (needs Zone:DNS:Edit)" >&2
+  echo "  ✗ no Cloudflare zone \$ZONE for \$DOMAIN, or the token cannot see it (needs Zone:DNS:Edit)" >&2
   exit 1
 fi
 

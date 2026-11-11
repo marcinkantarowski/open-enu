@@ -117,6 +117,10 @@ seo-check: ## Landing pages: titles, descriptions, headings, alt text, URL-safe 
 test-order-check: ## PHPUnit runs the tests in one fixed order, never the last failures first
 	@$(DEV)/check-test-order.sh
 
+.PHONY: net-check
+net-check: ## The probes preflight builds on - zone of a staging name, refused vs filtered port - proved offline
+	@$(DEV)/check-net.sh
+
 .PHONY: symfony-check
 symfony-check: ## Every Symfony component on the framework's line, fenced from the next major
 	@$(DEV)/check-symfony-line.sh
@@ -420,7 +424,7 @@ types: openapi ## Regenerate the frontend types from the spec
 	@echo "  ✓ ui-kit/types/api.d.ts"
 
 .PHONY: arch
-arch: stan test-kernel test-arch schema-check openapi-check module-check docs-check i18n-check typography-check seo-check symfony-check test-order-check shell-check prod-check route-coverage inventory-check dead-code ## Every architectural guardrail
+arch: stan test-kernel test-arch schema-check openapi-check module-check docs-check i18n-check typography-check seo-check symfony-check test-order-check net-check shell-check prod-check route-coverage inventory-check dead-code ## Every architectural guardrail
 
 .PHONY: check
 check: ## The inner loop - run after every edit (target: under 60s)
