@@ -124,6 +124,39 @@ Encrypted columns are never queryable: the ciphertext differs on every write. Ad
 
 ---
 
+## Units inside a tenant
+
+A tenant can be split into a tree of units - branches, departments, sites - and a row can
+belong to one ([ADR-0025](../adr/0025-units-and-tenant-defined-roles.md)). It is the same
+filter with a second dimension, and the same fail-closed rule.
+
+| | |
+|---|---|
+| `Contract\UnitScopedInterface` | the row has a nullable `unit_id`; reads become `unit_id IN (...)` |
+| `ScopeContext::enterTenant($id)` | the tenant with **every** unit - a console command, a setup hook, an API key |
+| `ScopeContext::enterUnits($id, $units)` | the tenant narrowed to these units, already expanded to their subtrees |
+| `Doctrine\UnitWriteGuard` | a narrowed caller cannot persist a row into a unit outside its set |
+
+- **The set comes from the membership, on every request.** `ScopeListener` expands
+  `Membership::unitIds()` through `Unit\Contract\UnitTreeInterface`; null is the whole
+  tenant, and an owner is always the whole tenant. Nothing is in the token, so a moved unit
+  or a narrowed membership applies to the next request.
+- **A tenant entered without a unit set sees no unit-scoped row.** `enter([TENANT => ...])`
+  is the forgotten case, exactly as a missing tenant is; say `enterTenant()`.
+- **A row with no unit is the whole tenant's**, seen only by those who see all of it. That
+  is what lets an existing entity become unit-scoped without assigning old rows first.
+- **System writes are not narrowed.** With no unit set in scope at all, the guard stands
+  aside: the caller is the system writing a row whose unit it states. A signed-in request
+  always has a set.
+- **Search is narrowed too.** The index is read by DBAL, which the filter cannot see, so it
+  stores each record's unit and filters on it.
+
+`tests/Security/UnitIsolationTest.php` attacks it as `TenantIsolationTest` attacks tenants:
+a read, a direct id lookup, a write, a move of a row, a worker message, search, and a unit
+moved under a live scope.
+
+---
+
 ## Proving it
 
 `make test-security` is the suite that exists for this one property, and it attacks from

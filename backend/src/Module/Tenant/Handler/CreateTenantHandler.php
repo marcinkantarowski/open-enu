@@ -48,7 +48,7 @@ final readonly class CreateTenantHandler
         // a setup provider writing a scoped entity does not have to remember to
         // stamp it - and cannot get it wrong.
         $previous = $this->scope->all();
-        $this->scope->enter([ScopeContext::TENANT => $tenantId]);
+        $this->scope->enterTenant($tenantId);
 
         try {
             $this->setup->onTenantCreated($tenantId);

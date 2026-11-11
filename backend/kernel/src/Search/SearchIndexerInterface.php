@@ -25,9 +25,12 @@ interface SearchIndexerInterface
      * explodes or, worse, indexes into the wrong partition. Reads have no such
      * source of truth, so they stay fail-closed against the scope.
      *
+     * `$unitScoped` and `$unitId` come from UnitScopedInterface: a unit-scoped
+     * record is found only by someone whose scope allows its unit (ADR-0025).
+     *
      * @param array<string, string> $fields field => text
      */
-    public function index(string $entityType, string $entityId, array $fields, string $tenantId): void;
+    public function index(string $entityType, string $entityId, array $fields, string $tenantId, bool $unitScoped = false, ?string $unitId = null): void;
 
     public function remove(string $entityType, string $entityId, string $tenantId): void;
 

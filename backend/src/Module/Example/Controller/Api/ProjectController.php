@@ -25,6 +25,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Thin by rule: validate, delegate, serialize.
@@ -71,6 +72,7 @@ final readonly class ProjectController
                 description: \is_string($body['description'] ?? null) ? $body['description'] : null,
                 clientReference: \is_string($body['clientReference'] ?? null) ? $body['clientReference'] : null,
                 attributes: \is_array($body['attributes'] ?? null) ? $body['attributes'] : [],
+                unitId: \is_string($body['unitId'] ?? null) && Uuid::isValid($body['unitId']) ? $body['unitId'] : null,
             )),
             Response::HTTP_CREATED,
         );

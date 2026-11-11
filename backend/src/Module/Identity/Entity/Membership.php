@@ -55,6 +55,16 @@ class Membership
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
+    /**
+     * The units this membership reaches, each with everything below it - or
+     * null for the whole tenant (ADR-0025). An owner always reaches the whole
+     * tenant, whatever this says: a tenant must never lock out its last owner.
+     *
+     * @var list<string>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true, options: ['jsonb' => true])]
+    private ?array $unitIds = null;
+
     public function __construct(User $user, string $tenantId, string $role = self::ROLE_MEMBER)
     {
         $this->id = Uuid::v7();
@@ -73,6 +83,18 @@ class Membership
     public function user(): User
     {
         return $this->user;
+    }
+
+    /** @return list<string>|null null: the whole tenant */
+    public function unitIds(): ?array
+    {
+        return $this->role === self::ROLE_OWNER ? null : $this->unitIds;
+    }
+
+    /** @param list<string>|null $unitIds null: the whole tenant */
+    public function narrowTo(?array $unitIds): void
+    {
+        $this->unitIds = $unitIds === null ? null : array_values(array_unique($unitIds));
     }
 
     public function tenantId(): string
@@ -129,6 +151,7 @@ class Membership
             'tenantId' => (string) $this->tenantId,
             'role' => $this->role,
             'status' => $this->status,
+            'unitIds' => $this->unitIds(),
         ];
     }
 }

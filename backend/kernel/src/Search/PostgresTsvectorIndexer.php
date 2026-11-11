@@ -30,7 +30,7 @@ final readonly class PostgresTsvectorIndexer implements SearchIndexerInterface
     }
 
     #[Unscoped(reason: 'DBAL upsert; the tenant is passed in and written explicitly below')]
-    public function index(string $entityType, string $entityId, array $fields, string $tenantId): void
+    public function index(string $entityType, string $entityId, array $fields, string $tenantId, bool $unitScoped = false, ?string $unitId = null): void
     {
         $text = trim(implode(' ', array_filter($fields, static fn (string $v): bool => $v !== '')));
 
@@ -45,10 +45,12 @@ final readonly class PostgresTsvectorIndexer implements SearchIndexerInterface
 
         $this->db->executeStatement(
             <<<'SQL'
-                INSERT INTO search_index (tenant_id, entity_type, entity_id, content, document, indexed_at)
-                VALUES (:tenant, :type, :id, :content, to_tsvector(:config, :content), now())
+                INSERT INTO search_index (tenant_id, entity_type, entity_id, content, document, indexed_at, unit_scoped, unit_id)
+                VALUES (:tenant, :type, :id, :content, to_tsvector(:config, :content), now(), :unitScoped, :unit)
                 ON CONFLICT (tenant_id, entity_type, entity_id) DO UPDATE
                 SET content = EXCLUDED.content,
+                    unit_scoped = EXCLUDED.unit_scoped,
+                    unit_id = EXCLUDED.unit_id,
                     document = EXCLUDED.document,
                     indexed_at = EXCLUDED.indexed_at
                 SQL,
@@ -58,6 +60,8 @@ final readonly class PostgresTsvectorIndexer implements SearchIndexerInterface
                 'id' => $entityId,
                 'content' => $text,
                 'config' => $this->textSearchConfig,
+                'unitScoped' => $unitScoped ? 'true' : 'false',
+                'unit' => $unitId,
             ],
         );
     }
@@ -92,6 +96,18 @@ final readonly class PostgresTsvectorIndexer implements SearchIndexerInterface
         ];
 
         $types = [];
+
+        // The units, which the scope filter applies to entities but cannot apply
+        // here. A tenant-wide record stays visible; a unit-scoped one only in a
+        // unit the scope allows - none, when the scope allows no unit.
+        $units = $this->scope->units();
+        if ($units === []) {
+            $sql .= ' AND NOT unit_scoped';
+        } elseif ($units !== null) {
+            $sql .= ' AND (NOT unit_scoped OR unit_id IN (:units))';
+            $params['units'] = $units;
+            $types['units'] = ArrayParameterType::STRING;
+        }
 
         if ($entityTypes !== null && $entityTypes !== []) {
             $sql .= ' AND entity_type IN (:types)';

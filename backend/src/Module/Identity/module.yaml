@@ -1,4 +1,4 @@
 name: Identity
 description: Users, their memberships of tenants, and everything that authenticates one.
-depends: [Tenant]
+depends: [Tenant, Unit]
 enabled: true

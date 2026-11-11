@@ -15,6 +15,7 @@ final readonly class CreateProject implements CommandInterface
         public ?string $description = null,
         public ?string $clientReference = null,
         public array $attributes = [],
+        public ?string $unitId = null,
     ) {
     }
 

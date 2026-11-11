@@ -56,7 +56,7 @@ final class TenantSeedCommand extends Command
         // filter is fail-closed by design (ADR-0004) - so each hook's "have I
         // already done this?" check answers no, and re-seeding silently
         // duplicates every example row instead of being idempotent.
-        $this->scope->enter([ScopeContext::TENANT => $tenant]);
+        $this->scope->enterTenant($tenant);
 
         $providers = $this->runner->providers();
 

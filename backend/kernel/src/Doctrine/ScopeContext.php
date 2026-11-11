@@ -23,6 +23,15 @@ final class ScopeContext implements ResetInterface
 {
     public const string TENANT = 'tenant_id';
 
+    /**
+     * The units a caller may see, comma-separated - or ALL_UNITS. Kept a string so
+     * the scope stays a flat map that a worker stamp carries unchanged (ADR-0025).
+     */
+    public const string UNITS = 'unit_id';
+
+    /** Every unit of the tenant. Explicit: an ABSENT unit set matches nothing. */
+    public const string ALL_UNITS = '*';
+
     /** @var array<string, string> dimension => value */
     private array $scope = [];
 
@@ -46,6 +55,50 @@ final class ScopeContext implements ResetInterface
     public function tenantId(): ?string
     {
         return $this->get(self::TENANT);
+    }
+
+    /**
+     * The units in scope: null for every unit, a list otherwise - empty when no
+     * unit set was entered, which the filter turns into "nothing".
+     *
+     * @return list<string>|null
+     */
+    public function units(): ?array
+    {
+        $units = $this->get(self::UNITS);
+
+        if ($units === self::ALL_UNITS) {
+            return null;
+        }
+
+        return $units === null || $units === '' ? [] : explode(',', $units);
+    }
+
+    /** Whether a row in this unit (null: the whole tenant's) may be read or written. */
+    public function allowsUnit(?string $unitId): bool
+    {
+        $units = $this->units();
+
+        return $units === null || ($unitId !== null && \in_array($unitId, $units, true));
+    }
+
+    /**
+     * Enter a tenant with every unit in it - for a caller acting for the tenant
+     * as a whole: a console command, a tenant's setup, an API key.
+     */
+    public function enterTenant(string $tenantId): void
+    {
+        $this->enter([self::TENANT => $tenantId, self::UNITS => self::ALL_UNITS]);
+    }
+
+    /**
+     * Enter a tenant narrowed to these units (already expanded to their subtrees).
+     *
+     * @param list<string> $unitIds
+     */
+    public function enterUnits(string $tenantId, array $unitIds): void
+    {
+        $this->enter([self::TENANT => $tenantId, self::UNITS => implode(',', $unitIds)]);
     }
 
     /**

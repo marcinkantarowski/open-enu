@@ -273,7 +273,7 @@ final class CredentialHandlingTest extends WebTestCase
         $storage = $container->get(StorageInterface::class);
         \assert($storage instanceof StorageInterface);
 
-        $scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $scope->enterTenant($this->tenantId);
 
         $key = $storage->write('attachment', '../../etc/passwd', 'file contents', 'text/plain');
 

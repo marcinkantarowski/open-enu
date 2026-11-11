@@ -104,7 +104,7 @@ final class AuthApiTest extends ApiTestCase
         new Membership($user, $second, Membership::ROLE_MEMBER);
         $this->em->flush();
 
-        $this->scope->enter([ScopeContext::TENANT => $first]);
+        $this->scope->enterTenant($first);
         $this->post('/api/auth/switch-tenant', ['tenantId' => $second]);
 
         self::assertResponseIsSuccessful();
@@ -119,7 +119,7 @@ final class AuthApiTest extends ApiTestCase
         $this->givenATenant('alpha');
         $this->givenIAmSignedIn();
         $stranger = $this->givenATenant('somebody-elses');
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $this->scope->enterTenant($this->tenantId);
 
         $this->post('/api/auth/switch-tenant', ['tenantId' => $stranger]);
 

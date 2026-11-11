@@ -84,7 +84,7 @@ abstract class ApiTestCase extends WebTestCase
         $this->em->flush();
 
         $this->tenantId = (string) $tenant->id();
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $this->scope->enterTenant($this->tenantId);
 
         return $this->tenantId;
     }
@@ -103,7 +103,7 @@ abstract class ApiTestCase extends WebTestCase
         $this->em->flush();
 
         $this->tenantId = (string) $tenant->id();
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $this->scope->enterTenant($this->tenantId);
 
         return $this->tenantId;
     }
@@ -135,7 +135,7 @@ abstract class ApiTestCase extends WebTestCase
         \assert(\is_string($token), 'Login must succeed or the rest of the test means nothing.');
 
         $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer ' . $token);
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantId]);
+        $this->scope->enterTenant($this->tenantId);
 
         return $user;
     }

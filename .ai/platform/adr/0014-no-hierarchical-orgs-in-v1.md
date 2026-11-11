@@ -1,6 +1,6 @@
 # ADR-0014 - No hierarchical organizations in v1; the door stays open
 
-**Status:** accepted · **Date:** 2026-09-10
+**Status:** revised by [ADR-0025](0025-units-and-tenant-defined-roles.md) · **Date:** 2026-09-10
 
 ## Context
 The reference framework scopes by `tenantId` **and** `organizationId`, supporting organization trees

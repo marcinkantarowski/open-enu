@@ -79,7 +79,7 @@ final class TenantIsolationTest extends KernelTestCase
 
     public function testATenantSeesOnlyItsOwnRows(): void
     {
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantA]);
+        $this->scope->enterTenant($this->tenantA);
         $items = $this->listItems();
 
         self::assertCount(1, $items);
@@ -88,7 +88,7 @@ final class TenantIsolationTest extends KernelTestCase
 
     public function testTheOtherTenantSeesOnlyItsOwn(): void
     {
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantB]);
+        $this->scope->enterTenant($this->tenantB);
         $items = $this->listItems();
 
         self::assertCount(1, $items);
@@ -116,12 +116,12 @@ final class TenantIsolationTest extends KernelTestCase
         // Knowing the id is the realistic attack: ids leak through logs, URLs
         // and support tickets. The filter applies to find() too, so the row is
         // not merely hidden from lists.
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantB]);
+        $this->scope->enterTenant($this->tenantB);
         $theirs = $this->listItems()[0];
         $theirId = $theirs->id();
 
         $this->em->clear();
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantA]);
+        $this->scope->enterTenant($this->tenantA);
 
         self::assertNull($this->em->getRepository(Project::class)->find($theirId));
     }
@@ -137,7 +137,7 @@ final class TenantIsolationTest extends KernelTestCase
         $all = $this->scope->runUnscoped('deliberately loading every tenant', fn (): array => $this->listItems());
         self::assertCount(2, $all, 'The unscoped read should see both tenants.');
 
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantA]);
+        $this->scope->enterTenant($this->tenantA);
         $visible = $this->listItems();
 
         self::assertCount(1, $visible, 'After runUnscoped() the identity map must not still hold the other tenant.');
@@ -149,7 +149,7 @@ final class TenantIsolationTest extends KernelTestCase
         // The single most common source of tenant leaks in async code. A handler
         // that runs unscoped does nothing to nobody's data - far better than
         // touching the wrong tenant's, and still a bug worth catching.
-        $stamp = new TenantStamp([ScopeContext::TENANT => $this->tenantA]);
+        $stamp = new TenantStamp([ScopeContext::TENANT => $this->tenantA, ScopeContext::UNITS => ScopeContext::ALL_UNITS]);
         self::assertSame($this->tenantA, $stamp->scope[ScopeContext::TENANT]);
 
         $this->scope->enter($stamp->scope);
@@ -170,7 +170,7 @@ final class TenantIsolationTest extends KernelTestCase
 
     public function testTheScopeIsRestoredAfterAnUnscopedBlockThrows(): void
     {
-        $this->scope->enter([ScopeContext::TENANT => $this->tenantA]);
+        $this->scope->enterTenant($this->tenantA);
 
         try {
             $this->scope->runUnscoped('boom', static function (): void {

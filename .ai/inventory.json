@@ -133,7 +133,8 @@
             "description": "Users, their memberships of tenants, and everything that authenticates one.",
             "slug": "identity",
             "depends": [
-                "Tenant"
+                "Tenant",
+                "Unit"
             ],
             "contracts": [
                 "SessionMinterInterface",
@@ -344,6 +345,40 @@
             "permissions": [
                 "tenant.manage",
                 "tenant.view"
+            ]
+        },
+        "Unit": {
+            "description": "The tree of units inside a tenant - branches, departments, sites - that rows and memberships are narrowed to.",
+            "slug": "unit",
+            "depends": [],
+            "contracts": [
+                "UnitTreeInterface"
+            ],
+            "entities": [
+                "Unit"
+            ],
+            "commands": [
+                "ArchiveUnit",
+                "CreateUnit",
+                "MoveUnit",
+                "RenameUnit"
+            ],
+            "services": [
+                "UnitTree"
+            ],
+            "repositories": [
+                "UnitRepository"
+            ],
+            "permissions": [
+                "unit.manage",
+                "unit.view"
+            ],
+            "routes": [
+                "GET /api/units (unit_index)",
+                "PATCH /api/units/{id} (unit_rename)",
+                "POST /api/units (unit_create)",
+                "POST /api/units/{id}/archive (unit_archive)",
+                "POST /api/units/{id}/move (unit_move)"
             ]
         },
         "Webhook": {

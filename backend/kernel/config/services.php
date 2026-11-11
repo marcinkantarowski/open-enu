@@ -25,6 +25,7 @@ use OpenEnu\Kernel\Crypto\Encryptor;
 use OpenEnu\Kernel\Crypto\KeyProviderInterface;
 use OpenEnu\Kernel\Doctrine\OptimisticLock;
 use OpenEnu\Kernel\Doctrine\ScopeContext;
+use OpenEnu\Kernel\Doctrine\UnitWriteGuard;
 use OpenEnu\Kernel\Flags\FlagsInterface;
 use OpenEnu\Kernel\Flags\StaticFlags;
 use OpenEnu\Kernel\Gdpr\GdprSubjectInterface;
@@ -151,6 +152,11 @@ return static function (ContainerConfigurator $container): void {
         ->public()
         ->tag('kernel.reset', ['method' => 'reset']);
     $services->set(OptimisticLock::class);
+    // Reads are narrowed by the filter; writes into a unit outside the scope are
+    // refused here (ADR-0025).
+    $services->set(UnitWriteGuard::class)
+        ->tag('doctrine.event_listener', ['event' => 'prePersist'])
+        ->tag('doctrine.event_listener', ['event' => 'preUpdate']);
 
     // ── command bus ─────────────────────────────────────────────────────────
     $services->set(SnapshotCollector::class)->tag('kernel.reset', ['method' => 'reset']);
