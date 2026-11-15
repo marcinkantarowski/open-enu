@@ -89,23 +89,37 @@ A permission is a string like `example.view`, declared by the module that enforc
 them at compile time, and an undeclared permission is **refused**, so a typo in an
 `#[IsGranted]` attribute fails closed rather than opening an endpoint.
 
-Roles map to permissions in exactly one place - `Identity\Service\PermissionResolver`:
+Roles belong to the tenant and are edited in its settings ([ADR-0025](../adr/0025-units-and-tenant-defined-roles.md)).
+What a role grants is answered in exactly one place - the `Role` module's
+`PermissionsInterface` (`Role\Service\PermissionResolver`). Every tenant has three roles
+before it saves any:
 
-| Role | May |
+| Role | May, until the tenant changes it |
 |---|---|
-| `owner` | everything |
+| `owner` | everything - never stored, never edited |
 | `admin` | everything except `tenant.delete` and `api_key.manage` |
 | `member` | anything ending in `.view` or `.use` |
 
 `.view` reads. `.use` is the everyday work a module exists for, when that work is something
 every member of a team does - sending the message, logging the hours. A module declares it
-only when it means that; everything else stays `.manage` and needs an admin. The suffix is
-the whole mechanism: there is no per-member grant and no role editor.
+only when it means that; everything else stays `.manage` and needs an admin - or a role a
+tenant made and ticked it on.
 
-Both callers that need this answer use that class: the voter, which enforces it, and the
-session payload, which tells the UI which buttons to render. Computing it twice would
+A tenant may change `admin` and `member` and add roles of its own (`front-desk`). Three rules
+hold whatever it ticks: the owner-only permissions go to no other role; nobody grants a
+permission they do not hold themselves; a role someone holds cannot be deleted. A permission
+a module declares AFTER a role was saved is decided by the role's template - the rule above
+for `admin` and `member`, refused for a tenant's own role - so an update that adds a module
+does not silently take it away from every admin.
+
+Each declared permission is a line on the roles screen, so it needs a `permission.<name>`
+label in its module's `i18n/messages.*.json`. `make i18n-check` fails on one without.
+
+Both callers that need this answer use that one resolver: the voter, which enforces it, and
+the session payload, which tells the UI which buttons to render. Computing it twice would
 drift, and the drift is silent in the worst direction - a control that renders and then
-403s.
+403s. The tenant's roles are read once per request, never cached across requests, so an
+edit applies to the next one.
 
 The role travels with the **workspace**, not the person: the same account can be an owner
 in one tenant and a member in another ([ADR-0005](../adr/0005-membership-from-day-one.md)).

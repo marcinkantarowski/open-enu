@@ -1,5 +1,8 @@
 {
   "example.project.archived": "Archived %count% project(s).",
   "example.project.created": "Project created.",
-  "example.project.renamed": "Project renamed."
+  "example.project.renamed": "Project renamed.",
+  "example.title": "Projects",
+  "permission.example.view": "See projects",
+  "permission.example.manage": "Create, edit and archive projects"
 }

@@ -33,15 +33,21 @@ themselves. Three hard-coded roles (`owner`, `admin`, `member`) cannot say that.
    those units and all their descendants, computed on every request from the tree (two
    indexed queries, no cache to invalidate) - so moving a unit takes effect at once, without
    re-issuing tokens. A row with no unit is the whole tenant's.
-6. **Roles belong to the tenant.** `identity_role(tenant_id, key, name, permissions)`, edited
-   in the tenant's own settings. `owner` is a system role: it has every permission, cannot
-   be edited or deleted, and a tenant always keeps one. `admin` and `member` are seeded as
-   ordinary roles a tenant may change. The permissions a role may hold are exactly those the
-   modules declare; the owner-only ones (`tenant.delete`, `api_key.manage`) cannot be granted
-   to any other role.
-7. **One resolver still answers for both the voter and the session**, now from the tenant's
-   roles, cached per tenant and dropped on every role change, so an edit applies to the next
-   request.
+6. **Roles belong to the tenant**, in a `Role` module: `role_role(tenant_id, key, name,
+   permissions, known, template)`, edited in the tenant's own settings. A membership names
+   its role by key. `owner` has every permission, is never stored, cannot be edited or
+   deleted, and a tenant always keeps one. `admin` and `member` exist in every tenant with
+   the built-in rule until the tenant saves them; the first save stores them. The
+   permissions a role may hold are exactly those the modules declare; the owner-only ones
+   (`tenant.delete`, `api_key.manage`) cannot be granted to any other role, and nobody grants
+   a permission they do not hold themselves.
+7. **A role remembers which permissions existed when it was saved** (`known`). A permission
+   declared later - a module added by an update - follows the role's template: the built-in
+   rule for `admin` and `member`, refused for a tenant's own role. Without this, every
+   tenant's admin would lose each new module until an owner ticked it.
+8. **One resolver still answers for both the voter and the session**, now from the tenant's
+   roles, read once per request and not cached across requests - an edit applies to the
+   next request with nothing to invalidate.
 
 ## Consequences
 - Every place that enters a scope says which units: a request computes them; a worker gets
@@ -60,5 +66,10 @@ themselves. Three hard-coded roles (`owner`, `admin`, `member`) cannot say that.
   and a large tree would make every request carry it.
 - **Roles in a project file.** The customer's own administrator cannot edit a file, and
   "front desk without amounts" is exactly the role a customer invents after go-live.
+- **Seeding `admin` and `member` into every tenant.** Every existing tenant would need a
+  data migration, and every test tenant a setup run; a role never saved answering with its
+  built-in rule needs neither.
+- **Roles cached per tenant.** One indexed query per request is cheap, and a cache is one
+  more thing a role edit must remember to invalidate - in every process.
 - **Nested sets / a closure table.** A materialised path answers the only question asked -
   "descendants of these" - with one `LIKE` on an index, and a move rewrites one subtree.

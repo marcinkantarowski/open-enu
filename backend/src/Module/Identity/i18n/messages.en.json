@@ -7,5 +7,9 @@
   "identity.email.reset.ignore": "If you did not request this, you can ignore this email - your password has not changed.",
   "identity.email.invite.subject": "You have been invited to %tenant%",
   "identity.email.invite.body": "You have been invited to join %tenant%.",
-  "identity.email.expires": "This link expires in %hours% hour(s)."
+  "identity.email.expires": "This link expires in %hours% hour(s).",
+  "permission.identity.member.view": "See members and roles",
+  "permission.identity.member.invite": "Invite members",
+  "permission.identity.member.manage": "Change members' roles and units, suspend members",
+  "permission.identity.profile.manage": "Edit their own profile"
 }

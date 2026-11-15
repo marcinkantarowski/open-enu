@@ -1,0 +1,5 @@
+{
+  "role.title": "Roles",
+  "permission.role.view": "See roles",
+  "permission.role.manage": "Create and edit roles"
+}

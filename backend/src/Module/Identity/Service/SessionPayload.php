@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Module\Identity\Service;
 
 use App\Module\Identity\Entity\User;
+use App\Module\Role\Contract\PermissionsInterface;
 use App\Module\Tenant\Contract\TenantReaderInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,7 +21,7 @@ final readonly class SessionPayload
 {
     public function __construct(
         private TenantReaderInterface $tenants,
-        private PermissionResolver $permissions,
+        private PermissionsInterface $permissions,
     ) {
     }
 
@@ -75,7 +76,7 @@ final readonly class SessionPayload
             'role' => $role,
             // Advisory: it decides which controls render, never which requests
             // succeed. The voter decides that, from the same resolver.
-            'permissions' => $role !== null ? $this->permissions->forRole($role) : [],
+            'permissions' => $role !== null && $tenantId !== null ? $this->permissions->forRole($tenantId, $role) : [],
         ];
     }
 }

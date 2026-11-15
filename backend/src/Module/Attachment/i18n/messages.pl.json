@@ -1,3 +1,5 @@
 {
-  "attachment.title": "Załączniki"
+  "attachment.title": "Załączniki",
+  "permission.attachment.view": "Podgląd załączników",
+  "permission.attachment.manage": "Dodawanie i usuwanie załączników"
 }

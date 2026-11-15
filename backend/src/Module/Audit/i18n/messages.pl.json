@@ -1,3 +1,4 @@
 {
-  "audit.title": "Dziennik zdarzeń"
+  "audit.title": "Dziennik zdarzeń",
+  "permission.audit.view": "Wgląd w dziennik zdarzeń"
 }

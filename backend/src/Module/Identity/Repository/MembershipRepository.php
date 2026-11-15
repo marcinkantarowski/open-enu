@@ -32,4 +32,15 @@ final class MembershipRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    public function countWithRole(string $tenantId, string $role): int
+    {
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->where('m.tenantId = :tenant AND m.role = :role')
+            ->setParameter('tenant', Uuid::fromString($tenantId), 'uuid')
+            ->setParameter('role', $role)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

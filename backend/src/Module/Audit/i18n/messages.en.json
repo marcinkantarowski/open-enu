@@ -1,3 +1,4 @@
 {
-  "audit.title": "Audit log"
+  "audit.title": "Audit log",
+  "permission.audit.view": "Read the audit trail"
 }

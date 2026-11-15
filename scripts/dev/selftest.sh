@@ -283,6 +283,10 @@ fails_when "i18n-check catches a key present in one locale only" \
   "$WORK/scripts/dev/check-i18n.sh" \
   "printf '{\"scratch.title\":\"Scratch\",\"scratch.only_en\":\"x\"}' > '$WORK/backend/src/Module/Scratch/i18n/messages.en.json'"
 
+fails_when "i18n-check catches a declared permission with no label for the roles screen" \
+  "$WORK/scripts/dev/check-i18n.sh" \
+  "sed_inplace \"s/^return \\[/return ['scratch.export',/\" '$WORK/backend/src/Module/Scratch/Acl/permissions.php'"
+
 fails_when "module-check catches a clock task the scheduler would silently never run" \
   "$WORK/scripts/dev/check-modules.sh" \
   "printf 'hourly app:scratch:run\n' > '$WORK/backend/src/Module/Scratch/clock'"

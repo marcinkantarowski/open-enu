@@ -134,7 +134,8 @@
             "slug": "identity",
             "depends": [
                 "Tenant",
-                "Unit"
+                "Unit",
+                "Role"
             ],
             "contracts": [
                 "SessionMinterInterface",
@@ -157,7 +158,7 @@
                 "IdentityGdprSubject",
                 "IdentityMailer",
                 "LoginService",
-                "PermissionResolver",
+                "RoleHolders",
                 "SecurityTokenIssuer",
                 "SessionIssuer",
                 "SessionMinter",
@@ -276,6 +277,43 @@
             ],
             "routes": [
                 "GET /api/progress/{id} (progress_show)"
+            ]
+        },
+        "Role": {
+            "description": "The tenant's roles - which permissions each grants - and the one resolver the voter and the session ask.",
+            "slug": "role",
+            "depends": [
+                "Tenant"
+            ],
+            "contracts": [
+                "PermissionsInterface",
+                "RoleHoldersInterface"
+            ],
+            "entities": [
+                "Role"
+            ],
+            "commands": [
+                "CreateRole",
+                "DeleteRole",
+                "UpdateRole"
+            ],
+            "services": [
+                "PermissionResolver",
+                "RoleGrantSource"
+            ],
+            "repositories": [
+                "RoleRepository"
+            ],
+            "permissions": [
+                "role.manage",
+                "role.view"
+            ],
+            "routes": [
+                "DELETE /api/roles/{key} (role_delete)",
+                "GET /api/roles (role_index)",
+                "GET /api/roles/permissions (role_permissions)",
+                "PATCH /api/roles/{key} (role_update)",
+                "POST /api/roles (role_create)"
             ]
         },
         "Settings": {

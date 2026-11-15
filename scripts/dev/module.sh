@@ -115,8 +115,10 @@ declare(strict_types=1);
  * Permissions are global: the kernel refuses to boot if two modules declare the
  * same string, because a permission with two owners has no meaning.
  *
- * A plain member holds whatever ends in \`.view\` or \`.use\`; everything else
- * needs an admin. Add \`$SLUG.use\` only for work every member of a team does.
+ * A plain member holds whatever ends in \`.view\` or \`.use\` until the tenant
+ * changes its roles; everything else needs an admin. Add \`$SLUG.use\` only for
+ * work every member of a team does. Each one needs a \`permission.<name>\` label
+ * in i18n/ - it is a line on the roles screen (ADR-0025).
  */
 return [
     '$SLUG.view',
@@ -251,8 +253,13 @@ EOF
 # fails `make i18n-check` (ADR-0020).
 # Symfony resolves catalogues as <domain>.<locale>.<format>; the frontend uses
 # Nuxt's <locale>.json. Each convention is native to its own side.
-printf '{\n  "%s.title": "%s"\n}\n' "$SLUG" "$NAME" > "$BACK/i18n/messages.en.json"
-printf '{\n  "%s.title": "%s"\n}\n' "$SLUG" "$NAME" > "$BACK/i18n/messages.pl.json"
+# Each declared permission is a line on the tenant's roles screen, and
+# i18n-check fails on one with no label. Placeholders in both: a translator
+# replaces them, rather than finding them missing.
+for loc in en pl; do
+  printf '{\n  "%s.title": "%s",\n  "permission.%s.view": "See %s",\n  "permission.%s.manage": "Manage %s"\n}\n' \
+    "$SLUG" "$NAME" "$SLUG" "$NAME" "$SLUG" "$NAME" > "$BACK/i18n/messages.$loc.json"
+done
 
 # Verify what we just wrote actually parses. A generator emitting a syntax
 # error is worse than no generator: the failure surfaces later, somewhere else,

@@ -42,16 +42,25 @@ the next request.
 
 ## 8b - Roles
 
-- `Role` entity in Identity, tenant-scoped: `key, name, permissions (jsonb), system`.
-  `Membership.role` stays the role's key. Tenant setup seeds `owner` (system), `admin`,
-  `member` with today's grants.
-- `PermissionResolver::allows(tenantId, roleKey, permission)`; `owner` always true;
-  OWNER_ONLY never for another role. Cache per tenant, dropped by every role command.
-- Commands `CreateRole`, `UpdateRole`, `DeleteRole` (refused while a membership uses it).
-- API `/api/roles`, permission `identity.role.manage`. A permission catalogue endpoint
-  groups the declared permissions by module, with translated labels
-  (`permission.<name>` keys in each module's catalogue - `i18n-check` requires them).
-- Frontend: settings tab "Roles" - list, create, edit with checkboxes by module.
+- A `Role` module of its own (Identity is at its context budget): `role_role`, tenant-scoped:
+  `key, name, permissions, known, template`, versioned. `Membership.role` stays the role's
+  key (widened to 40).
+- Built-ins: `owner` is never stored. `admin` and `member` exist in every tenant before
+  they are saved - a role never saved answers with the built-in rule, so no seed and no
+  data migration - and the first save stores them (version 0 until then, so even the first
+  save is checked for a conflict).
+- `known`: the permissions that existed when the role was saved. One declared later
+  follows the role's template (built-in rule for admin/member, refused for a tenant's own).
+- `Role\Contract\PermissionsInterface::allows(tenantId, roleKey, permission)`, used by the
+  voter and the session. Grants read once per request (`ResetInterface`), not cached.
+- `Role\Contract\RoleHoldersInterface`, implemented by Identity: a held role is not deleted.
+- Commands `CreateRole`, `UpdateRole`, `DeleteRole`; audit `role.created|updated|deleted`.
+- API `/api/roles` (`role.view`), `/api/roles/permissions`, POST, PATCH and DELETE
+  `/api/roles/{key}` (`role.manage`). Nobody grants what they do not hold themselves.
+- Every declared permission has a `permission.<name>` label; `i18n-check` requires it,
+  `make module` scaffolds it, `selftest` proves the check fails.
+- Frontend: settings tab "Roles" - list, create, edit with checkboxes by module; boxes the
+  editor does not hold are disabled.
 
 ## 8c - Members
 
@@ -70,3 +79,7 @@ See the ADR.
 - 2026-11-11 - written.
 - 2026-11-11 - 8a built: the tree is not cached; system writes are not narrowed; search
   narrowed; `Unit` versioned (a PATCH endpoint needs optimistic locking - arch test).
+- 2026-11-15 - 8b built: roles are a `Role` module (Identity hit its context budget);
+  `admin` and `member` exist unsaved instead of being seeded; `known` + template for
+  permissions declared after a save; grants read per request, not cached; no granting
+  what you do not hold.

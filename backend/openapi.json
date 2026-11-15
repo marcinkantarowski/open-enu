@@ -477,6 +477,74 @@
         }
       }
     },
+    "/api/roles": {
+      "get": {
+        "operationId": "get_role_index",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "Every role this tenant has: owner, the two built-in ones, then its own -\neach with what it grants RIGHT NOW, which for a role never saved is the\nbuilt-in rule."
+      },
+      "post": {
+        "operationId": "post_role_create",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/roles/permissions": {
+      "get": {
+        "operationId": "get_role_permissions",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "What a role may hold, grouped by the module that declares it, in the reader's language."
+      }
+    },
+    "/api/roles/{key}": {
+      "delete": {
+        "operationId": "delete_role_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch_role_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/search": {
       "get": {
         "operationId": "get_search",
