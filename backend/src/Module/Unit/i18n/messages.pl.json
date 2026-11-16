@@ -1,3 +1,5 @@
 {
-  "unit.title": "Unit"
+  "unit.title": "Struktura",
+  "permission.unit.view": "Podgląd struktury",
+  "permission.unit.manage": "Zmiana struktury"
 }

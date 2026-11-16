@@ -1,0 +1,6 @@
+# Read by the kernel at container-compile time. The name MUST match the
+# directory name - it is the PSR-4 namespace segment.
+name: Role
+description: The tenant's roles - which permissions each grants - and the one resolver the voter and the session ask.
+depends: [Tenant]
+enabled: true

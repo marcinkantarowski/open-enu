@@ -151,7 +151,7 @@ dialog open and the operator console, and saves each screen to `e2e/.results/scr
 
 `auth.can('example.manage')` decides what to **render**. It never decides what is allowed -
 the server checks every request against the same rules, from
-`Identity\Service\PermissionResolver`, which is also what computes the list the session
+`Role\Service\PermissionResolver`, which is also what computes the list the session
 carries. Hide a control the session cannot use; never rely on hiding it.
 
 ## Why two SPAs and one server-rendered site

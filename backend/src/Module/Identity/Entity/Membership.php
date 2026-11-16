@@ -46,7 +46,8 @@ class Membership
     #[ORM\Column(type: 'uuid')]
     private Uuid $tenantId;
 
-    #[ORM\Column(type: Types::STRING, length: 20)]
+    /** A role's key in this tenant - `owner`, `admin`, `member`, or one the tenant made (ADR-0025). */
+    #[ORM\Column(type: Types::STRING, length: 40)]
     private string $role;
 
     #[ORM\Column(type: Types::STRING, length: 20)]

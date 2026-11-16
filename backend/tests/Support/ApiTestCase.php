@@ -129,15 +129,20 @@ abstract class ApiTestCase extends WebTestCase
     protected function givenIAmSignedIn(string $role = Membership::ROLE_OWNER, string $email = 'owner@example.test'): User
     {
         $user = $this->makeUser($email, $role);
+        $this->signInAs($email);
 
+        return $user;
+    }
+
+    /** Log in as someone who already exists - the second person in a test, again. */
+    protected function signInAs(string $email): void
+    {
         $this->post('/api/auth/login', ['email' => $email, 'password' => self::PASSWORD]);
         $token = $this->json()['token'] ?? null;
         \assert(\is_string($token), 'Login must succeed or the rest of the test means nothing.');
 
         $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer ' . $token);
         $this->scope->enterTenant($this->tenantId);
-
-        return $user;
     }
 
     /**

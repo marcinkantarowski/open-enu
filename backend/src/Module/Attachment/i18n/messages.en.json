@@ -1,3 +1,5 @@
 {
-  "attachment.title": "Attachments"
+  "attachment.title": "Attachments",
+  "permission.attachment.view": "See attachments",
+  "permission.attachment.manage": "Upload and delete attachments"
 }

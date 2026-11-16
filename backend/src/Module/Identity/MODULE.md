@@ -47,10 +47,12 @@ _(none yet.)_
 
 ## Notes for agents
 
-- **Permission rules live in `Service/PermissionResolver`, not in the voter.** Two callers
-  need the same answer - the voter, which enforces it on every request, and
-  `Service/SessionPayload`, which tells the UI which controls to render. A second copy
-  drifts in the worst direction: a button that renders and then 403s.
+- **Permission rules live in the `Role` module, not in the voter.** Two callers need the
+  same answer - the voter, which enforces it on every request, and `Service/SessionPayload`,
+  which tells the UI which controls to render - and both ask `Role\Contract\PermissionsInterface`.
+  A second copy drifts in the worst direction: a button that renders and then 403s.
+- A membership holds a role by KEY. This module tells the Role module how many hold one
+  (`Service/RoleHolders`), so a role still held is never deleted.
 - **Every endpoint that establishes a session returns the same shape** - login, refresh,
   switch-tenant and impersonation all go through `SessionPayload`, so the client has one
   code path for "I now have a session" rather than four that differ in small ways.

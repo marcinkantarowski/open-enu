@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Module\Identity\Security\Voter;
 
 use App\Module\Identity\Entity\User;
-use App\Module\Identity\Service\PermissionResolver;
+use App\Module\Role\Contract\PermissionsInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -14,7 +14,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  *
  * Roles are bundles of permissions, not permissions themselves. Code checks
  * `demo.item.create`, never `ROLE_ADMIN`, so adding a role - or moving a
- * capability between roles - touches PermissionResolver and nothing else.
+ * capability between roles - is data in the tenant's roles, answered by the Role module.
  *
  * The rules themselves live in that resolver rather than here, because the
  * session payload has to answer the same question for the UI. Two copies would
@@ -25,7 +25,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 final class PermissionVoter extends Voter
 {
-    public function __construct(private readonly PermissionResolver $permissions)
+    public function __construct(private readonly PermissionsInterface $permissions)
     {
     }
 
@@ -55,6 +55,6 @@ final class PermissionVoter extends Voter
             return false;
         }
 
-        return $this->permissions->allows($membership->role(), $attribute);
+        return $this->permissions->allows($tenantId, $membership->role(), $attribute);
     }
 }

@@ -1,3 +1,5 @@
 {
-  "api_key.title": "API keys"
+  "api_key.title": "API keys",
+  "permission.api_key.view": "See API keys",
+  "permission.api_key.manage": "Create and revoke API keys"
 }

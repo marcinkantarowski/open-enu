@@ -64,3 +64,14 @@ test('the operator console', async ({ page }) => {
   await signInAsOperator(page, managerUrl, OPERATOR.email, OPERATOR.password)
   await audit(page, 'manager-tenants')
 })
+
+test('roles in settings, and the role dialog', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/roles')
+  await expect(page.getByTestId('role-new')).toBeVisible()
+  await audit(page, 'settings-roles')
+
+  await page.getByTestId('role-edit').first().click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await audit(page, 'role-dialog')
+})

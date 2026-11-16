@@ -1,3 +1,4 @@
 {
-  "progress.title": "Progress"
+  "progress.title": "Progress",
+  "permission.progress.view": "See the progress of background jobs"
 }

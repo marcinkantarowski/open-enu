@@ -1,5 +1,8 @@
 {
   "example.project.archived": "Zarchiwizowano %count% projekt(ów).",
   "example.project.created": "Projekt utworzony.",
-  "example.project.renamed": "Nazwa projektu zmieniona."
+  "example.project.renamed": "Nazwa projektu zmieniona.",
+  "example.title": "Projekty",
+  "permission.example.view": "Podgląd projektów",
+  "permission.example.manage": "Tworzenie, edycja i archiwizacja projektów"
 }

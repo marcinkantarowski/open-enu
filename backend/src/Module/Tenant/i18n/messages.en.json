@@ -1,3 +1,5 @@
 {
-  "tenant.title": "Tenant"
+  "tenant.title": "Tenant",
+  "permission.tenant.view": "See the organisation's details",
+  "permission.tenant.manage": "Edit the organisation's details"
 }

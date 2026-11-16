@@ -1,3 +1,5 @@
 {
-  "settings.title": "Ustawienia"
+  "settings.title": "Ustawienia",
+  "permission.settings.view": "Podgląd ustawień",
+  "permission.settings.manage": "Zmiana ustawień"
 }

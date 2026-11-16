@@ -1,3 +1,5 @@
 {
-  "api_key.title": "Klucze API"
+  "api_key.title": "Klucze API",
+  "permission.api_key.view": "Podgląd kluczy API",
+  "permission.api_key.manage": "Tworzenie i unieważnianie kluczy API"
 }

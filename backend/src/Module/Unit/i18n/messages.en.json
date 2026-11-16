@@ -1,3 +1,5 @@
 {
-  "unit.title": "Unit"
+  "unit.title": "Structure",
+  "permission.unit.view": "See the structure",
+  "permission.unit.manage": "Change the structure"
 }
