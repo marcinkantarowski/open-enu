@@ -277,6 +277,7 @@ E2E_APP_URL=${app_url}
 E2E_MANAGER_URL=${manager_url}
 E2E_API_BASE=${api}
 E2E_SITE_URL=${site_url}
+E2E_MAIL_URL=https://mail.${DOMAIN}
 EOF
 
   log_ok "derived backend/.env{.local,.test.local}, frontend/.env, manager/.env, landing/.env, e2e/.env"

@@ -7,6 +7,7 @@ namespace App\Module\Identity\Entity;
 use App\Module\Identity\Repository\MembershipRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use OpenEnu\Kernel\Contract\VersionedInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -23,7 +24,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'identity_membership')]
 #[ORM\UniqueConstraint(name: 'uniq_membership_user_tenant', columns: ['user_id', 'tenant_id'])]
 #[ORM\Index(columns: ['tenant_id'], name: 'idx_membership_tenant')]
-class Membership
+class Membership implements VersionedInterface
 {
     public const string ROLE_OWNER = 'owner';
     public const string ROLE_ADMIN = 'admin';
@@ -31,6 +32,8 @@ class Membership
 
     public const string STATUS_ACTIVE = 'active';
     public const string STATUS_SUSPENDED = 'suspended';
+    /** Asked to join and not yet accepted: it grants nothing until then. */
+    public const string STATUS_INVITED = 'invited';
 
     /** Highest first - used to pick a default tenant at login. */
     private const array ROLE_RANK = [self::ROLE_OWNER => 3, self::ROLE_ADMIN => 2, self::ROLE_MEMBER => 1];
@@ -55,6 +58,11 @@ class Membership
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
+
+    /** Two administrators changing one person's access: the second gets a 409. */
+    #[ORM\Version]
+    #[ORM\Column(type: Types::INTEGER)]
+    private int $version = 1;
 
     /**
      * The units this membership reaches, each with everything below it - or
@@ -123,9 +131,35 @@ class Membership
         return $this->status === self::STATUS_ACTIVE;
     }
 
+    public function version(): int
+    {
+        return $this->version;
+    }
+
+    public function createdAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function status(): string
+    {
+        return $this->status;
+    }
+
     public function suspend(): void
     {
         $this->status = self::STATUS_SUSPENDED;
+    }
+
+    public function invite(): void
+    {
+        $this->status = self::STATUS_INVITED;
+    }
+
+    /** Accepting an invitation, or an administrator lifting a suspension. */
+    public function activate(): void
+    {
+        $this->status = self::STATUS_ACTIVE;
     }
 
     /**

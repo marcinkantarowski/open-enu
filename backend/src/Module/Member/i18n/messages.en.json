@@ -1,0 +1,6 @@
+{
+  "member.title": "People",
+  "permission.member.view": "See who is a member, with their role and units",
+  "permission.member.invite": "Invite people",
+  "permission.member.manage": "Change people's role and units, suspend them"
+}

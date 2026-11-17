@@ -64,13 +64,20 @@ the next request.
 
 ## 8c - Members
 
+- A `Member` module (Identity is at 40 files, its budget). It owns no table: it works on
+  memberships through `Identity\Contract\MembershipsInterface`, which changes rows in
+  memory and returns new ones as `unsaved` for the Member handler to persist and flush.
 - API `/api/members`: list (with role and units), invite by e-mail (a `SecurityToken` and
-  the existing `invitation.html.twig`), change role and units, suspend, reactivate. The last
-  active owner cannot be demoted, suspended or removed.
-- Frontend: settings tab "Members" - table, invite dialog, edit drawer with role select and
-  a unit picker over the tree.
-- Accepting an invitation: a page that sets a password for a new account, or adds the
-  membership to an existing one after login.
+  the existing `invitation.html.twig`), `POST /{id}/access` for role and units together
+  (Membership is now versioned: a stale edit is a 409), suspend, reactivate. The last
+  active owner cannot be demoted or suspended.
+- Nobody gives a role with a permission they lack, or changes someone whose role has one;
+  someone narrowed to units gives only those units.
+- An invited membership grants nothing; `GET|POST /api/auth/invitation` (public,
+  rate-limited) describes and accepts it - a new account sets its password there.
+- Frontend: settings tab "People" - table, invite dialog, an access dialog with a role
+  select and a unit picker; `/accept-invitation`, the path the mail already linked to.
+- e2e follows the mail: `fixtures/mail.ts` reads the link from Mailpit.
 
 ## Rejected
 See the ADR.
@@ -83,3 +90,5 @@ See the ADR.
   `admin` and `member` exist unsaved instead of being seeded; `known` + template for
   permissions declared after a save; grants read per request, not cached; no granting
   what you do not hold.
+- 2026-11-17 - 8c built: a `Member` module over an Identity contract; Membership versioned;
+  access changed by a POST action; e2e reads the invitation from Mailpit.

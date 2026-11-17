@@ -21,6 +21,9 @@ interface PermissionsInterface
 
     public const array BUILT_IN = [self::OWNER, self::ADMIN, self::MEMBER];
 
+    /** A built-in key, or one of this tenant's own roles. */
+    public function exists(string $tenantId, string $role): bool;
+
     public function allows(string $tenantId, string $role, string $permission): bool;
 
     /** @return list<string> everything the role may do, sorted */

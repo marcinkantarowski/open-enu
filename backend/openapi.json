@@ -105,6 +105,25 @@
         }
       }
     },
+    "/api/auth/invitation": {
+      "get": {
+        "operationId": "get_member_invitation_show",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "What a link is for, before it is used: whose tenant, which address, and\nwhether the page must ask for a password. Public - the token is the\ncredential - and rate-limited like every other public auth endpoint."
+      },
+      "post": {
+        "operationId": "post_member_invitation_accept",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "operationId": "post_auth_login",
@@ -314,6 +333,84 @@
     "/api/manager/workers": {
       "get": {
         "operationId": "get_manager_worker_status",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/members": {
+      "get": {
+        "operationId": "get_member_index",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_member_invite",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/members/{id}/access": {
+      "post": {
+        "operationId": "post_member_access",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/members/{id}/reactivate": {
+      "post": {
+        "operationId": "post_member_reactivate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/members/{id}/suspend": {
+      "post": {
+        "operationId": "post_member_suspend",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "default": {
             "description": ""

@@ -9,8 +9,5 @@ declare(strict_types=1);
  * same string, because a permission with two owners has no meaning.
  */
 return [
-    'identity.member.view',
-    'identity.member.invite',
-    'identity.member.manage',
     'identity.profile.manage',
 ];

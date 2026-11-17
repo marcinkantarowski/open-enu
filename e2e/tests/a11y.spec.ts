@@ -75,3 +75,14 @@ test('roles in settings, and the role dialog', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeVisible()
   await audit(page, 'role-dialog')
 })
+
+test('people in settings, and the invite dialog', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings/members')
+  await expect(page.getByTestId('member-invite')).toBeVisible()
+  await audit(page, 'settings-members')
+
+  await page.getByTestId('member-invite').click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await audit(page, 'member-dialog')
+})
