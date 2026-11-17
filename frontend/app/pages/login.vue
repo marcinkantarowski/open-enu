@@ -7,7 +7,8 @@ const { login } = useAuth()
 const { t } = useI18n()
 const route = useRoute()
 
-const email = ref('')
+// Prefilled from a link that already knows it - the end of an invitation, say.
+const email = ref(typeof route.query.email === 'string' ? route.query.email : '')
 const password = ref('')
 const error = ref<string | null>(null)
 const busy = ref(false)

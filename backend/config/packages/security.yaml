@@ -53,7 +53,7 @@ security:
         # Everything that establishes a tenant session is necessarily public,
         # and is therefore rate-limited in the controller.
         auth:
-            pattern: ^/api/auth/(register|verify|login|refresh|logout|forgot-password|reset-password|switch-tenant)$
+            pattern: ^/api/auth/(register|verify|login|refresh|logout|forgot-password|reset-password|switch-tenant|invitation)$
             stateless: true
             security: false
 

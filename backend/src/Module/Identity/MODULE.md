@@ -25,6 +25,12 @@ Owns people, their membership of tenants, and everything that authenticates one.
     and answers every failure alike; its page goes in `<InjectionPoint name="auth.login.methods">`.
 - `Contract\UserDirectoryInterface` - who belongs to a tenant, as rows. Used by the operator
   console to pick someone to view as.
+- `Contract\MembershipsInterface` - a tenant's memberships for the module that administers
+  them (Member): list, assign a role and units (with the version read, so a stale edit is a
+  409), suspend, invite, accept an invitation. It changes rows in memory and returns new
+  ones as `unsaved`; the caller's handler persists and flushes, inside its audited command.
+  `Service/Memberships` implements it, and `UserDirectoryInterface` and the Role module's
+  `RoleHoldersInterface` with it.
 
 ## Events
 
@@ -32,10 +38,9 @@ _(none yet.)_
 
 ## Permissions
 
-- `identity.member.view`
-- `identity.member.invite`
-- `identity.member.manage`
 - `identity.profile.manage`
+
+Administering other people is the Member module's (`member.*`).
 
 ## Console
 
@@ -52,7 +57,9 @@ _(none yet.)_
   which tells the UI which controls to render - and both ask `Role\Contract\PermissionsInterface`.
   A second copy drifts in the worst direction: a button that renders and then 403s.
 - A membership holds a role by KEY. This module tells the Role module how many hold one
-  (`Service/RoleHolders`), so a role still held is never deleted.
+  (`Service/Memberships`), so a role still held is never deleted.
+- **This module is at its file budget (40).** A new capability around accounts or sessions
+  (2FA, single sign-on) is a module of its own, talking to this one through `Contract/`.
 - **Every endpoint that establishes a session returns the same shape** - login, refresh,
   switch-tenant and impersonation all go through `SessionPayload`, so the client has one
   code path for "I now have a session" rather than four that differ in small ways.

@@ -138,6 +138,7 @@
                 "Role"
             ],
             "contracts": [
+                "MembershipsInterface",
                 "SessionMinterInterface",
                 "UserDirectoryInterface"
             ],
@@ -158,12 +159,11 @@
                 "IdentityGdprSubject",
                 "IdentityMailer",
                 "LoginService",
-                "RoleHolders",
+                "Memberships",
                 "SecurityTokenIssuer",
                 "SessionIssuer",
                 "SessionMinter",
                 "SessionPayload",
-                "UserDirectory",
                 "UserLocaleProvider"
             ],
             "repositories": [
@@ -176,9 +176,6 @@
                 "CreateUserCommand"
             ],
             "permissions": [
-                "identity.member.invite",
-                "identity.member.manage",
-                "identity.member.view",
                 "identity.profile.manage"
             ],
             "routes": [
@@ -227,6 +224,40 @@
                 "POST /api/manager/login (manager_login)",
                 "POST /api/manager/tenants/{id}/suspend (manager_tenant_suspend)",
                 "POST /api/manager/tenants/{tenantId}/users/{userId}/impersonate (manager_impersonate)"
+            ]
+        },
+        "Member": {
+            "description": "Administering a tenant's people - the list, invitations, each one's role and units, suspension.",
+            "slug": "member",
+            "depends": [
+                "Identity",
+                "Role",
+                "Unit",
+                "Tenant"
+            ],
+            "commands": [
+                "AcceptInvitation",
+                "ChangeMemberAccess",
+                "InviteMember",
+                "ReactivateMember",
+                "SuspendMember"
+            ],
+            "services": [
+                "AccessGuard"
+            ],
+            "permissions": [
+                "member.invite",
+                "member.manage",
+                "member.view"
+            ],
+            "routes": [
+                "GET /api/auth/invitation (member_invitation_show)",
+                "GET /api/members (member_index)",
+                "POST /api/auth/invitation (member_invitation_accept)",
+                "POST /api/members (member_invite)",
+                "POST /api/members/{id}/access (member_access)",
+                "POST /api/members/{id}/reactivate (member_reactivate)",
+                "POST /api/members/{id}/suspend (member_suspend)"
             ]
         },
         "Notification": {

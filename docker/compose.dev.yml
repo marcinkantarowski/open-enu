@@ -414,6 +414,9 @@ services:
       E2E_MANAGER_URL: https://manager.${DOMAIN}
       E2E_API_BASE: https://api.${DOMAIN}
       E2E_SITE_URL: https://${DOMAIN}
+      # Mailpit's API on the stack's own network: a test that follows an
+      # e-mailed link reads the mail the way a person would, from the inbox.
+      E2E_MAIL_URL: http://mailpit:8025
       # The image runs as root by default and then refuses to launch Chromium
       # without a sandbox; this is the supported way to say "that is expected".
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright

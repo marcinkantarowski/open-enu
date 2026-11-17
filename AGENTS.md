@@ -36,8 +36,8 @@ full-text search, tenant setup hooks, GDPR export/erase, progress and feature fl
 Read [`.ai/platform/docs/platform-services.md`](.ai/platform/docs/platform-services.md) **before** adding any
 infrastructure to a module.
 
-**Thirteen modules are live**: Tenant, Identity, ApiKey, Audit, Attachment, Progress,
-Manager, Settings, Notification, Webhook, Unit, Role and the `Example` reference. A user can register, verify by email, log in, switch tenant and reset
+**Fourteen modules are live**: Tenant, Identity, ApiKey, Audit, Attachment, Progress,
+Manager, Settings, Notification, Webhook, Unit, Role, Member and the `Example` reference. A user can register, verify by email, log in, switch tenant and reset
 their password; a machine can authenticate with a scoped API key; every write is audited
 with before/after snapshots against a real actor and tenant.
 
@@ -285,6 +285,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Adding a service, a host, or a healthcheck | `docker/compose.dev.yml` + add a target to `scripts/dev/smoke.sh` in the same change |
 | A service or route of the project's own, not the platform's | `docker/project/compose.<stage file>.yml` - `.ai/platform/docs/deployment.md` → *A project's own services and routes* |
 | Why a capability is deliberately absent | `.ai/platform/adr/` - especially 0013 (custom fields), 0014 (hierarchical orgs), 0015 (undo) |
+| A tenant's people: inviting, a member's role and units, suspending | `backend/src/Module/Member/MODULE.md` |
 | Roles, and what each may do; a new permission and its label | `backend/src/Module/Role/MODULE.md` + `.ai/platform/docs/auth.md` → *Permissions* |
 | Branches, departments, sites; narrowing rows to a unit | `.ai/platform/docs/tenancy.md` → *Units inside a tenant* + [ADR-0025](.ai/platform/adr/0025-units-and-tenant-defined-roles.md) |
 | Tenancy, scope, `runUnscoped()`, what breaks isolation | [`.ai/platform/docs/tenancy.md`](.ai/platform/docs/tenancy.md) |
@@ -330,6 +331,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Notification - notification | `backend/src/Module/Notification/MODULE.md` |
 | Unit - unit | `backend/src/Module/Unit/MODULE.md` |
 | Role - role | `backend/src/Module/Role/MODULE.md` |
+| Member - member | `backend/src/Module/Member/MODULE.md` |
 <!-- module-rows: make module inserts here, keep this comment -->
 
 ---

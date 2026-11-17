@@ -8,8 +8,5 @@
   "identity.email.invite.subject": "Zaproszenie do %tenant%",
   "identity.email.invite.body": "Otrzymujesz zaproszenie do dołączenia do %tenant%.",
   "identity.email.expires": "Link wygasa za %hours% godz.",
-  "permission.identity.member.view": "Podgląd członków i ról",
-  "permission.identity.member.invite": "Zapraszanie członków",
-  "permission.identity.member.manage": "Zmiana ról i jednostek członków, zawieszanie",
   "permission.identity.profile.manage": "Edycja własnego profilu"
 }

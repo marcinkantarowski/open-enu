@@ -44,6 +44,13 @@ final class PermissionResolver implements PermissionsInterface, ResetInterface
     ) {
     }
 
+    public function exists(string $tenantId, string $role): bool
+    {
+        $this->grants[$tenantId] ??= $this->roles->grantsFor($tenantId);
+
+        return \in_array($role, self::BUILT_IN, true) || isset($this->grants[$tenantId][$role]);
+    }
+
     public function allows(string $tenantId, string $role, string $permission): bool
     {
         // An undeclared permission is refused rather than granted. A typo in a

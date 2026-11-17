@@ -57,6 +57,9 @@ themselves. Three hard-coded roles (`owner`, `admin`, `member`) cannot say that.
   outside it, a worker message, and a membership narrowed while its session is live.
 - A role is data, so it is audited like data: every change to a role or a membership goes
   through a command and lands in the trail with before and after.
+- People are administered by a `Member` module that owns no table: Identity keeps
+  memberships and exposes them through a contract. Nobody hands out more than they hold -
+  a role, or a reach - and a tenant always keeps one active owner.
 - Per-unit roles (front desk in A, finance in B) are not supported: one membership, one
   role. The cost of the alternative - a permission that depends on the row's unit, in every
   voter and every list - is recorded here so it is not added by accident.
