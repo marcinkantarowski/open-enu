@@ -38,7 +38,10 @@ const sizes: Record<string, string> = {
   <DialogRoot v-model:open="open">
     <DialogPortal>
       <DialogOverlay class="fixed inset-0 z-50 bg-fg/40" />
+      <!-- With no description, say so: Reka otherwise points aria-describedby at
+           an element that does not exist, and warns about it on every open. -->
       <DialogContent
+        v-bind="props.description ? {} : { 'aria-describedby': undefined }"
         :class="cn(
           'fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-card border border-border bg-surface text-fg shadow-raised focus:outline-none',
           sizes[props.size],
