@@ -24,6 +24,12 @@ interface PermissionsInterface
     /** A built-in key, or one of this tenant's own roles. */
     public function exists(string $tenantId, string $role): bool;
 
+    /**
+     * What the tenant calls a role, or null when it never named it - a built-in
+     * role, which the UI names in the reader's language.
+     */
+    public function nameOf(string $tenantId, string $role): ?string;
+
     public function allows(string $tenantId, string $role, string $permission): bool;
 
     /** @return list<string> everything the role may do, sorted */

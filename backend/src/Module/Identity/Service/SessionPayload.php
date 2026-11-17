@@ -63,6 +63,7 @@ final readonly class SessionPayload
 
             $memberships[] = [
                 ...$membership->toArray(),
+                'roleName' => $this->permissions->nameOf($membership->tenantId(), $membership->role()),
                 'tenantName' => $tenant['name'] ?? null,
                 'tenantSlug' => $tenant['slug'] ?? null,
             ];

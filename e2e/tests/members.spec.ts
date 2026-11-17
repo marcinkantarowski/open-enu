@@ -37,6 +37,10 @@ test('an owner invites someone, who joins by the e-mailed link and signs in', as
   await invitee.locator('button[type=submit]').click()
   await expect(invitee).not.toHaveURL(/login/)
 
+  // The role by its name, in the reader's language - never the stored key.
+  await invitee.goto('/settings/profile')
+  await expect(invitee.getByTestId('membership-role')).toHaveText(/^(Member|Członek)$/)
+
   await page.reload()
   await expect(page.getByRole('row').filter({ hasText: email })).toContainText(/active|aktywna/i)
 })
