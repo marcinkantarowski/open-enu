@@ -35,7 +35,7 @@ final class PermissionResolver implements PermissionsInterface, ResetInterface
         'api_key.manage',
     ];
 
-    /** @var array<string, array<string, array{permissions: list<string>, known: list<string>, template: ?string}>> */
+    /** @var array<string, array<string, array{permissions: list<string>, known: list<string>, template: ?string, name?: ?string}>> */
     private array $grants = [];
 
     public function __construct(
@@ -49,6 +49,13 @@ final class PermissionResolver implements PermissionsInterface, ResetInterface
         $this->grants[$tenantId] ??= $this->roles->grantsFor($tenantId);
 
         return \in_array($role, self::BUILT_IN, true) || isset($this->grants[$tenantId][$role]);
+    }
+
+    public function nameOf(string $tenantId, string $role): ?string
+    {
+        $this->grants[$tenantId] ??= $this->roles->grantsFor($tenantId);
+
+        return $this->grants[$tenantId][$role]['name'] ?? null;
     }
 
     public function allows(string $tenantId, string $role, string $permission): bool

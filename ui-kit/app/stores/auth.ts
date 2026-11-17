@@ -12,6 +12,8 @@ export interface Membership {
   id: string
   tenantId: string
   role: string
+  /** What the tenant named this role; null for a built-in one, named by translation. */
+  roleName: string | null
   status: string
   /** Resolved through the Tenant module's contract - Membership holds only an id. */
   tenantName: string | null

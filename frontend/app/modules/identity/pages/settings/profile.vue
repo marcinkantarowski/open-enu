@@ -9,7 +9,14 @@
 const api = useApi()
 const auth = useAuthStore()
 const toast = useToast()
-const { t, locale, setLocale } = useI18n()
+const { t, te, locale, setLocale } = useI18n()
+
+// What the tenant named the role, else the built-in role in the reader's
+// language (the Role module's catalogue), else the key itself.
+function roleLabel(membership: { role: string, roleName: string | null }): string {
+  const key = `role.key.${membership.role}`
+  return membership.roleName ?? (te(key) ? t(key) : membership.role)
+}
 const ui = useUiStore()
 
 const form = reactive({
@@ -89,7 +96,11 @@ async function save() {
           { key: 'status', label: t('identity.status') },
         ]"
         :rows="auth.memberships"
-      />
+      >
+        <template #cell-role="{ row }">
+          <span data-testid="membership-role">{{ roleLabel(row) }}</span>
+        </template>
+      </UiTable>
     </UiCard>
   </div>
 </template>

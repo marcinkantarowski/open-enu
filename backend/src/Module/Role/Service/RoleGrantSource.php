@@ -12,6 +12,6 @@ namespace App\Module\Role\Service;
  */
 interface RoleGrantSource
 {
-    /** @return array<string, array{permissions: list<string>, known: list<string>, template: ?string}> by role key */
+    /** @return array<string, array{permissions: list<string>, known: list<string>, template: ?string, name?: ?string}> by role key */
     public function grantsFor(string $tenantId): array;
 }

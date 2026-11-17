@@ -30,6 +30,8 @@ final class RoleApiTest extends ApiTestCase
     {
         $this->givenATenant();
         $this->givenIAmSignedIn(Membership::ROLE_MEMBER, 'member@example.test');
+        self::assertArrayHasKey('roleName', $this->json()['memberships'][0]);
+        self::assertNull($this->json()['memberships'][0]['roleName'], 'a built-in role is named by the UI, in the reader\'s language');
 
         $roles = $this->roles();
 
@@ -55,6 +57,7 @@ final class RoleApiTest extends ApiTestCase
 
         $this->givenIAmSignedIn('front-desk', 'desk@example.test');
         self::assertSame(['example.manage', 'example.view'], $this->json()['permissions'] ?? null, 'the session says it');
+        self::assertSame('Front desk', $this->json()['memberships'][0]['roleName'] ?? null, 'and names the role as the tenant does');
 
         $this->get('/api/projects');
         self::assertResponseIsSuccessful();

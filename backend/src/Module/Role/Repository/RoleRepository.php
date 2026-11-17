@@ -64,13 +64,13 @@ final class RoleRepository extends ServiceEntityRepository implements RoleGrantS
      * tenant's restriction silently ignored in exactly the response that tells
      * the UI what to show.
      *
-     * @return array<string, array{permissions: list<string>, known: list<string>, template: ?string}>
+     * @return array<string, array{permissions: list<string>, known: list<string>, template: ?string, name?: ?string}>
      */
     #[Unscoped(reason: 'permissions are resolved for a named tenant, at login before the scope is that tenant')]
     public function grantsFor(string $tenantId): array
     {
         $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
-            'SELECT role_key, permissions, known, template FROM role_role WHERE tenant_id = ?',
+            'SELECT role_key, name, permissions, known, template FROM role_role WHERE tenant_id = ?',
             [$tenantId],
         );
 
@@ -80,6 +80,7 @@ final class RoleRepository extends ServiceEntityRepository implements RoleGrantS
                 'permissions' => self::list($row['permissions']),
                 'known' => self::list($row['known']),
                 'template' => \is_string($row['template']) ? $row['template'] : null,
+                'name' => \is_string($row['name']) ? $row['name'] : null,
             ];
         }
 
