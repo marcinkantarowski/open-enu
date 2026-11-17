@@ -86,3 +86,22 @@ test('people in settings, and the invite dialog', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeVisible()
   await audit(page, 'member-dialog')
 })
+
+// A dialog with only a title is named and not described - and must say so,
+// rather than point aria-describedby at nothing (Reka warns when it does).
+test('a dialog without a description describes nothing that is not there', async ({ page }) => {
+  const warnings: string[] = []
+  page.on('console', message => {
+    if (message.type() === 'warning' && message.text().includes('Description')) warnings.push(message.text())
+  })
+
+  await signIn(page)
+  await page.goto('/settings/api-keys')
+  await page.getByTestId('api-key-new').click()
+
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await expect(dialog).not.toHaveAttribute('aria-describedby')
+  await audit(page, 'dialog-without-description')
+  expect(warnings).toEqual([])
+})
