@@ -9,5 +9,8 @@
   "identity.membershipsHint": "One account, one membership per workspace, one role in each.",
   "identity.workspace": "Workspace",
   "identity.role": "Role",
-  "identity.status": "Status"
+  "identity.status": "Status",
+  "identity.membershipStatus.active": "Active",
+  "identity.membershipStatus.invited": "Invited",
+  "identity.membershipStatus.suspended": "Suspended"
 }

@@ -17,6 +17,14 @@ function roleLabel(membership: { role: string, roleName: string | null }): strin
   const key = `role.key.${membership.role}`
   return membership.roleName ?? (te(key) ? t(key) : membership.role)
 }
+
+const statusTones = { active: 'ok', invited: 'info', suspended: 'warn' } as const
+
+// A status the catalogue does not know yet is shown as its key, not hidden.
+function statusLabel(status: string): string {
+  const key = `identity.membershipStatus.${status}`
+  return te(key) ? t(key) : status
+}
 const ui = useUiStore()
 
 const form = reactive({
@@ -99,6 +107,12 @@ async function save() {
       >
         <template #cell-role="{ row }">
           <span data-testid="membership-role">{{ roleLabel(row) }}</span>
+        </template>
+
+        <template #cell-status="{ row }">
+          <UiStatus :tone="statusTones[row.status as keyof typeof statusTones] ?? 'neutral'">
+            {{ statusLabel(String(row.status)) }}
+          </UiStatus>
         </template>
       </UiTable>
     </UiCard>

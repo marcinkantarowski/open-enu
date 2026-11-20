@@ -1,5 +1,5 @@
 {
-  "tenant.title": "Tenant",
+  "tenant.title": "Workspace",
   "permission.tenant.view": "See the organisation's details",
   "permission.tenant.manage": "Edit the organisation's details"
 }
