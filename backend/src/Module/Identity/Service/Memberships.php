@@ -204,7 +204,7 @@ final readonly class Memberships implements MembershipsInterface, UserDirectoryI
     {
         return $this->scope->runUnscoped(
             'counting a tenant\'s members for the operator console',
-            fn (): int => $this->memberships->countForTenant($tenantId),
+            fn (): int => $this->memberships->countActiveForTenant($tenantId),
         );
     }
 
