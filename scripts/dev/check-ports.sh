@@ -18,7 +18,7 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-. "$HERE/../lib/log.sh"; . "$HERE/../lib/compose.sh"
+. "$HERE/../lib/log.sh"; . "$HERE/../lib/compose.sh"; . "$HERE/../lib/net.sh"
 
 [ -f "$ROOT/.env" ] || die ".env is missing" "run: make env"
 env_value() { sed -n "s/^$1=//p" "$ROOT/.env" | head -1; }
@@ -43,11 +43,7 @@ fi
 # A connect rather than `ss`: under WSL2 the holder may be a Windows process,
 # which no Linux-side socket table can see.
 listening() {
-  if command -v timeout >/dev/null 2>&1; then
-    timeout 2 bash -c "exec 3<>/dev/tcp/127.0.0.1/$1" 2>/dev/null
-  else
-    (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
-  fi
+  with_timeout 2 bash -c "exec 3<>/dev/tcp/127.0.0.1/$1" 2>/dev/null
 }
 
 # next_free <port> → the first port above it that nothing holds

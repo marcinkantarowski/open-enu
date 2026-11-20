@@ -30,10 +30,17 @@ command -v mkcert >/dev/null 2>&1 || die "mkcert is not installed" \
 
 # ── 1. the certificate ──────────────────────────────────────────────────────
 needs_cert=1
+CA_PEM="$(mkcert -CAROOT 2>/dev/null)/rootCA.pem"
 if [ -f "$CERT" ] && [ -f "$KEY" ]; then
+  # Covering the names is not enough: a certificate issued by another machine's
+  # mkcert CA (a checkout copied with its docker/certs/, a renamed host, a
+  # reinstalled CA) covers them too, and every client that trusts THIS
+  # machine's CA refuses it - the browser, and `make smoke` on every host.
+  if [ -f "$CA_PEM" ] && ! openssl verify -CAfile "$CA_PEM" "$CERT" >/dev/null 2>&1; then
+    log_warn "existing certificate was not issued by this machine's mkcert CA - regenerating"
   # Regenerate when the domain changed (e.g. after `make init`), otherwise the
   # old certificate silently fails to match and every host shows a warning.
-  if openssl x509 -in "$CERT" -noout -text 2>/dev/null | grep -qF "DNS:*.$DOMAIN"; then
+  elif openssl x509 -in "$CERT" -noout -text 2>/dev/null | grep -qF "DNS:*.$DOMAIN"; then
     needs_cert=0
     exp="$(openssl x509 -in "$CERT" -noout -enddate | cut -d= -f2)"
     log_skip "certificate already covers *.$DOMAIN (expires $exp)"
