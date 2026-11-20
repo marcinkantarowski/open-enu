@@ -33,17 +33,21 @@ final class PlatformEndpointsTest extends ApiTestCase
         self::assertNotEmpty($body['kernel'], 'The version is what makes a health page tell you WHICH build answered.');
     }
 
-    public function testTheDeepCheckNamesWhatItVerified(): void
+    public function testTheDeepCheckProvesEveryDependencyAndSaysWhichItProved(): void
     {
         $this->get('/health/deep');
 
         self::assertResponseIsSuccessful();
         $body = $this->json();
         self::assertSame('ok', $body['status']);
-        // Reports what it checked and what failed, rather than implying it
-        // verified something it did not - the deploy gate reads this.
         self::assertSame([], $body['failed']);
-        self::assertArrayHasKey('checks', $body);
+        // What the deploy gate trusts: each dependency by name, each verified.
+        // An empty list once answered "ok" here having checked nothing at all.
+        foreach (['database', 'redis', 'mercure'] as $name) {
+            self::assertTrue($body['checks'][$name]['ok'] ?? false, $name . ' is checked, and usable');
+        }
+        // Public endpoint: a verdict and a time, never the reason.
+        self::assertSame(['ok', 'ms'], array_keys($body['checks']['database']));
     }
 
     public function testHealthIsReachableWithoutCredentials(): void

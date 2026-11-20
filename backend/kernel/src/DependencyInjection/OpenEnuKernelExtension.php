@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OpenEnu\Kernel\DependencyInjection;
 
+use OpenEnu\Kernel\Health\HealthCheckInterface;
 use OpenEnu\Kernel\Doctrine\ScopeFilter;
 use OpenEnu\Kernel\Doctrine\Type\EncryptedStringType;
 use OpenEnu\Kernel\Doctrine\Type\EncryptedTenantStringType;
@@ -83,6 +84,7 @@ final class OpenEnuKernelExtension extends Extension implements PrependExtension
         GdprSubjectInterface::class => 'open_enu.gdpr_subject',
         LogContextProviderInterface::class => 'open_enu.log_context',
         LocalePreferenceProviderInterface::class => 'open_enu.locale_provider',
+        HealthCheckInterface::class => 'open_enu.health_check',
     ];
 
     /** @var array<string, ModuleManifest>|null */
