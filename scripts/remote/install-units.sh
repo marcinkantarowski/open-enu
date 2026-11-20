@@ -88,4 +88,9 @@ UNIT
 " || { log_warn "could not install systemd units (needs sudo on the server)"; exit 1; }
 
 log_ok "$SLUG.service enabled - the stack returns after a reboot"
-[ "$STAGE" = production ] && log_ok "$SLUG-backup.timer enabled - nightly at 03:17 (+ up to 15 min jitter)"
+if [ "$STAGE" = production ]; then
+  log_ok "$SLUG-backup.timer enabled - nightly at 03:17 (+ up to 15 min jitter)"
+fi
+# The last command is the exit status: a bare `[ ] &&` here made every staging
+# run report a failure after the units were installed.
+exit 0
