@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Module\Manager\Tests\Functional;
 
+use App\Module\Identity\Entity\Membership;
 use App\Tests\Support\ApiTestCase;
 
 /**
@@ -62,6 +63,26 @@ final class ManagerApiTest extends ApiTestCase
         );
     }
 
+    public function testTheTenantListCountsTheMembersItsPageShows(): void
+    {
+        $tenantId = $this->givenATenant();
+        $this->makeUser('owner@example.test');
+        $invited = $this->makeUser('invited@example.test', Membership::ROLE_MEMBER);
+        foreach ($invited->memberships() as $membership) {
+            $membership->invite();
+        }
+        $this->em->flush();
+        $this->givenIAmAnOperator();
+
+        $this->get('/api/manager/tenants');
+
+        self::assertResponseIsSuccessful();
+        $row = array_values(array_filter($this->json()['items'], static fn (array $t): bool => $t['id'] === $tenantId))[0] ?? null;
+        // An open invitation is not a member yet: the tenant page lists one
+        // person, so the list must not say two.
+        self::assertSame(1, $row['members'] ?? null);
+    }
+
     public function testAnUnknownTenantIsNotFound(): void
     {
         $this->givenIAmAnOperator();
@@ -74,7 +95,7 @@ final class ManagerApiTest extends ApiTestCase
     public function testSuspendingATenantTakesEffectAndIsAudited(): void
     {
         $tenantId = $this->givenATenant();
-        $this->givenIAmAnOperator();
+        $operator = $this->givenIAmAnOperator();
 
         $this->post('/api/manager/tenants/' . $tenantId . '/suspend');
 
@@ -92,6 +113,7 @@ final class ManagerApiTest extends ApiTestCase
         self::assertResponseIsSuccessful();
         $actions = array_map(static fn (array $e): string => $e['action'], $this->json()['items']);
         self::assertContains('manager.tenant.suspended', $actions);
+        self::assertSame((string) $operator->id(), $this->auditEntry('manager.tenant.suspended')['actorId']);
     }
 
     public function testImpersonationMintsAMarkedSessionForTheTenantUser(): void
@@ -120,6 +142,9 @@ final class ManagerApiTest extends ApiTestCase
         // Recorded before the token was minted, so a failed attempt is on record
         // too - "who tried?" is most of what a trail is asked after an incident.
         self::assertContains('manager.impersonation.started', $actions);
+        // WHICH operator: the trail once recorded the crossing with no actor at
+        // all, because the actor provider only knew tenant users.
+        self::assertSame((string) $operator->id(), $this->auditEntry('manager.impersonation.started')['actorId']);
     }
 
     public function testImpersonatingSomebodyNotInThatTenantIsRefused(): void
@@ -155,5 +180,21 @@ final class ManagerApiTest extends ApiTestCase
         $this->get('/api/manager/tenants');
 
         self::assertResponseStatusCodeSame(401);
+    }
+
+    /**
+     * The newest entry for an action, as the operator's audit endpoint returns it.
+     *
+     * @return array<string, mixed>
+     */
+    private function auditEntry(string $action): array
+    {
+        foreach ($this->json()['items'] as $entry) {
+            if ($entry['action'] === $action) {
+                return $entry;
+            }
+        }
+
+        self::fail(sprintf('No audit entry for %s.', $action));
     }
 }

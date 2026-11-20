@@ -23,12 +23,19 @@ final class MembershipRepository extends ServiceEntityRepository
         return $this->findBy(['tenantId' => Uuid::fromString($tenantId)]);
     }
 
-    public function countForTenant(string $tenantId): int
+    /**
+     * Active memberships only - the same people `UserRepository::membersOf()`
+     * lists. Counting invitations and suspensions too made the operator's
+     * tenant list say "2 members" above a tenant page that showed one.
+     */
+    public function countActiveForTenant(string $tenantId): int
     {
         return (int) $this->createQueryBuilder('m')
             ->select('COUNT(m.id)')
             ->where('m.tenantId = :tenant')
+            ->andWhere('m.status = :active')
             ->setParameter('tenant', Uuid::fromString($tenantId), 'uuid')
+            ->setParameter('active', Membership::STATUS_ACTIVE)
             ->getQuery()
             ->getSingleScalarResult();
     }

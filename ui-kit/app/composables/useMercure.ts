@@ -24,6 +24,10 @@ let source: EventSource | null = null
 let connecting: Promise<void> | null = null
 const listeners = new Set<Listener>()
 const connected = ref(false)
+// Holders keep the stream open without listening for anything - the app shell,
+// which shows whether the tab is live on every page, including the ones that
+// subscribe to nothing.
+let holders = 0
 
 export function useMercure() {
   const config = useRuntimeConfig()
@@ -74,15 +78,19 @@ export function useMercure() {
     connected.value = false
   }
 
+  // Nobody left who wants the stream: close it, so a tab is not holding a
+  // connection open for nothing.
+  function releaseIfUnused() {
+    if (listeners.size === 0 && holders === 0) disconnect()
+  }
+
   function subscribe(listener: Listener): () => void {
     listeners.add(listener)
     void connect()
 
     const stop = () => {
       listeners.delete(listener)
-      // Last listener out closes the stream, so a background tab is not holding
-      // a connection open for nothing.
-      if (listeners.size === 0) disconnect()
+      releaseIfUnused()
     }
 
     // Tied to the component's scope when there is one, so navigating away
@@ -92,5 +100,27 @@ export function useMercure() {
     return stop
   }
 
-  return { connect, disconnect, subscribe, connected }
+  /**
+   * Keep the stream open until the returned function is called.
+   *
+   * The shell holds it for as long as it is mounted. Before this the shell only
+   * called `connect()`, so the first page that subscribed and was then left
+   * closed the shell's stream with it - and the header said "Reconnecting..."
+   * on every page after, while nothing was reconnecting at all.
+   */
+  function hold(): () => void {
+    holders++
+    void connect()
+
+    let released = false
+
+    return () => {
+      if (released) return
+      released = true
+      holders--
+      releaseIfUnused()
+    }
+  }
+
+  return { connect, disconnect, subscribe, hold, connected }
 }

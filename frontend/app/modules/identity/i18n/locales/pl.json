@@ -9,5 +9,8 @@
   "identity.membershipsHint": "Jedno konto, jedno członkostwo na obszar roboczy, jedna rola w każdym.",
   "identity.workspace": "Obszar roboczy",
   "identity.role": "Rola",
-  "identity.status": "Status"
+  "identity.status": "Status",
+  "identity.membershipStatus.active": "Aktywne",
+  "identity.membershipStatus.invited": "Zaproszenie",
+  "identity.membershipStatus.suspended": "Zawieszone"
 }

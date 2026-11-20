@@ -17,6 +17,7 @@ interface TenantRow {
 
 const api = useApi()
 const { t } = useI18n()
+const label = useLabel()
 
 const page = ref(1)
 
@@ -64,7 +65,7 @@ const tones: Record<string, 'ok' | 'warn' | 'crit' | 'neutral'> = {
         </template>
 
         <template #cell-status="{ row }">
-          <UiStatus :tone="tones[String(row.status)] ?? 'neutral'">{{ row.status }}</UiStatus>
+          <UiStatus :tone="tones[String(row.status)] ?? 'neutral'">{{ label('manager.tenantStatus', String(row.status)) }}</UiStatus>
         </template>
 
       </UiTable>

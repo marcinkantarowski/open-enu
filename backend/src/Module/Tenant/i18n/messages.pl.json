@@ -1,5 +1,5 @@
 {
-  "tenant.title": "Tenant",
-  "permission.tenant.view": "Podgląd danych organizacji",
-  "permission.tenant.manage": "Edycja danych organizacji"
+  "tenant.title": "Obszar roboczy",
+  "permission.tenant.view": "Podgląd danych obszaru roboczego",
+  "permission.tenant.manage": "Edycja danych obszaru roboczego"
 }

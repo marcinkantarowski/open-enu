@@ -54,5 +54,16 @@
   "manager.outcomeOk": "OK",
   "manager.outcomeFailed": "Failed",
   "manager.loginTitle": "Operator console",
-  "manager.loginSubtitle": "Sign in with a platform operator account."
+  "manager.loginSubtitle": "Sign in with a platform operator account.",
+  "manager.tenantStatus.pending": "Pending",
+  "manager.tenantStatus.active": "Active",
+  "manager.tenantStatus.suspended": "Suspended",
+  "manager.accountStatus.unverified": "Unverified",
+  "manager.accountStatus.active": "Active",
+  "manager.accountStatus.disabled": "Disabled",
+  "manager.roleKey.owner": "Owner",
+  "manager.roleKey.admin": "Admin",
+  "manager.roleKey.member": "Member",
+  "manager.valueOn": "On",
+  "manager.valueOff": "Off"
 }

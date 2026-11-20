@@ -25,6 +25,7 @@ const api = useApi()
 const route = useRoute()
 const toast = useToast()
 const { t } = useI18n()
+const label = useLabel()
 const { public: cfg } = useRuntimeConfig()
 
 const id = computed(() => String(route.params.id))
@@ -113,6 +114,10 @@ async function viewAs(member: Member) {
         :loading="pending"
         :empty-title="t('manager.noMembers')"
       >
+        <template #cell-role="{ row }">{{ label('manager.roleKey', String(row.role)) }}</template>
+
+        <template #cell-status="{ row }">{{ label('manager.accountStatus', String(row.status)) }}</template>
+
         <template #cell-actions="{ row }">
           <UiButton size="sm" data-testid="impersonate" @click="viewAs(row)">
             {{ t('manager.viewAs') }}

@@ -16,5 +16,6 @@ interface UserDirectoryInterface
     /** @return list<array{id: string, email: string, displayName: ?string, role: string, status: string}> */
     public function membersOf(string $tenantId): array;
 
+    /** How many rows `membersOf()` would return: active members, not invitations or suspensions. */
     public function countMembersOf(string $tenantId): int;
 }

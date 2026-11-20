@@ -88,7 +88,8 @@ async function override(setting: Setting, value: unknown) {
         </template>
 
         <template #cell-defaultValue="{ row }">
-          <span class="font-mono text-xs">{{ JSON.stringify(row.defaultValue) }}</span>
+          <span v-if="typeof row.defaultValue === 'boolean'">{{ row.defaultValue ? t('manager.valueOn') : t('manager.valueOff') }}</span>
+          <span v-else class="font-mono text-xs">{{ JSON.stringify(row.defaultValue) }}</span>
         </template>
 
         <template #cell-tenantEditable="{ row }">
