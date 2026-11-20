@@ -45,7 +45,15 @@ Linux too. A portability rule has to be a static check, not a test.
 - `grep -P`, `readlink -f`, `date -d`, `stat -c`, `\|` in a basic regex and `sed`'s `0,/re/`
   address: all GNU-only. "First match only" is an `awk` one-liner here.
 - BSD `wc -l` pads its count with spaces: compare it through `tr -d ' '`, or use `grep -c`.
-- `timeout` is not on macOS by default; `check-ports.sh` already falls back when it is absent.
+- `timeout` is not on macOS by default. `tcp_probe` called it bare, got "command not found"
+  and reported every closed port as `filtered` - on the laptop preflight runs from. Every
+  time limit now goes through `with_timeout` in `scripts/lib/net.sh` (perl's `alarm` where
+  there is no GNU `timeout`), and `make shell-check` fails on a bare call.
+- `getent` is not on macOS either, and `dig` is not its substitute: dig asks a DNS server and
+  never reads `/etc/hosts`. The system resolver on macOS is `dscacheutil -q host`.
+- A test that only ever runs where the tool exists proves nothing about the fallback.
+  `check-net.sh` runs `with_timeout` again with a PATH that has no `timeout` in it, so
+  Linux CI exercises the path a Mac takes.
 - Anything inside a container is fine: the containers are Linux whatever the host is.
 - `make platform-update` renders OLD commits with their own `init`, so the fix has to reach
   back: `platform-update.sh` falls back to the target's `init` (`INIT_ROOT`) when a version

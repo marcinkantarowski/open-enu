@@ -62,12 +62,31 @@ expect "a keyscan banner is skipped, the key line kept" "github.com ssh-ed25519 
 free_port() {
   local p
   for p in $(seq 47000 47100); do
-    timeout 1 bash -c "exec 3<>/dev/tcp/127.0.0.1/$p" 2>/dev/null || { echo "$p"; return; }
+    [ "$(tcp_probe 127.0.0.1 "$p" 1)" = open ] || { echo "$p"; return; }
   done
 }
 port="$(free_port)"
 [ -n "$port" ] || die "no free local port in 47000-47100" "the check cannot run, which is not the same as passing"
 expect "a port nothing listens on is refused, not filtered" refused "$(tcp_probe 127.0.0.1 "$port" 2)"
+
+# ── a time limit, with and without GNU timeout ──────────────────────────────
+# macOS has no `timeout`, and CI runs on Linux, where it always does - so the
+# fallback is proved here on purpose, with a PATH that has no `timeout` in it.
+# A bare `timeout` there was "command not found", and every port read filtered.
+expect "a command that outlives its limit is stopped" 124 "$(with_timeout 1 sleep 3; echo $?)"
+expect "a command within its limit keeps its status"   3   "$(with_timeout 5 sh -c 'exit 3'; echo $?)"
+
+mkdir -p "$FAKE/bin"
+for tool in bash sh perl sleep grep; do
+  ln -s "$(command -v "$tool")" "$FAKE/bin/$tool"
+done
+without_timeout() { (PATH="$FAKE/bin"; "$@"); }
+expect "without GNU timeout, a command that outlives its limit is stopped" 124 \
+  "$(without_timeout with_timeout 1 sleep 3; echo $?)"
+expect "without GNU timeout, a command within its limit keeps its status" 3 \
+  "$(without_timeout with_timeout 5 sh -c 'exit 3'; echo $?)"
+expect "without GNU timeout, a port nothing listens on is still refused" refused \
+  "$(without_timeout tcp_probe 127.0.0.1 "$port" 2)"
 
 # TEST-NET-1 (RFC 5737) is never routed: nothing answers, which is what a
 # firewall that drops packets looks like from outside.

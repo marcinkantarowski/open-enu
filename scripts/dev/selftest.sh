@@ -374,9 +374,12 @@ fails_when "net-check catches a zone lookup that stops at the staging name" \
   "$WORK/scripts/dev/check-net.sh" \
   "sed_inplace 's/name=\"\${name#\*.}\"/return 1/' '$WORK/scripts/lib/net.sh'"
 
+# Both resolvers are broken at once: Linux takes the getent branch and macOS
+# the dscacheutil one, and a mutation only one host executes proves nothing on
+# the other.
 fails_when "net-check catches a server address that is not IPv4" \
   "$WORK/scripts/dev/check-net.sh" \
-  "sed_inplace 's/getent ahostsv4/getent hosts/' '$WORK/scripts/lib/net.sh'"
+  "sed_inplace 's/getent ahostsv4/getent hosts/; s|/^ip_address:/|/address:/|' '$WORK/scripts/lib/net.sh'"
 
 fails_when "net-check catches a host key read from the keyscan banner" \
   "$WORK/scripts/dev/check-net.sh" \
@@ -456,6 +459,10 @@ fails_when "shell-check catches a broken script" \
 fails_when "shell-check catches a bare in-place sed" \
   "$WORK/scripts/dev/check-shell.sh" \
   "printf '#!/usr/bin/env bash\\nsed -i s/a/b/ \"\$1\"\\n' > '$WORK/scripts/dev/sed-fixture.sh'"
+
+fails_when "shell-check catches a bare timeout" \
+  "$WORK/scripts/dev/check-shell.sh" \
+  "printf '#!/usr/bin/env bash\\ntimeout 1 true\\n' > '$WORK/scripts/dev/timeout-fixture.sh'"
 
 
 fails_when "agents-budget catches an oversized MODULE.md" \

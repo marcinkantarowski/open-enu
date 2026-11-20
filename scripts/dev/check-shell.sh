@@ -41,6 +41,22 @@ if [ -n "$bare" ]; then
 fi
 log_ok "every in-place sed goes through sed_inplace"
 
+# GNU `timeout` is not on macOS either. Called bare it is "command not found",
+# which a probe reads as an answer: tcp_probe called every closed port
+# `filtered`, and preflight runs from the developer's laptop. scripts/lib/net.sh
+# has with_timeout for it. Only a call with a duration is matched, so
+# `--connect-timeout 5` and `ConnectTimeout=10` are not.
+bare="$(cd "$ROOT" && grep -rnE '(^|[^[:alnum:]_-])timeout +[0-9]' scripts/dev scripts/lib --include='*.sh' \
+        | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)"
+if [ -n "$bare" ]; then
+  printf '%s\n' "$bare" >&2
+  echo
+  log_fail "a bare timeout in the scripts above - macOS has no GNU timeout" \
+    "call with_timeout from scripts/lib/net.sh instead (source it first)"
+  exit 1
+fi
+log_ok "every time limit goes through with_timeout"
+
 command -v docker >/dev/null 2>&1 || die "docker is required to run shellcheck"
 
 mapfile -t FILES < <(cd "$ROOT" && find scripts docker -name '*.sh' -not -path '*/node_modules/*' | sort)
