@@ -218,6 +218,9 @@ $banner
 
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?serverVersion=16&charset=utf8"
 REDIS_URL="redis://:${REDIS_PASSWORD}@redis:6379"
+# The internal hub: /health/deep is tested against the real one, as it is
+# against the real Postgres and Redis.
+MERCURE_URL=http://mercure/.well-known/mercure
 
 # The suite issues real tokens against the real keypair, so signing must work -
 # stubbing it out would leave the whole authentication path untested.

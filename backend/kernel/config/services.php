@@ -30,6 +30,9 @@ use OpenEnu\Kernel\Flags\FlagsInterface;
 use OpenEnu\Kernel\Flags\StaticFlags;
 use OpenEnu\Kernel\Gdpr\GdprSubjectInterface;
 use OpenEnu\Kernel\Gdpr\GdprWalker;
+use OpenEnu\Kernel\Health\DatabaseCheck;
+use OpenEnu\Kernel\Health\MercureCheck;
+use OpenEnu\Kernel\Health\RedisCheck;
 use OpenEnu\Kernel\Http\Controller\HealthController;
 use OpenEnu\Kernel\Inventory\DuplicateNameHint;
 use OpenEnu\Kernel\Inventory\InventoryBuilder;
@@ -131,8 +134,19 @@ return static function (ContainerConfigurator $container): void {
     // Records that a session is impersonated, and refuses what it must not do.
     $services->set(ImpersonationListener::class);
 
+    // What /health/deep proves usable. A module adds one by implementing
+    // HealthCheckInterface; autoconfiguration tags it.
+    $services->set(DatabaseCheck::class);
+    $services->set(RedisCheck::class)->arg('$redisUrl', env('REDIS_URL'));
+    $services->set(MercureCheck::class)->arg('$mercureUrl', env('MERCURE_URL'));
+
     $services->set(HealthController::class)
-        ->args([param('open_enu.app_stage'), \OpenEnu\Kernel\Kernel::VERSION])
+        ->args([
+            param('open_enu.app_stage'),
+            \OpenEnu\Kernel\Kernel::VERSION,
+            tagged_iterator('open_enu.health_check'),
+            service('logger'),
+        ])
         ->tag('controller.service_arguments');
 
     $services->set(StorageController::class)->tag('controller.service_arguments');

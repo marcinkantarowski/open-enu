@@ -202,6 +202,7 @@ on `web` with TLS settings, and lists the plain-HTTP routers it found.
 | `promote` says staging is behind origin | `make deploystaging` first: production only gets what staging has run |
 | `promote` cannot push | Staging's deploy key is read-only - `make deploy-key … STAGE=staging` and tick write access |
 | Certificates never issue | Port 80 reachable? CAA record naming another CA? Cloudflare proxy on? All three are preflight checks |
+| Health gate red, and `/health/deep` names a check in `failed` | that dependency is down or unreachable from the API; the reason is in the API's log: `ssh $HOST 'cd /opt/<slug>-prod && docker compose logs --tail=80 api \| grep "Health check"'` |
 | Stack up, health gate red | `ssh $HOST 'cd /opt/<slug>-prod && docker compose logs --tail=80 api; docker logs --tail=80 enu-edge'` |
 | Deploy failed mid-migration | Nothing was restarted; the old containers are still serving. The pre-deploy dump is in `/opt/<slug>-prod/backups`; the rollback command is printed |
 | Need the database locally | `make tunnel HOST=… [STAGE=staging]` → `postgres://…@127.0.0.1:15432/…` for one session |

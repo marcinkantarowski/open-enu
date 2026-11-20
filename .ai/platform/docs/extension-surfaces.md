@@ -21,6 +21,7 @@ that is the coupling these surfaces exist to avoid.
 | **React to something happening** | subscribe | `#[AsEventListener]`, or a Messenger handler for a domain event *(2b)*. Many listeners may react to one event; ordering is `priority` |
 | **Add fields to every log line** | `LogContextProviderInterface` | Implement it. Auto-tagged by `instanceof`, merged by `ContextProcessor`. A provider that throws is swallowed - it must never take down the request it is annotating |
 | **Influence which language a response speaks** | `LocalePreferenceProviderInterface` | Implement it with a `priority()`. The kernel's `Accept-Language` provider sits at 0; anything the user or tenant explicitly chose should outrank it |
+| **Make the deploy gate check a dependency** | `HealthCheckInterface` | Implement `name()` and a `check()` that throws when the dependency is unusable. Auto-tagged; `/health/deep` lists it by name, with a verdict and a time and never the reason (that goes to the log - the endpoint is public). Keep it bounded: the kernel's own (database, redis, mercure) give up after 2 s |
 | **Add a console command** | put it in `Command/` | Discovered and registered automatically for every enabled module |
 | **Add routes** | put a controller in `Controller/` | Attribute routes are loaded per module by `ModuleRouteLoader`, which respects `enabled: false` |
 | **Add a permission** | `Acl/permissions.php` | Merged into one global map at compile time. Two modules declaring the same string is a boot failure - a permission with two owners has no meaning |

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenEnu\Kernel\Http\Controller;
 
+use OpenEnu\Kernel\Health\HealthCheckInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -20,16 +22,21 @@ use Symfony\Component\Routing\Attribute\Route;
  *
  *   /health/deep  readiness - "are this process's dependencies usable?".
  *                 Polled once by the deploy gate, which must NOT report success
- *                 while the app cannot reach Postgres. Checks arrive as the
- *                 dependencies do; today there are none to check.
+ *                 while the app cannot reach Postgres. Each dependency is a
+ *                 HealthCheckInterface (Postgres, Redis, Mercure in the kernel;
+ *                 a module may add its own). With none registered it is not
+ *                 "ok": a check that verified nothing has not passed.
  *
  * Both are unauthenticated by necessity and therefore rate-limited (Phase 3).
  */
 final class HealthController
 {
+    /** @param iterable<HealthCheckInterface> $checks */
     public function __construct(
         private readonly string $appStage,
         private readonly string $kernelVersion,
+        private readonly iterable $checks,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -46,13 +53,31 @@ final class HealthController
     #[Route('/health/deep', name: 'kernel_health_deep', methods: ['GET'])]
     public function deep(): JsonResponse
     {
-        // Each dependency registers a check as it is introduced: Postgres and
-        // Redis in Phase 2b, Mercure and outbox lag in Phase 7. Until then this
-        // reports honestly that it verified nothing, rather than implying it did.
-        /** @var array<string, array{ok: bool, detail?: string}> $checks */
+        // Name, verdict and time only. Why a check failed goes to the log: this
+        // endpoint is public, and an exception message is a map of the inside.
+        /** @var array<string, array{ok: bool, ms: int}> $checks */
         $checks = [];
 
+        foreach ($this->checks as $check) {
+            $started = hrtime(true);
+            try {
+                $check->check();
+                $ok = true;
+            } catch (\Throwable $e) {
+                $ok = false;
+                $this->logger->error('Health check {check} failed: {message}', [
+                    'check' => $check->name(),
+                    'message' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
+            }
+            $checks[$check->name()] = ['ok' => $ok, 'ms' => intdiv(hrtime(true) - $started, 1_000_000)];
+        }
+
         $failed = array_keys(array_filter($checks, static fn (array $c): bool => !$c['ok']));
+        if ($checks === []) {
+            $failed = ['nothing-checked'];
+        }
 
         return new JsonResponse(
             [
