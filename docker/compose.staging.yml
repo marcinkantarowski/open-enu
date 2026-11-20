@@ -28,21 +28,28 @@ services:
   mercure:
     labels:
       - traefik.http.routers.${STACK}-mercure.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.routers.${STACK}-mercure.tls.certresolver=letsencrypt
   api:
     labels:
       - traefik.http.routers.${STACK}-api.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.routers.${STACK}-api.tls.certresolver=letsencrypt
   frontend:
     labels:
       - traefik.http.routers.${STACK}-frontend.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.routers.${STACK}-frontend.tls.certresolver=letsencrypt
   manager:
     labels:
       - traefik.http.routers.${STACK}-manager.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.routers.${STACK}-manager.tls.certresolver=letsencrypt
   landing:
     labels:
       - traefik.http.routers.${STACK}-landing.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.routers.${STACK}-landing.tls.certresolver=letsencrypt
   mailpit:
     labels:
       - traefik.http.routers.${STACK}-mailpit.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.routers.${STACK}-mailpit.tls.certresolver=letsencrypt
   webhook-echo:
     labels:
       - traefik.http.routers.${STACK}-webhook-echo.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.routers.${STACK}-webhook-echo.tls.certresolver=letsencrypt

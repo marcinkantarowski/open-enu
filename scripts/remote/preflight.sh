@@ -18,6 +18,12 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/../lib/net.sh"
 
 HOST="${1:-}"; DOMAIN="${2:-}"; REPO="${3:-}"; REF="${4:-main}"
+# Which key the server clones with: staging has its own (github-staging). A
+# provisioning run sets GIT_HOST; `make preflight STAGE=staging` sets STAGE.
+if [ -z "${GIT_HOST:-}" ] && [ -n "${STAGE:-}" ]; then
+  . "$HERE/../lib/stage.sh"
+  GIT_HOST="$(stage_git_host "$(stage_normalize "$STAGE")")" || die "STAGE must be staging or production"
+fi
 [ -n "$HOST" ] && [ -n "$DOMAIN" ] || die \
   "usage: preflight.sh HOST DOMAIN [REPO] [REF]" \
   "example: make preflight HOST=deploy@203.0.113.42 DOMAIN=open-enu.com REPO=acme/open-enu"
