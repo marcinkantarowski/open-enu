@@ -85,6 +85,21 @@ test('a project created in one session appears in another, and not in another te
   await actorContext.close()
 })
 
+test('leaving a page that listened leaves the header live', async ({ page }) => {
+  await signIn(page)
+  await openProjects(page)
+  const indicator = page.getByRole('banner').getByTestId('realtime-indicator')
+  await expect(indicator).toContainText(/live/i)
+
+  // A route change through the menu, as a person makes it - not a reload, which
+  // would open a fresh stream and hide the bug. The page being left was the
+  // stream's last listener, and closing it under the shell made the header say
+  // "Reconnecting..." on every page after, while nothing was reconnecting.
+  await page.getByRole('navigation').locator('a[href="/audit"]').click()
+  await page.waitForURL('**/audit')
+  await expect(indicator).toContainText(/live/i)
+})
+
 test('a stale save is refused and the conflict bar offers a real choice', async ({ browser }) => {
   const first = await browser.newContext({ ignoreHTTPSErrors: true })
   const second = await browser.newContext({ ignoreHTTPSErrors: true })

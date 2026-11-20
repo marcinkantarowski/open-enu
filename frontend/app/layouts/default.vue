@@ -8,11 +8,15 @@ const ui = useUiStore()
 const { items } = useNavigation()
 const { logout } = useAuth()
 const { t } = useI18n()
-const { connect } = useMercure()
+const { hold } = useMercure()
 
-// One stream per tab, opened once the shell mounts. Widgets subscribe to it by
-// event name; they do not each open a connection.
-onMounted(() => { void connect() })
+// One stream per tab, held for as long as the shell is mounted. Widgets
+// subscribe to it by event name; they do not each open a connection, and
+// leaving a page that subscribed does not close it under the header's
+// "Live" indicator.
+let release: (() => void) | undefined
+onMounted(() => { release = hold() })
+onBeforeUnmount(() => release?.())
 
 // Initials stand in for a picture nobody uploaded: enough to tell at a glance
 // whose session this tab holds.
