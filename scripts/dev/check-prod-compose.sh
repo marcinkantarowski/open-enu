@@ -178,6 +178,19 @@ for router in "${srouters[@]}"; do
 done
 [ "$unguarded" -eq 0 ] && log_ok "every staging router is behind the allowlist (${#srouters[@]})"
 
+# ── 7b. and gets a public certificate ───────────────────────────────────────
+# The dev stack gives every router `tls=true` for its local certificates, and a
+# router's own TLS section replaces the entrypoint's default - certResolver
+# included. Without its own resolver label a staging router serves Traefik's
+# self-signed certificate, and Let's Encrypt is never asked.
+noresolver=0
+for router in "${srouters[@]}"; do
+  grep -qF "traefik.http.routers.$router.tls.certresolver: letsencrypt" <<<"$SCONFIG" \
+    || { bad "staging router $router has no certificate resolver" \
+             "add \${STACK}-<service>.tls.certresolver=letsencrypt in docker/compose.staging.yml - the dev stack's tls=true drops the edge's default"; noresolver=1; }
+done
+[ "$noresolver" -eq 0 ] && log_ok "every staging router resolves a public certificate (${#srouters[@]})"
+
 # ── 8. nothing drops the override ───────────────────────────────────────────
 # Code only: a comment explaining the rule names the pattern too.
 hardcoded="$(grep -rnE -- "-f [\"']?[^ ]*compose\.dev\.yml" "$ROOT/scripts" "$ROOT/Makefile" 2>/dev/null \

@@ -215,8 +215,8 @@ status: ## Show container status and health
 #  never change a DNS zone or a server as a side effect (.ai/platform/PLAN.md §10.5).
 
 .PHONY: preflight
-preflight: ## Everything a remote target needs, checked first: make preflight HOST=deploy@ip DOMAIN=x.com REPO=org/x
-	@$(REMOTE)/preflight.sh "$(HOST)" "$(DOMAIN)" "$(REPO)" "$(or $(REF),main)"
+preflight: ## Everything a remote target needs, checked first: make preflight HOST=deploy@ip DOMAIN=x.com REPO=org/x [STAGE=staging]
+	@STAGE="$(STAGE)" $(REMOTE)/preflight.sh "$(HOST)" "$(DOMAIN)" "$(REPO)" "$(or $(REF),main)"
 
 .PHONY: dns-check
 dns-check: ## Check DNS against the target and write importable fixes: make dns-check DOMAIN=x.com IP=1.2.3.4
