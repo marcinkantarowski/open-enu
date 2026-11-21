@@ -80,6 +80,30 @@ The rules for anything placed there:
 Name the route `/api/callbacks/<module>/<provider>`. `AccessControlCoverageTest` exempts the
 prefix from `#[IsGranted]` - there is no user to grant anything to - and nothing else.
 
+### The open web
+
+`^/api/public/` is the third public prefix: what a page on somebody else's site calls - a form
+a visitor fills in, a widget that lists something. The caller is an anonymous browser with no
+session and no key of ours, and there never will be one. The rules:
+
+- **The tenant comes from a public key in the path**, looked up inside a reasoned
+  `runUnscoped()`, and then the request enters that tenant with `enterTenant()`. Never from a
+  header or the body, and never from the ambient scope - there is none.
+- **Every write is limited per address** with `publicWriteLimiter`; reads ride on the edge's
+  coarse limit. A write that looks automated (a filled honeypot field, a form submitted faster
+  than a person can type) gets the same answer as a real one and stores nothing - telling a bot
+  it was caught teaches it what to change.
+- **Answer without revealing what exists.** An unknown key, a paused form and a disabled
+  tenant look the same to the caller unless the page has to say something to a person
+  ("sign-ups open on 16 November").
+- **No personal data out.** A public answer carries what the page shows to any visitor; a
+  submission answers with a reference number, never with the record it created.
+- **The write still goes through the command bus**, with a null actor, so it is audited and
+  transactional like any other.
+
+Name the route `/api/public/<module>/...`. `AccessControlCoverageTest` exempts the prefix from
+`#[IsGranted]`; a functional test of each action shows the limiter and the refusals.
+
 ---
 
 ## Permissions

@@ -46,6 +46,14 @@ framework:
             policy: sliding_window
             limit: 1000
             interval: '1 minute'
+        publicWriteLimiter:
+            # A write from the open web (`/api/public/`): a form submitted on a
+            # school's site, a sign-up from a widget. Per address, generous enough
+            # for a family behind one router, tight enough that a script filling
+            # the form in a loop stops after a handful.
+            policy: sliding_window
+            limit: 10
+            interval: '10 minutes'
 
 when@dev:
     framework:
@@ -67,6 +75,8 @@ when@dev:
                 limit: 600
             managerLoginLimiter:
                 limit: 100
+            publicWriteLimiter:
+                limit: 200
 
 when@test:
     framework:
@@ -83,4 +93,6 @@ when@test:
             refreshLimiter:
                 limit: 10000
             managerLoginLimiter:
+                limit: 10000
+            publicWriteLimiter:
                 limit: 10000

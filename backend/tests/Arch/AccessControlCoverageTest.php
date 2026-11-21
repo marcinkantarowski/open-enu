@@ -35,6 +35,10 @@ final class AccessControlCoverageTest extends KernelTestCase
         // user: the action verifies the provider's signature instead, and a
         // functional test of each one must show a forged call being refused.
         '/api/callbacks/',
+        // The open web: a page on another site calls these with no session at
+        // all. The tenant comes from a public key in the path and each write is
+        // limited per address (auth.md, "The open web").
+        '/api/public/',
     ];
 
     public function testEveryModuleActionDeclaresThePermissionItNeeds(): void
