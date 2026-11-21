@@ -24,7 +24,8 @@ import type { KnipConfig } from 'knip'
  * module directory mean?" - see .ai/platform/docs/frontend-conventions.md.
  */
 const nuxtConventions = (root: string) => [
-  `${root}/app.vue`,
+  // The root component and the error page - Nuxt renders `error.vue` in place of the app.
+  `${root}/{app,error}.vue`,
   `${root}/{pages,layouts,middleware,plugins,composables,components,stores,utils}/**/*.{ts,vue}`,
   `${root}/types/**/*.d.ts`,
 ]

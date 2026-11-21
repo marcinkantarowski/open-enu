@@ -16,6 +16,7 @@ interface Setting {
   tenantEditable: boolean
   effectiveValue: unknown
   overridden: boolean
+  category: string | null
 }
 
 const api = useApi()
@@ -27,6 +28,12 @@ const { data, pending, refresh } = await useAsyncData(
   'tenant-settings',
   () => api.get<{ items: Setting[] }>('/api/settings'),
 )
+
+// The reference module's switches follow DEMO_CONTENT like its menu entry: a
+// product that does not offer the module does not offer its settings either.
+const DEMO_CATEGORIES = ['example']
+const { demoContent } = useRuntimeConfig().public
+const items = computed(() => (data.value?.items ?? []).filter(s => demoContent || !DEMO_CATEGORIES.includes(s.category ?? '')))
 
 const saving = ref<string | null>(null)
 
@@ -50,11 +57,11 @@ async function save(setting: Setting, value: unknown) {
     <SettingsTabs />
 
     <UiCard :title="t('settings.workspace')" :description="t('settings.hint')">
-      <UiEmptyState v-if="!pending && (data?.items.length ?? 0) === 0" />
+      <UiEmptyState v-if="!pending && items.length === 0" />
 
       <ul v-else class="flex flex-col divide-y divide-border">
         <li
-          v-for="setting in data?.items ?? []"
+          v-for="setting in items"
           :key="setting.identifier"
           class="flex items-center justify-between gap-4 py-3"
         >

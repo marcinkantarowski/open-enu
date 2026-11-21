@@ -24,6 +24,11 @@
   "error.network": "Nie udało się połączyć z serwerem.",
   "error.forbidden": "Nie masz uprawnień do tej operacji.",
   "error.notFound": "To już nie istnieje.",
+  "errorPage.notFound.title": "Nie ma takiej strony",
+  "errorPage.notFound.hint": "Adres mógł się zmienić albo strona została usunięta. Sprawdź link albo wróć na stronę główną.",
+  "errorPage.failed.title": "Coś poszło nie tak",
+  "errorPage.failed.hint": "Nie udało się wyświetlić tej strony. Spróbuj ponownie za chwilę.",
+  "errorPage.home": "Wróć na stronę główną",
 
   "auth.email": "Adres e-mail",
   "auth.password": "Hasło",
