@@ -24,6 +24,11 @@
   "error.network": "The server could not be reached.",
   "error.forbidden": "You do not have permission to do that.",
   "error.notFound": "That no longer exists.",
+  "errorPage.notFound.title": "Page not found",
+  "errorPage.notFound.hint": "The address may have changed or the page was removed. Check the link or go back to the home page.",
+  "errorPage.failed.title": "Something went wrong",
+  "errorPage.failed.hint": "This page could not be shown. Please try again in a moment.",
+  "errorPage.home": "Back to the home page",
 
   "auth.email": "Email address",
   "auth.password": "Password",

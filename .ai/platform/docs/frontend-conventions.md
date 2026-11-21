@@ -75,7 +75,8 @@ permission to see it.
 
 `Example` is the platform's reference module and is not a product screen. Its menu entry is
 marked `demo: true` and is offered only while `DEMO_CONTENT` is on (`.env`; on by default, a
-product switches it off). The module, its routes and `/example` stay either way, because the
+product switches it off). Its switches on the workspace settings screen follow the same flag
+(`DEMO_CATEGORIES` in the settings page). The module, its routes and `/example` stay either way, because the
 platform's browser and security tests stand on them - never delete it to tidy a menu.
 
 ### Screens for an operator
