@@ -71,6 +71,19 @@ security:
             pattern: ^/api/callbacks/
             stateless: true
             security: false
+        # The open web: what a page on someone else's site calls - a form a
+        # visitor fills in, a widget that shows a list. There is no session and
+        # never will be, so the firewall cannot tell who is asking. EVERY action
+        # under this prefix takes its tenant from a public key in the path
+        # (inside a reasoned runUnscoped()), is rate-limited per address, answers
+        # without revealing what exists, and returns no personal data.
+        #
+        # MUST be declared before the `api` firewall, which would otherwise
+        # claim the path and answer 401.
+        public:
+            pattern: ^/api/public/
+            stateless: true
+            security: false
 
         # The tenant realm, reachable two ways.
         #
@@ -99,6 +112,7 @@ security:
         - { path: ^/api/auth/, roles: PUBLIC_ACCESS }
         - { path: ^/api/manager/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/callbacks/, roles: PUBLIC_ACCESS }
+        - { path: ^/api/public/, roles: PUBLIC_ACCESS }
         # Belt to the firewall's braces: even if a route slipped past the
         # manager firewall's pattern, it still requires an operator role.
         - { path: ^/api/manager, roles: ROLE_PLATFORM_MANAGER }

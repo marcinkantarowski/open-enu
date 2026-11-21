@@ -105,6 +105,18 @@ operator already is, and the tenant page never learns which modules exist.
 place where optimistic locking, the conflict bar, a realtime refresh, an upload and a
 flag-guarded action are all shown working against the real API at once.
 
+### Pages embedded on other sites
+
+The edge answers every request with `X-Frame-Options: DENY`, and that is the right default.
+A page meant to sit in an iframe on another site (a sign-up form, a widget) does not switch it
+off; it answers with `Content-Security-Policy: frame-ancestors <the allowed origins>`, which
+browsers obey **instead of** `X-Frame-Options` (CSP Level 2). Set it per request from a Nitro
+server middleware in the module's layer (`server/middleware/`), from the API - the allowed
+origins are data, never `*`, and an unknown page gets `frame-ancestors 'none'`.
+
+Such a page is `definePageMeta({ layout: 'blank', public: true })`, calls only
+`/api/public/` (auth.md, *The open web*) and still goes through `useApi()`.
+
 ## What the shared layer gives you
 
 | Need | Reach for |
