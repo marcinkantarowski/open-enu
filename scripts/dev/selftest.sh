@@ -202,6 +202,18 @@ assert_contains "backend DSN uses the SQL-safe name" "$(cat backend/.env.local)"
 assert_contains "derived files are marked generated" "$(head -1 frontend/.env)"  "GENERATED"
 
 # ═══════════════════════════════════════════════════════════════════════════
+log_step "Remote targets - a server's address never comes from this machine's DOMAIN"
+# ═══════════════════════════════════════════════════════════════════════════
+# .env's DOMAIN is the local stack's. A deploy that fell back to it would
+# report - and one day act on - acme.example.com while shipping to staging.
+printf 'STAGING_HOST=deploy@stg.test\nSTAGING_DOMAIN=stg.acme.test\n' >> .env
+assert_contains "deploystaging goes to STAGING_HOST, with its own domain" \
+  "$(make -n deploystaging 2>&1)" '"deploy@stg.test" "stg.acme.test" staging'
+assert_contains "a HOST named on the command line does not borrow the stage's domain" \
+  "$(make -n deploystaging HOST=deploy@other.test 2>&1)" '"deploy@other.test" "" staging'
+sed_inplace '/^STAGING_HOST=deploy@stg.test$/d; /^STAGING_DOMAIN=stg.acme.test$/d' .env
+
+# ═══════════════════════════════════════════════════════════════════════════
 log_step "Guardrails actually fail when the rule is broken"
 # ═══════════════════════════════════════════════════════════════════════════
 # The whole premise of this repository is that every rule which matters is also

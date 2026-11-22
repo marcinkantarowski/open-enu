@@ -234,6 +234,11 @@ deploy-key: ## Give a stage access to the repo (production read-only, STAGE=stag
 # ═════════════════════════════════════════════════════════════════════════════
 ##@ Remote
 # ═════════════════════════════════════════════════════════════════════════════
+#  A stage's target: HOST/DOMAIN given on the command line, else STAGING_* or
+#  PROD_* from .env. DOMAIN only when it came from the command line - the one
+#  in .env is THIS machine's (open-enu.local), never a server's - and the
+#  stage's own only with its own host, not with another HOST= named here.
+target_domain = $(if $(filter command line,$(origin DOMAIN)),$(DOMAIN),$(if $(HOST),,$(1)))
 
 .PHONY: buildstaging
 buildstaging: ## Bare server → staging (the dev stack, for vibe coding): make buildstaging HOST=deploy@ip DOMAIN=stg.x.com REPO=org/x EMAIL=you@x.com [ALLOW=ip,cidr]
@@ -244,16 +249,16 @@ buildprod: ## Bare server → production, one command; same server as staging or
 	@$(REMOTE)/provision.sh "$(HOST)" "$(DOMAIN)" production "$(REPO)" "$(or $(REF),main)"
 
 .PHONY: deploystaging
-deploystaging: ## Pull a ref into staging - refuses to touch uncommitted work there: make deploystaging HOST=deploy@ip DOMAIN=stg.x.com [REF=main]
-	@$(REMOTE)/deploy.sh "$(HOST)" "$(DOMAIN)" staging "$(or $(REF),main)"
+deploystaging: ## Pull a ref into staging - refuses to touch uncommitted work there: make deploystaging [HOST=deploy@ip DOMAIN=stg.x.com] [REF=main]
+	@$(REMOTE)/deploy.sh "$(or $(HOST),$(STAGING_HOST))" "$(call target_domain,$(STAGING_DOMAIN))" staging "$(or $(REF),main)"
 
 .PHONY: deployprod
 deployprod: ## Ship a ref to production (runs `make ci` first; brief downtime). Usually: make promote
-	@$(REMOTE)/deploy.sh "$(HOST)" "$(DOMAIN)" production "$(or $(REF),main)"
+	@$(REMOTE)/deploy.sh "$(or $(HOST),$(PROD_HOST))" "$(call target_domain,$(PROD_DOMAIN))" production "$(or $(REF),main)"
 
 .PHONY: promote
 promote: ## Production runs exactly what staging runs: make promote (on staging) | make promote STAGING=deploy@ip [PROD=deploy@ip]
-	@STAGING="$(STAGING)" PROD="$(PROD)" $(REMOTE)/promote.sh
+	@STAGING="$(or $(STAGING),$(STAGING_HOST))" PROD="$(or $(PROD),$(PROD_HOST))" $(REMOTE)/promote.sh
 
 .PHONY: promote-gate
 promote-gate: test-db arch test typecheck ## The gate `make promote` runs on staging before production moves
