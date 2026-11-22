@@ -480,6 +480,10 @@ fails_when "shell-check catches a bare timeout" \
   "$WORK/scripts/dev/check-shell.sh" \
   "printf '#!/usr/bin/env bash\\ntimeout 1 true\\n' > '$WORK/scripts/dev/timeout-fixture.sh'"
 
+fails_when "shell-check catches a non-atomic write the edge watches" \
+  "$WORK/scripts/dev/check-shell.sh" \
+  "printf 'install -m 644 x \"\$EDGE_HOME/dynamic/x.yml\"\\n' >> '$WORK/scripts/dev/edge.sh'"
+
 
 fails_when "agents-budget catches an oversized MODULE.md" \
   "$WORK/scripts/dev/agents-budget.sh" \

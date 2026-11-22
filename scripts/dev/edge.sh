@@ -78,7 +78,12 @@ edge_health() { docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{
 on_network() { docker inspect -f '{{range $n, $_ := .NetworkSettings.Networks}}{{$n}} {{end}}' "$EDGE" 2>/dev/null | tr ' ' '\n' | grep -qxF "$NET"; }
 
 # write_atomically <path> - stdin to <path> via a temp file, so Traefik's
-# watcher never reads half a file.
+# watcher never reads half a file. Every write under dynamic/ goes through it
+# (enforced by `make shell-check`): `install` and `cp` unlink or truncate the
+# target first, and Traefik reloads in that gap. With _shared.yml missing,
+# every router naming noindex@file fails and the whole host answers 404 for
+# a few seconds - on each `make edge`, which is how it was found.
+# The temp file is a dotfile without a .yml suffix, so Traefik never loads it.
 write_atomically() {
   local tmp; tmp="$(mktemp "$(dirname "$1")/.$(basename "$1").XXXXXX")" || return 1
   cat > "$tmp" && chmod 644 "$tmp" && mv "$tmp" "$1"
@@ -110,7 +115,7 @@ EOF
 }
 
 register_server() {
-  install -m 644 "$ROOT/docker/edge/middlewares.yml" "$EDGE_HOME/dynamic/_shared.yml"
+  write_atomically "$EDGE_HOME/dynamic/_shared.yml" < "$ROOT/docker/edge/middlewares.yml"
 
   if [ "$STAGE" = staging ]; then
     local allow; allow="$(env_value STAGING_ALLOW_FROM | tr -d ' ')"

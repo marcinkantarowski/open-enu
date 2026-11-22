@@ -57,6 +57,22 @@ if [ -n "$bare" ]; then
 fi
 log_ok "every time limit goes through with_timeout"
 
+# Traefik watches the edge's dynamic/ directory and reloads on every event. A
+# write that unlinks or truncates first (`install`, `cp`, `>`) gives it a
+# moment with the file missing or half-written: with _shared.yml gone, every
+# router naming noindex@file failed and staging answered 404 on each
+# `make edge`. edge.sh has write_atomically for it; removing a file is atomic.
+bare="$(cd "$ROOT" && grep -nE 'dynamic/' scripts/dev/edge.sh \
+        | grep -vE '^[0-9]+:[[:space:]]*#' | grep -vE 'write_atomically|rm -f ' || true)"
+if [ -n "$bare" ]; then
+  printf '%s\n' "$bare" >&2
+  echo
+  log_fail "a non-atomic write into the edge's dynamic/ in scripts/dev/edge.sh" \
+    "Traefik reloads mid-write and drops routers; pipe it through write_atomically instead"
+  exit 1
+fi
+log_ok "every write Traefik watches goes through write_atomically"
+
 command -v docker >/dev/null 2>&1 || die "docker is required to run shellcheck"
 
 mapfile -t FILES < <(cd "$ROOT" && find scripts docker -name '*.sh' -not -path '*/node_modules/*' | sort)
