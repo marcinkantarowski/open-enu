@@ -9,7 +9,6 @@
   "audit.failed": "Failed",
   "audit.onBehalfOf": "(support session)",
   "audit.show": "Details",
-  "audit.hide": "Hide",
   "audit.before": "Before",
   "audit.after": "After",
   "audit.empty": "Nothing recorded yet"

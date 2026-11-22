@@ -170,6 +170,11 @@ table is TanStack Table. Icons are `@lucide/vue`, imported one at a time.
 - **A sortable table sorts on the server.** Bind `v-model:sort` and ask the API for that
   order; `UiTable` never sorts the page it was handed.
 - **`cn()`** joins classes and lets the caller's win: `cn('px-4', props.class)`.
+- **An active link is a state variant on its own class**, never `active-class`:
+  `aria-[current=page]:text-accent-700` for an exact match, `[&.router-link-active]:...` for a
+  section and its pages. The classes `active-class` adds fight the link's own
+  (`text-fg-muted` against `text-accent-700`) and lose whenever Tailwind emits them first -
+  a tab bar where nothing looks selected. `make tokens-check` fails on `active-class`.
 
 **A project's look is `theme/`**, a Nuxt layer at the repository root that every app extends
 before `ui-kit`. The platform ships it with a README only. Put there: `assets/theme.css`

@@ -12,8 +12,7 @@ const { t } = useI18n()
         v-for="tab in settingsTabs"
         :key="tab.to"
         :to="tab.to"
-        class="-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-fg-muted hover:text-fg"
-        active-class="border-accent-600 text-accent-700"
+        class="-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-fg-muted hover:text-fg aria-[current=page]:border-accent-600 aria-[current=page]:font-medium aria-[current=page]:text-accent-700"
       >
         {{ tab.label }}
       </NuxtLink>

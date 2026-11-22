@@ -210,6 +210,31 @@ final class RealmIsolationTest extends WebTestCase
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
 
+    public function testAChangeMadeInAnImpersonationSessionNamesBothPeople(): void
+    {
+        $session = $this->mintImpersonation();
+
+        $this->client->request(
+            'POST',
+            '/api/projects',
+            server: [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $session['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            content: json_encode(['name' => 'made during support'], \JSON_THROW_ON_ERROR),
+        );
+        self::assertSame(201, $this->client->getResponse()->getStatusCode(), (string) $this->client->getResponse()->getContent());
+
+        $entry = $this->em->getConnection()->fetchAssociative(
+            "SELECT actor_id, on_behalf_of_id FROM audit_entry WHERE action = 'example.project.created' ORDER BY recorded_at DESC LIMIT 1",
+        );
+
+        // The customer's account made the change, and the trail says whose hands
+        // were on it - or it reads as something the customer did (ADR-0008).
+        self::assertSame((string) $this->userA->id(), $entry['actor_id'] ?? null);
+        self::assertSame((string) $this->operator->id(), $entry['on_behalf_of_id'] ?? null);
+    }
+
     public function testAnImpersonationSessionCannotRenewItself(): void
     {
         // Not refreshable, by construction: nothing is issued to renew with, so

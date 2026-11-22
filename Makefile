@@ -118,7 +118,7 @@ test-order-check: ## PHPUnit runs the tests in one fixed order, never the last f
 	@$(DEV)/check-test-order.sh
 
 .PHONY: tokens-check
-tokens-check: ## Screens use role tokens, never a raw palette colour or a removed token (ADR-0024)
+tokens-check: ## Screens use role tokens, never a raw palette colour or a removed token (ADR-0024); active links use state variants
 	@$(DEV)/check-tokens.sh
 
 .PHONY: net-check

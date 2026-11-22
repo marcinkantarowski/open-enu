@@ -28,7 +28,13 @@ const { t } = useI18n()
 
 const { data, pending } = await useAsyncData('audit', () => api.get<{ items: AuditEntry[] }>('/api/audit'))
 
-const expanded = ref<string | null>(null)
+// Shown in a drawer beside the list: under a table of fifty rows the
+// snapshots would land below the fold, far from the row that asked for them.
+const selected = ref<AuditEntry | null>(null)
+const detailsOpen = computed({
+  get: () => selected.value !== null,
+  set: (open: boolean) => { if (!open) selected.value = null },
+})
 </script>
 
 <template>
@@ -55,7 +61,7 @@ const expanded = ref<string | null>(null)
           <span class="font-mono text-xs">{{ row.action }}</span>
         </template>
 
-        <template #cell-actor="{ row }">
+        <template #cell-actorId="{ row }">
           <!-- Both identities when one is acting for another: an impersonated
                change must never read as the customer's own (ADR-0008). -->
           <span class="font-mono text-xs">{{ row.actorId ?? '-' }}</span>
@@ -71,24 +77,21 @@ const expanded = ref<string | null>(null)
         </template>
 
         <template #cell-details="{ row }">
-          <UiButton
-            variant="ghost"
-            size="sm"
-            @click="expanded = expanded === row.id ? null : String(row.id)"
-          >
-            {{ expanded === row.id ? t('audit.hide') : t('audit.show') }}
+          <UiButton variant="ghost" size="sm" data-testid="audit-details" @click="selected = row">
+            {{ t('audit.show') }}
           </UiButton>
         </template>
       </UiTable>
+    </UiCard>
 
-      <div v-if="expanded" class="mt-4 grid gap-4 md:grid-cols-2">
+    <UiDrawer v-model:open="detailsOpen" :title="selected?.action ?? ''" :description="selected?.recordedAt" width="lg">
+      <div v-if="selected" class="flex flex-col gap-4" data-testid="audit-snapshot">
+        <p v-if="selected.failureReason" class="text-sm text-crit">{{ selected.failureReason }}</p>
         <div v-for="side in ['before', 'after'] as const" :key="side">
           <p class="mb-1 text-xs font-medium uppercase tracking-wide text-fg-muted">{{ t(`audit.${side}`) }}</p>
-          <pre class="overflow-x-auto rounded-lg bg-surface-subtle p-3 font-mono text-[11px] text-fg">{{
-            JSON.stringify(data?.items.find(i => i.id === expanded)?.[side] ?? null, null, 2)
-          }}</pre>
+          <pre class="overflow-x-auto rounded-lg bg-surface-subtle p-3 font-mono text-[11px] text-fg">{{ JSON.stringify(selected[side], null, 2) }}</pre>
         </div>
       </div>
-    </UiCard>
+    </UiDrawer>
   </div>
 </template>

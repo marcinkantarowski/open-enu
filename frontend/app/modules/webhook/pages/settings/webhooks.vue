@@ -160,7 +160,7 @@ async function copySecret() {
 
     <UiCard :title="t('webhook.deliveries')" :description="t('webhook.deliveriesHint')">
       <template #header>
-        <UiButton size="sm" @click="refreshDeliveries()">{{ t('common.retry') }}</UiButton>
+        <UiButton size="sm" @click="refreshDeliveries()">{{ t('common.refresh') }}</UiButton>
       </template>
 
       <UiTable

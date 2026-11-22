@@ -393,6 +393,10 @@ fails_when "tokens-check catches a token the platform removed" \
   "$WORK/scripts/dev/check-tokens.sh" \
   "sed_inplace 's/bg-surface shadow-card/bg-surface-muted shadow-card/' '$WORK/ui-kit/app/components/ui/Card.vue'"
 
+fails_when "tokens-check catches a link styled with active-class" \
+  "$WORK/scripts/dev/check-tokens.sh" \
+  "printf '<template><NuxtLink to=\"/\" active-class=\"text-accent-700\">x</NuxtLink></template>\\n' > '$WORK/ui-kit/app/components/SelftestLink.vue'"
+
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.
 fails_when "typography-check catches a long dash" \

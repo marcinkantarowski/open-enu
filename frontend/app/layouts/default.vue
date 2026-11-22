@@ -55,8 +55,7 @@ async function signOut() {
         <nav class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4" :aria-label="t('app.nav.main')">
           <NuxtLink
             to="/"
-            class="flex h-control-md items-center gap-3 rounded-control px-3 text-sm text-nav-fg transition-colors hover:bg-nav-hover"
-            exact-active-class="bg-nav-active font-medium text-nav-fg-active hover:bg-nav-active"
+            class="flex h-control-md items-center gap-3 rounded-control px-3 text-sm text-nav-fg transition-colors hover:bg-nav-hover aria-[current=page]:bg-nav-active aria-[current=page]:font-medium aria-[current=page]:text-nav-fg-active aria-[current=page]:hover:bg-nav-active"
           >
             <LayoutDashboard class="size-5 shrink-0" aria-hidden="true" />
             {{ t('shell.dashboard') }}
@@ -65,8 +64,7 @@ async function signOut() {
             v-for="item in items"
             :key="item.to"
             :to="item.to"
-            class="flex h-control-md items-center gap-3 rounded-control px-3 text-sm text-nav-fg transition-colors hover:bg-nav-hover"
-            active-class="bg-nav-active font-medium text-nav-fg-active hover:bg-nav-active"
+            class="flex h-control-md items-center gap-3 rounded-control px-3 text-sm text-nav-fg transition-colors hover:bg-nav-hover [&.router-link-active]:bg-nav-active [&.router-link-active]:font-medium [&.router-link-active]:text-nav-fg-active [&.router-link-active]:hover:bg-nav-active"
           >
             <component :is="item.icon" v-if="item.icon" class="size-5 shrink-0" aria-hidden="true" />
             <span v-else class="size-5 shrink-0" aria-hidden="true" />
