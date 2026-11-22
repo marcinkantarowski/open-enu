@@ -306,7 +306,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | The landing site - a "coming soon" template; copy, sections, pricing, legal pages | [`.ai/platform/docs/landing.md`](.ai/platform/docs/landing.md) - words live in `landing/content/{en,pl}/*.md` |
 | Outbound webhooks, signing, delivery retries | `backend/src/Module/Webhook/MODULE.md` |
 | Telling a user something happened | `OpenEnu\Kernel\Notification\NotifierInterface` + `backend/src/Module/Notification/MODULE.md` |
-| Making a module's data findable | `backend/src/Module/Example/search.php` - declare fields **and** a permission |
+| Making a module's data findable | `backend/src/Module/Example/search.php` - declare fields **and** a permission; `frontend/app/modules/example/search.ts` - where a hit opens |
 | Background work on a clock | a `clock` file in the module (`minute app:x:run` / `daily app:x:sweep`) + the `Console/` command it names; `docker/api/scheduler.sh` reads it |
 | Logs, error tracking, traces, "is anything stuck?" | [`.ai/platform/docs/observability.md`](.ai/platform/docs/observability.md) |
 | **Deploying anything, anywhere** | [`.ai/platform/docs/deployment.md`](.ai/platform/docs/deployment.md) |

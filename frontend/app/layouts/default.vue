@@ -76,7 +76,7 @@ async function signOut() {
       </aside>
 
       <div class="flex min-w-0 flex-1 flex-col">
-        <header class="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b border-border bg-surface px-6">
+        <header class="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border bg-surface px-6">
           <UiButton
             variant="ghost"
             :icon="Menu"
@@ -85,7 +85,9 @@ async function signOut() {
             @click="ui.toggleSidebar()"
           />
 
-          <div class="flex items-center gap-3 whitespace-nowrap">
+          <GlobalSearch />
+
+          <div class="ml-auto flex items-center gap-3 whitespace-nowrap">
             <RealtimeIndicator />
             <NotificationBell />
             <TenantSwitcher />

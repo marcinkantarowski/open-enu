@@ -86,6 +86,23 @@ for dir in "${modules[@]}"; do
     done < "$dir/clock"
   fi
 
+  # ── a findable entity leads somewhere ─────────────────────────────────────
+  # `search.php` makes records findable; the search box in the shell shows a hit
+  # only where the module's frontend layer says which page opens it (`search.ts`).
+  # Without that, the record is indexed, permitted and never shown.
+  if [ -f "$dir/search.php" ]; then
+    layer="$(sed -E 's/([a-z0-9])([A-Z])/\1-\2/g' <<<"$name" | tr '[:upper:]' '[:lower:]')"
+    targets="$ROOT/frontend/app/modules/$layer/search.ts"
+    for entity in $(grep -oE '[A-Za-z0-9_]+::class *=>' "$dir/search.php" | sed -E 's/::class *=>//'); do
+      if [ ! -f "$targets" ] || ! grep -qF "\\\\${entity}'" "$targets"; then
+        bad "$rel/search.php makes $entity findable, but frontend/app/modules/$layer/search.ts does not say where a hit opens" \
+            "add: 'App\\\\Module\\\\$name\\\\Entity\\\\$entity': { group: '<key>', to: id => \`/<page>/\${id}\` }" \
+            "see .ai/platform/docs/frontend-conventions.md, Search"
+        ok=0
+      fi
+    done
+  fi
+
   # ── both locales present (ADR-0020) ───────────────────────────────────────
   for loc in en pl; do
     # Symfony's naming, not Nuxt's. Required rather than optional: check-i18n

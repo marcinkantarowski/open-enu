@@ -73,6 +73,57 @@ final class SearchTest extends KernelTestCase
         });
     }
 
+    public function testWordsAreFoundByTheirBeginningInAnyOrderAndWithoutAccents(): void
+    {
+        $this->asTenant($this->tenantA, function (): void {
+            $this->makeProject('Przystań Zająca', 'Wymiana pomostu w Łodzi.');
+            $this->makeProject('Harbour refit', 'Replacing the pontoon decking.');
+        });
+
+        $this->asTenant($this->tenantA, function (): void {
+            // What a search box sends while someone is still typing.
+            self::assertCount(1, $this->search->search('pont'));
+            // Every word must match, but not in the order of the record.
+            self::assertCount(1, $this->search->search('lodz zaja'));
+            self::assertSame([], $this->search->search('lodz pontoon'));
+            // Accents and case do not count in the query, and stay in the excerpt.
+            self::assertCount(1, $this->search->search('ŁÓDŹ'));
+            self::assertStringContainsString('<b>Zająca</b>', (string) $this->search->search('zajac')[0]->excerpt);
+        });
+    }
+
+    public function testAShortRecordIsShownWholeAndALongOneAroundTheMatch(): void
+    {
+        $this->asTenant($this->tenantA, function (): void {
+            $this->makeProject('Harbour refit', 'Replacing the pontoon decking.');
+            $this->makeProject('Survey', str_repeat('Lorem ipsum dolor sit amet. ', 20) . 'The breakwater cracked. ' . str_repeat('Consectetur adipiscing elit. ', 20));
+        });
+
+        $this->asTenant($this->tenantA, function (): void {
+            // Cut around the match, a short record lost its first words - the name.
+            self::assertSame('Harbour refit Replacing the <b>pontoon</b> decking.', $this->search->search('pontoon')[0]->excerpt);
+
+            $excerpt = (string) $this->search->search('breakwater')[0]->excerpt;
+            self::assertStringContainsString('<b>breakwater</b>', $excerpt);
+            self::assertLessThan(200, \strlen($excerpt));
+        });
+    }
+
+    public function testWhatAQueryLanguageWouldReadAsOperatorsIsATypo(): void
+    {
+        $this->asTenant($this->tenantA, function (): void {
+            $this->makeProject('Harbour refit', 'Replacing the pontoon decking.');
+        });
+
+        $this->asTenant($this->tenantA, function (): void {
+            // Each of these is a syntax error to to_tsquery if passed through.
+            self::assertCount(1, $this->search->search('(pontoon) deck!'));
+            self::assertSame([], $this->search->search("o'brien"));
+            self::assertCount(1, $this->search->search('pontoon & | ! : *'));
+            self::assertSame([], $this->search->search('& | ( ) !'));
+        });
+    }
+
     public function testAnotherTenantsProjectIsNotFound(): void
     {
         $this->asTenant($this->tenantB, function (): void {

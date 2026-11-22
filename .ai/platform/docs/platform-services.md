@@ -20,7 +20,7 @@ working with no call site changing.
 | Push to the browser | `#[ClientBroadcast]` on the event | Opt-in, tenant-scoped topic |
 | Report long-running work | `Progress\ProgressReporterInterface` | |
 | Gate a feature | `Flags\FlagsInterface` or `#[Flag('x.y')]` | Declare it in a `FlagProviderInterface` too, or it can never be switched. Disabled ⇒ 404, not 403 |
-| Full-text search | `Search\SearchIndexerInterface` | Postgres `tsvector` |
+| Full-text search | `search.php` in the module (+ `search.ts` in its frontend layer) | Postgres `tsvector`; see *Search* below |
 | Set a tenant up | implement `Setup\TenantSetupInterface` | Auto-discovered, dependency-ordered |
 | Answer a GDPR request | implement `Gdpr\GdprSubjectInterface` | Auto-discovered; **required** if you hold user data |
 | Add fields to every log line | implement `Logging\LogContextProviderInterface` | |
@@ -102,6 +102,30 @@ needs per-tenant open-ended data, use a JSONB column with a GIN index and docume
 #[ORM\Column(type: Types::JSON, options: ['jsonb' => true])]
 private array $attributes = [];
 ```
+
+## Search
+
+A module makes its records findable by declaring them in `search.php` - the fields to index
+and the permission that may see them (an excerpt is content). The kernel keeps the index in
+step on every write; nothing calls `index()` by hand. `GET /api/search?q=` answers across every
+module, for the tenant and the units in scope.
+
+The query is built for a box that answers while someone types:
+
+- **every word is a prefix, all must match, in any order** - "kowal jan" finds "Jan Kowalski";
+- **accents do not count** - "zajac" finds "Zając": the `open_enu_search` text search
+  configuration (kernel migration `Version20200101000002`) strips them from documents and
+  queries, while the stored text and the excerpt keep them;
+- an e-mail or a "12-345" stays one word; characters `to_tsquery` would read as operators
+  are dropped, so a stray `(` is a typo, not a 500;
+- a short record (up to 160 characters) comes back whole with the matches in `<b>`; a long
+  one is cut to the part around them.
+
+In the browser, the shell's search box (`/` or Ctrl K) shows a hit only where the module's
+frontend layer says which page opens it - `search.ts`, see `frontend-conventions.md` →
+*Search*. `make module-check` fails on an entity in `search.php` with no target there.
+
+Never index an encrypted column: the index stores plaintext and hands back excerpts of it.
 
 ## Tenant setup
 

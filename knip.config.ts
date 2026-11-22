@@ -34,10 +34,10 @@ const nuxtConventions = (root: string) => [
 const moduleConventions = (root: string) => [
   `${root}/modules/*/nuxt.config.ts`,
   `${root}/modules/*/{pages,layouts,middleware,plugins,composables,components,stores}/**/*.{ts,vue}`,
-  // Contributed to the shell by the layer: a menu entry and a settings tab.
-  // Found by `import.meta.glob` in the shell and in plugins/injections.client.ts,
-  // which is an import knip cannot follow.
-  `${root}/modules/*/{navigation,settings-tabs,injections}.ts`,
+  // Contributed to the shell by the layer: a menu entry, a settings tab, where a
+  // search hit leads. Found by `import.meta.glob` in the shell and in
+  // plugins/injections.client.ts, which is an import knip cannot follow.
+  `${root}/modules/*/{navigation,settings-tabs,injections,search}.ts`,
   `${root}/modules/*/i18n/locales/*.ts`,
 ]
 

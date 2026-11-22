@@ -38,6 +38,7 @@ frontend/app/modules/billing/
 ├── navigation.ts        defineNavigation([...]) - menu entries, permission-filtered
 ├── settings-tabs.ts     defineSettingsTab([...]) - optional, for a Settings screen
 ├── injections.ts        defineInjection(...) - optional, to extend someone else's page
+├── search.ts            defineSearchTargets({...}) - where a search hit opens; required with search.php
 ├── pages/billing/       auto-registered; the directory IS the URL
 ├── components/ composables/ stores/ types/
 └── i18n/locales/{en,pl}.{json,ts}
@@ -50,6 +51,25 @@ imports (ADR-0010).
 The `.ts` beside each `.json` catalogue is a two-line re-export and is not optional: pointing
 the i18n loader at a `.json` puts Vite's json plugin around the module's own transform and
 breaks server rendering. The `.json` stays because the parity check reads it as data.
+
+### Search
+
+The shell's search box (`GlobalSearch`, `/` or Ctrl K) asks `GET /api/search` and groups the
+hits by what they are. The API knows an entity's class and id, not its page, so the module
+that declared the entity findable in its backend `search.php` says where a hit opens:
+
+```ts
+// frontend/app/modules/billing/search.ts
+import { defineSearchTargets } from '~/composables/useGlobalSearch'
+
+export default defineSearchTargets({
+  'App\\Module\\Billing\\Entity\\Invoice': { group: 'billing.search.group', to: id => `/billing/${id}`, order: 30 },
+})
+```
+
+`group` is a translation key for the heading. A hit no `search.ts` claims is left out, and
+`make module-check` fails on it. The excerpt is the record's own text with `<b>` around the
+matches; `excerptParts()` splits it for rendering as text - it is user data, never `v-html`.
 
 ### Other ways to sign in
 

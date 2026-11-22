@@ -16,16 +16,25 @@ use OpenEnu\Kernel\Doctrine\ScopeContext;
  * index. Adequate well past the point where a project can afford a search
  * cluster, and the interface means swapping in Meilisearch later is one class.
  *
+ * Built for a search box that answers while someone types: every word of the
+ * query is a prefix and all of them must match, in any order ("kowal jan" finds
+ * "Jan Kowalski"), and accents do not count ("zajac" finds "Zając") - the
+ * `open_enu_search` configuration (migration Version20200101000002) strips them
+ * from documents and queries alike.
+ *
  * Tenant scoping is done by hand here, and that is the whole reason the raw-SQL
  * rule exists: this is a DBAL query, so the Doctrine filter cannot see it. Miss
  * the predicate and search returns every tenant's records - with an excerpt.
  */
 final readonly class PostgresTsvectorIndexer implements SearchIndexerInterface
 {
+    /** Characters of content shown whole in an excerpt rather than cut around the match. */
+    private const int WHOLE_UP_TO = 160;
+
     public function __construct(
         private Connection $db,
         private ScopeContext $scope,
-        private string $textSearchConfig = 'simple',
+        private string $textSearchConfig = 'open_enu_search',
     ) {
     }
 
@@ -78,20 +87,31 @@ final readonly class PostgresTsvectorIndexer implements SearchIndexerInterface
     #[Unscoped(reason: 'DBAL query; tenant predicate is written explicitly below')]
     public function search(string $query, ?array $entityTypes = null, int $limit = 20): array
     {
+        $prefixes = self::prefixQuery($query);
+        if ($prefixes === null) {
+            return [];
+        }
+
+        // A short record - a person's name and contact, an offer's title - is
+        // shown whole with the matches marked; a long one is cut to the part
+        // around them. Cut short, "Jan Kowalski jan@…" read "Kowalski jan@…".
         $sql = <<<'SQL'
             SELECT entity_type, entity_id,
-                   ts_rank(document, websearch_to_tsquery(:config, :q)) AS score,
-                   ts_headline(:config, content, websearch_to_tsquery(:config, :q),
-                               'MaxWords=20, MinWords=5, ShortWord=3') AS excerpt
-            FROM search_index
+                   ts_rank(document, q) AS score,
+                   CASE WHEN length(content) <= :whole
+                        THEN ts_headline(:config, content, q, 'HighlightAll=true')
+                        ELSE ts_headline(:config, content, q, 'MaxWords=20, MinWords=5, ShortWord=3')
+                   END AS excerpt
+            FROM search_index, to_tsquery(:config, :q) AS q
             WHERE tenant_id = :tenant
-              AND document @@ websearch_to_tsquery(:config, :q)
+              AND document @@ q
             SQL;
 
         $params = [
             'tenant' => $this->tenant(),
-            'q' => $query,
+            'q' => $prefixes,
             'config' => $this->textSearchConfig,
+            'whole' => self::WHOLE_UP_TO,
             'limit' => max(1, min($limit, 100)),
         ];
 
@@ -132,6 +152,24 @@ final readonly class PostgresTsvectorIndexer implements SearchIndexerInterface
         }
 
         return $hits;
+    }
+
+    /**
+     * What someone typed, as a `to_tsquery` of prefixes: each word quoted, so the
+     * parser keeps an e-mail or a "12-345" whole, and every character `to_tsquery`
+     * would read as an operator taken as a space between words - a stray "(" or
+     * "'" is a typo, not a syntax error. Null when nothing searchable is left.
+     */
+    private static function prefixQuery(string $query): ?string
+    {
+        $words = [];
+        foreach (preg_split('/[\s\'\\\\:&|!()<>*]+/u', $query) ?: [] as $word) {
+            if (preg_match('/[\p{L}\p{N}]/u', $word) === 1) {
+                $words[$word] = "'{$word}':*";
+            }
+        }
+
+        return $words === [] ? null : implode(' & ', $words);
     }
 
     /**
