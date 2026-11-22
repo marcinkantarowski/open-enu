@@ -11,6 +11,13 @@
 #    not fail on a class it cannot resolve: it emits nothing, and after a
 #    platform update the button simply has no background.
 #
+#  And one a link must not say: `active-class` / `exact-active-class`. The
+#  classes it adds fight the link's own (`text-fg-muted` against
+#  `text-accent-700`); which one wins is decided by the order Tailwind emits
+#  them, not by the markup, and here the active tab lost - visible only as a
+#  tab bar where nothing looked selected. A state variant on the class itself
+#  is more specific and always wins.
+#
 #  Static - reads the source, needs no running stack.
 # =============================================================================
 set -uo pipefail
@@ -49,5 +56,10 @@ report "$(scan "$PALETTE")" "use a raw palette colour" \
 report "$(scan "$REMOVED")" "use a token the platform removed" \
   "brand-N is accent-N; surface-muted is canvas; surface-sunken is surface-subtle; danger, warning, success are crit, warn, ok"
 
+report "$(grep -rnoEI '\b(exact-)?active-class=' "${dirs[@]}" --include='*.vue' \
+    --exclude-dir=node_modules --exclude-dir=.nuxt --exclude-dir=.output 2>/dev/null)" \
+  "style an active link with active-class, which can lose to the link's own classes" \
+  "put the state on the class itself: aria-[current=page]:text-accent-700 (exact match) or [&.router-link-active]:text-accent-700 (the section and its pages)"
+
 [ "$fails" -eq 0 ] || exit 1
-log_ok "every colour is a role or the accent scale"
+log_ok "every colour is a role or the accent scale, every active link a state variant"

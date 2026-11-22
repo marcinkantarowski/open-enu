@@ -12,6 +12,10 @@ test('an owner invites someone, who joins by the e-mailed link and signs in', as
 
   await signIn(page)
   await page.goto('/settings/members')
+  // The tab bar says where you are: its active state once lost to the tab's own
+  // classes, and the bar looked as if no tab were open.
+  await expect(page.getByTestId('settings-tabs').locator('[aria-current="page"]'))
+    .not.toHaveCSS('border-bottom-color', 'rgba(0, 0, 0, 0)')
 
   await page.getByTestId('member-invite').click()
   await page.getByTestId('member-form-email').fill(email)

@@ -44,8 +44,7 @@ function signOut() {
             v-for="link in links"
             :key="link.to"
             :to="link.to"
-            class="rounded-lg px-3 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-            exact-active-class="bg-white/15 font-medium text-white"
+            class="rounded-lg px-3 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white aria-[current=page]:bg-white/15 aria-[current=page]:font-medium aria-[current=page]:text-white"
           >
             {{ link.label }}
           </NuxtLink>

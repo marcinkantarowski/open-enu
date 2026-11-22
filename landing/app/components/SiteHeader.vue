@@ -38,8 +38,7 @@ const nav = computed(() => [
           v-for="item in nav"
           :key="item.to"
           :to="localePath(item.to)"
-          class="py-2 text-sm font-medium text-fg-muted hover:text-fg md:py-0"
-          active-class="text-accent-700"
+          class="py-2 text-sm font-medium text-fg-muted hover:text-fg md:py-0 [&.router-link-active]:text-accent-700"
         >
           {{ item.label }}
         </NuxtLink>

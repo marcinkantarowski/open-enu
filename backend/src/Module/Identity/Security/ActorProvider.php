@@ -6,8 +6,10 @@ namespace App\Module\Identity\Security;
 
 use App\Module\Identity\Entity\User;
 use OpenEnu\Kernel\Contract\ActorProviderInterface;
+use OpenEnu\Kernel\Security\Impersonation;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\AsDecorator;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Tells the audit trail who is acting.
@@ -19,12 +21,20 @@ use Symfony\Component\DependencyInjection\Attribute\AsDecorator;
  * `onBehalfOfId` carries the operator behind an impersonated session, so an
  * impersonated change is attributable to both identities. Without it the trail
  * says a customer did what their support agent did (ADR-0008).
+ *
+ * Read from the request, where `ImpersonationListener` puts the decoded `act`
+ * claim - the one place that sees the token's payload. It used to be looked
+ * for on the security token instead, where nothing ever set it: every
+ * impersonated change was recorded as the customer's own, and no test wrote
+ * anything inside a support session to notice.
  */
 #[AsDecorator(decorates: 'OpenEnu\Kernel\Command\NullActorProvider')]
 final readonly class ActorProvider implements ActorProviderInterface
 {
-    public function __construct(private Security $security)
-    {
+    public function __construct(
+        private Security $security,
+        private RequestStack $requests,
+    ) {
     }
 
     public function actorId(): ?string
@@ -36,21 +46,9 @@ final readonly class ActorProvider implements ActorProviderInterface
 
     public function onBehalfOfId(): ?string
     {
-        $token = $this->security->getToken();
-        if ($token === null) {
-            return null;
-        }
+        // The main request is the one the listener marked when the token was decoded.
+        $request = $this->requests->getMainRequest();
 
-        // Set by the manager realm when it mints an impersonation token.
-        // hasAttribute first: getAttribute THROWS on a missing key rather than
-        // returning null, so the ?? was never reached - and every ordinary
-        // request died in the audit path.
-        if (!$token->hasAttribute('act')) {
-            return null;
-        }
-
-        $act = $token->getAttribute('act');
-
-        return \is_array($act) && \is_string($act['sub'] ?? null) ? $act['sub'] : null;
+        return $request === null ? null : Impersonation::fromRequest($request)['sub'] ?? null;
     }
 }
