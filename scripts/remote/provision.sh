@@ -352,10 +352,11 @@ fi
 
 echo
 log_ok "$DOMAIN is live ($STAGE)"
+KEY="$([ "$STAGE" = production ] && echo PROD || echo STAGING)"
+echo
+log_info "Remember it:      in your .env, ${KEY}_HOST=$HOST and ${KEY}_DOMAIN=$DOMAIN"
 if [ "$STAGE" = staging ]; then
-  echo
   log_info "Vibe code here:   ssh $HOST, then cd $APP_DIR - the stack hot-reloads"
-  log_info "Pull your work:   make deploystaging HOST=$HOST DOMAIN=$DOMAIN"
-  log_info "Ship to prod:     make promote          (on this server)"
-  log_info "                  make promote STAGING=$HOST [PROD=deploy@…]   (from your machine)"
+  log_info "Pull your work:   make deploystaging   (HOST=$HOST DOMAIN=$DOMAIN without the .env lines)"
+  log_info "Ship to prod:     make promote          (on this server, or from your machine)"
 fi

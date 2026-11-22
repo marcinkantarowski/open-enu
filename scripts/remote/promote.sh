@@ -22,6 +22,7 @@
 #                            make promote PROD=deploy@prod   (prod elsewhere -
 #                            this server then needs ssh access to it)
 #    from your machine       make promote STAGING=deploy@stg [PROD=deploy@prod]
+#                            or bare, with STAGING_HOST [PROD_HOST] in .env;
 #                            PROD defaults to STAGING: one box for both
 #
 #  Usage: STAGING=<host|local> PROD=<host|local> promote.sh
@@ -40,7 +41,8 @@ here_is_staging() { [ "$(sed -n 's/^APP_STAGE=//p' "$ROOT/.env" 2>/dev/null | he
 STAGING="${STAGING:-}"; PROD="${PROD:-}"
 if [ -z "$STAGING" ]; then
   here_is_staging || die "where is staging?" \
-    "from your machine:      make promote STAGING=deploy@<staging-ip> [PROD=deploy@<prod-ip>]" \
+    "from your machine:      STAGING_HOST=deploy@<staging-ip> [PROD_HOST=…] in .env, then make promote" \
+    "                        (or once: make promote STAGING=deploy@<staging-ip> [PROD=deploy@<prod-ip>])" \
     "on the staging server:  make promote"
   STAGING=local
 fi

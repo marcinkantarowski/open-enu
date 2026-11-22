@@ -24,7 +24,13 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 . "$HERE/../lib/log.sh"; . "$HERE/../lib/stage.sh"
 
 HOST="${1:-}"; DOMAIN="${2:-}"; STAGE="$(stage_normalize "${3:-}")"; REF="${4:-main}"
-[ -n "$HOST" ] && [ -n "$STAGE" ] || die "usage: deploy.sh HOST DOMAIN staging|production [REF]"
+[ -n "$STAGE" ] || die "usage: deploy.sh HOST DOMAIN staging|production [REF]"
+if [ -z "$HOST" ]; then
+  KEY="$([ "$STAGE" = production ] && echo PROD || echo STAGING)"
+  die "no $STAGE server given" \
+    "once, in .env: ${KEY}_HOST=deploy@<ip> and ${KEY}_DOMAIN=<its domain> - then the bare make target" \
+    "or for this run: HOST=deploy@<ip> DOMAIN=<its domain>"
+fi
 
 SLUG="$(project_slug "$ROOT")"
 APP_DIR="$(stage_dir "$SLUG" "$STAGE")"

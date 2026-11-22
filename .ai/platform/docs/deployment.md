@@ -52,13 +52,20 @@ git commit -am "…"
 
 # or on your machine, with the local dev stack (make builddev)
 git push                       # then pull it into staging:
-make deploystaging HOST=deploy@… DOMAIN=stg.example.com
+make deploystaging             # STAGING_HOST/STAGING_DOMAIN from .env, or HOST=… DOMAIN=…
 
 # when staging looks right
 make promote                                    # on the staging server, prod on the same box
 make promote PROD=deploy@prod-ip                # on the staging server, prod elsewhere
-make promote STAGING=deploy@stg [PROD=deploy@…] # from your machine
+make promote                                    # from your machine, with STAGING_HOST [PROD_HOST] in .env
+make promote STAGING=deploy@stg [PROD=deploy@…] # from your machine, naming them
 ```
+
+On your machine, say once where the stages are - in `.env`, which is never committed:
+`STAGING_HOST`, `STAGING_DOMAIN`, `PROD_HOST`, `PROD_DOMAIN`. `deploystaging`, `deployprod` and
+`promote` use them when nothing is named on the command line; a `HOST=` given there wins, and
+then only a `DOMAIN=` given with it counts - never `.env`'s `DOMAIN`, which is your machine's.
+On a server these stay empty, so `make promote` there still means "this box".
 
 `promote` refuses a dirty staging checkout (a release is commits, not a working tree), refuses
 when origin has commits staging has not run, pushes staging's own commits, runs
