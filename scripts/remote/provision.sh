@@ -15,13 +15,16 @@
 #  (scripts/lib/stage.sh); the only thing they share on one box is the edge.
 #
 #    production  immutable images, off-box backups
-#    staging     the DEV stack - hot reload, Mailpit - so you can vibe code on
-#                it; reachable only from STAGING_ALLOW_FROM, and its git key
-#                can push, because commits made there are what `make promote`
-#                ships
+#    staging     STAGING_MODE=dev (default): the DEV stack - hot reload,
+#                Mailpit - so you can vibe code on it. STAGING_MODE=images:
+#                production's images plus Mailpit, a rehearsal for a team that
+#                codes locally. Either way reachable only from
+#                STAGING_ALLOW_FROM, and its git key can push, because commits
+#                made there are what `make promote` ships
 #
 #  Optional environment: EMAIL (LETSENCRYPT_EMAIL), ALLOW (STAGING_ALLOW_FROM;
-#  defaults to the address you are connecting from).
+#  defaults to the address you are connecting from), STAGING_MODE (dev |
+#  images; defaults to what the server's .env says, else dev).
 # =============================================================================
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -171,10 +174,21 @@ log_step "Syncing code to $APP_DIR"
 REMOTE "sudo -n mkdir -p $APP_DIR /opt/enu-edge && sudo -n chown $DEPLOY_USER:$DEPLOY_USER $APP_DIR /opt/enu-edge" 2>/dev/null \
   || REMOTE "mkdir -p $APP_DIR /opt/enu-edge"
 
-if REMOTE "test -d $OTHER_DIR" 2>/dev/null; then
+# What a staging server runs (STAGING_MODE in .env.example): the one given to
+# this command, else the one its .env already says, else dev. Kept rather than
+# defaulted on a re-run, so re-provisioning never switches a staging silently.
+MODE=dev
+if [ "$STAGE" = staging ]; then
+  MODE="${STAGING_MODE:-$(REMOTE "sed -n 's/^STAGING_MODE=//p' $APP_DIR/.env 2>/dev/null | head -1" 2>/dev/null || true)}"
+  MODE="${MODE:-dev}"
+  staging_mode_valid "$MODE" || die "STAGING_MODE must be dev or images, got: $MODE"
+  log_info "staging mode: $MODE"
+fi
+
+if [ "$MODE" = dev ] && REMOTE "test -d $OTHER_DIR" 2>/dev/null; then
   RAM_MB="$(REMOTE "free -m | awk '/^Mem:/{print \$2}'" 2>/dev/null || echo 0)"
   if [ "${RAM_MB:-0}" -lt 3800 ]; then
-    log_warn "staging and production on one server with ${RAM_MB}MB RAM - the dev stack alone runs three Nuxt dev servers; 4GB is the floor"
+    log_warn "staging and production on one server with ${RAM_MB}MB RAM - the dev stack alone runs three Nuxt dev servers; 4GB is the floor (STAGING_MODE=images needs far less)"
   fi
 fi
 
@@ -229,7 +243,8 @@ fi
 # server. Regenerating APP_SECRET invalidates every session; regenerating
 # APP_ENCRYPTION_KEY makes every encrypted column unreadable, permanently.
 log_step "Environment"
-if [ "$STAGE" = production ]; then APP_ENV=prod; APP_DEBUG=0; else APP_ENV=dev; APP_DEBUG=1; fi
+# Production's configuration wherever production's images run (ADR-0011).
+if [ "$STAGE" = production ] || [ "$MODE" = images ]; then APP_ENV=prod; APP_DEBUG=0; else APP_ENV=dev; APP_DEBUG=1; fi
 # The address this machine reaches the server from, as the server sees it.
 CLIENT_IP="$(REMOTE 'echo ${SSH_CLIENT%% *}' 2>/dev/null || true)"
 
@@ -243,7 +258,8 @@ REMOTE "set -e
   set_env APP_ENV      '$APP_ENV'
   set_env APP_DEBUG    '$APP_DEBUG'
   set_env STACK        '$STACK'
-  set_env COMPOSE_FILE '$(stage_compose_files "$STAGE")'
+  set_env COMPOSE_FILE '$(stage_compose_files "$STAGE" "$MODE")'
+  [ '$STAGE' = staging ] && set_env STAGING_MODE '$MODE'
   set_env HOST_UID     \$(id -u)
   set_env HOST_GID     \$(id -g)
   [ -z '${EMAIL:-}' ] || set_env LETSENCRYPT_EMAIL '${EMAIL:-}'
@@ -356,7 +372,7 @@ KEY="$([ "$STAGE" = production ] && echo PROD || echo STAGING)"
 echo
 log_info "Remember it:      in your .env, ${KEY}_HOST=$HOST and ${KEY}_DOMAIN=$DOMAIN"
 if [ "$STAGE" = staging ]; then
-  log_info "Vibe code here:   ssh $HOST, then cd $APP_DIR - the stack hot-reloads"
+  [ "$MODE" = dev ] && log_info "Vibe code here:   ssh $HOST, then cd $APP_DIR - the stack hot-reloads"
   log_info "Pull your work:   make deploystaging   (HOST=$HOST DOMAIN=$DOMAIN without the .env lines)"
   log_info "Ship to prod:     make promote          (on this server, or from your machine)"
 fi

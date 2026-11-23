@@ -7,7 +7,7 @@ to do, and what to reach for when something is wrong.
 
 | | staging | production |
 |---|---|---|
-| What runs | the **dev** stack - hot reload, Mailpit, profiler | immutable images |
+| What runs | `STAGING_MODE=dev`: the **dev** stack - hot reload, Mailpit, profiler. `STAGING_MODE=images`: production's images plus Mailpit | immutable images |
 | Checkout | `/opt/<slug>-staging` | `/opt/<slug>-prod` |
 | Compose project, containers, DB volume | `<slug>-staging-*` | `<slug>-prod-*` |
 | Who can reach it | `STAGING_ALLOW_FROM` only (IP allowlist) | everyone |
@@ -35,8 +35,27 @@ make buildprod    HOST=deploy@203.0.113.42 DOMAIN=example.com     REPO=acme/open
 
 Point `HOST` at the same server for both, or at two. `buildstaging` allows the address you
 run it from (`ALLOW=ip,cidr` to choose); change it later in the staging `.env` and run
-`make edge` on the server - no restart. **One server running both needs 4 GB of RAM**: the dev
-stack alone runs three Nuxt dev servers.
+`make edge` on the server - no restart. **One server running both needs 4 GB of RAM** with a dev
+staging: the dev stack alone runs three Nuxt dev servers.
+
+## Which staging: dev or images
+
+`STAGING_MODE` in the staging checkout's `.env` decides what staging is
+([spec](../specs/2026-11-23-staging-from-images.md)):
+
+| | `dev` (default) | `images` |
+|---|---|---|
+| For a team that | codes **on** the staging server (an agent edits there) | codes locally and pushes |
+| Runs | `compose.dev.yml` + `compose.staging.yml`, `APP_ENV=dev` | `compose.prod.yml` + `compose.staging-images.yml`, `APP_ENV=prod` |
+| A change shows | on save (hot reload) | after `make deploystaging` rebuilds the images |
+| Rehearses production | no - a production-build failure passes it | yes - the same images and configuration |
+| Memory | three Nuxt dev servers, ~2 GB and growing | about what production uses |
+| `make promote` gate | runs on staging | runs on your machine, at the commit staging runs |
+
+Choose it once: `STAGING_MODE=images make buildstaging HOST=… DOMAIN=… REPO=…`. To switch an
+existing staging, change `STAGING_MODE` in its `.env` and `make deploystaging`: `release.sh`
+derives `COMPOSE_FILE`, `APP_ENV` and `APP_DEBUG` from it. The database volume carries over;
+uploaded files do not (dev keeps them in `apivar`, production in `storage`).
 
 `preflight` is read-only and takes about ten seconds; every `build*` runs it again as step 0.
 Both stages use Let's Encrypt's **production** CA - a staging-CA certificate is untrusted by
@@ -71,7 +90,9 @@ On a server these stay empty, so `make promote` there still means "this box".
 
 `promote` refuses a dirty staging checkout (a release is commits, not a working tree), refuses
 when origin has commits staging has not run, pushes staging's own commits, runs
-`make promote-gate` (arch, tests, typecheck) **on staging**, then moves production to that
+`make promote-gate` (arch, tests, typecheck) **on staging** (on an image staging, which has no
+test tooling, on your machine - refusing unless your checkout is clean and at staging's commit),
+then moves production to that
 exact SHA and releases it: build → back up → migrate → restart → health. It tags
 `prod-<timestamp>`, so "what was live when" is a `git tag` away. Code only - staging's
 database never goes near production.
@@ -103,7 +124,7 @@ deliberately not in v1.
 | Register a deploy key as a side effect of a build | Same principle. `make deploy-key` is a separate, deliberate act |
 | Harden sshd before proving you can still log in | The order is: create the user → install the key → **open a second connection and verify** → only then touch `sshd_config`. If the verification fails, the file is never edited |
 | Overwrite a secret | `.env` is created once and read forever after. Regenerating `APP_SECRET` invalidates every session; regenerating `APP_ENCRYPTION_KEY` makes every encrypted column unreadable, permanently |
-| Expose staging to everyone | It is the dev stack: the profiler shows environment variables and Vite serves source files. `edge.sh` refuses to register it with an empty `STAGING_ALLOW_FROM`, and `prod-check` fails if a staging router lacks the allowlist or the stack publishes a port |
+| Expose staging to everyone | A dev staging serves the profiler (environment variables) and Vite (source files); an image staging is unfinished work. `edge.sh` refuses to register either with an empty `STAGING_ALLOW_FROM`, and `prod-check` fails if a router of either lacks the allowlist, either stack publishes a port, or an image staging loses Mailpit |
 | Overwrite work on staging | `deploystaging`, `promote` and a re-run `buildstaging` all refuse to touch uncommitted or unpushed changes in the staging checkout |
 | Call `buildprod` finished without an off-box backup | The stack comes up, then the command exits non-zero naming what is missing. With `BACKUP_REMOTE` and `BACKUP_AGE_PUBKEY` set it takes a real backup and looks for it on the remote - set is not the same as working. A `pg_dump` on the same disk as the database is a hope, not a backup |
 | Migrate without dumping first | Backup, then migrate, in that order, every time |

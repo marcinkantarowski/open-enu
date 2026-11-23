@@ -229,7 +229,7 @@ log_step "Guardrails actually fail when the rule is broken"
 # check and restored after, so one broken fixture cannot leak into the next
 # check and fail it for the wrong reason - which is exactly what happened the
 # first time a compose-file fixture was added here.
-RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock backend/phpunit.dist.xml AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/project scripts/dev scripts/lib ui-kit/app .ai .project.json landing/content)
+RESTORABLE=(backend/src/Module manager/app/modules backend/composer.json backend/composer.lock backend/phpunit.dist.xml AGENTS.md docker/compose.dev.yml docker/compose.prod.yml docker/compose.staging.yml docker/compose.staging-images.yml docker/project scripts/dev scripts/lib ui-kit/app .ai .project.json landing/content)
 
 # fails_when <label> <check-script> <break-command>
 fails_when() {
@@ -444,6 +444,14 @@ fails_when "prod-check catches a staging stack that publishes the database port"
 fails_when "prod-check catches a staging router outside the allowlist" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "sed_inplace '/routers.\\\${STACK}-api.middlewares/d' '$WORK/docker/compose.staging.yml'"
+
+fails_when "prod-check catches an image-staging router outside the allowlist" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "sed_inplace '/routers.\\\${STACK}-api.middlewares/d' '$WORK/docker/compose.staging-images.yml'"
+
+fails_when "prod-check catches an image staging that would send real mail" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "awk '/^  mailpit:/ {skip=1; next} skip && /^  [a-z]/ {skip=0} !skip' '$WORK/docker/compose.staging-images.yml' > '$WORK/si.tmp' && mv '$WORK/si.tmp' '$WORK/docker/compose.staging-images.yml'"
 
 # A project's own files (docker/project/) ride along with the platform's, so
 # their routers answer to the same rules - or a project route is the one that

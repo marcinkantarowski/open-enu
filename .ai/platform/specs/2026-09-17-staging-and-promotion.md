@@ -49,6 +49,9 @@ checkout; provision, deploy and promote all end in it.
   never carries credentials, so the API would fail every request.
 - **Staging as prod-like images, a third `dev.` stack for coding.** Three stacks on one box
   needs 6 GB+, and a rehearsal nobody codes on drifts from the one people do.
+  (Reopened as an *option*, not a third stack: `STAGING_MODE=images`,
+  [2026-11-23-staging-from-images.md](2026-11-23-staging-from-images.md) - for a team that
+  codes locally, staging is not where anyone codes.)
 - **Promoting from the staging checkout directly (no GitHub).** Loses history, review and the
   code itself with the server.
 - **Let's Encrypt's staging CA for the staging stage.** Its certificates are untrusted by

@@ -19,6 +19,10 @@
 #    allowlist               Vite's dev server (source files) to everyone
 #    a script that names     silently drops the staging override, and the next
 #    compose.dev.yml itself  `up` on the server undoes both of the above
+#
+#  And for staging from images (STAGING_MODE=images, production's stack plus
+#  compose.staging-images.yml): the same allowlist and port rules, and the
+#  production rule against bind-mounted source.
 # =============================================================================
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -177,49 +181,76 @@ case "$edge_socket" in
   *)      bad "no traefik service in docker/edge/compose.yml" "the edge changed shape" ;;
 esac
 
-# ═══ staging: the dev stack, on a public server ═════════════════════════════
-log_step "Staging stack invariants"
+# ═══ staging, in both of its modes ══════════════════════════════════════════
+# staging_invariants <label> <compose file>... → 6, 7 and 7b against that stack
+staging_invariants() {
+  local label="$1"; shift
+  local config published router unguarded=0 noresolver=0 override="${*: -1}"
+  local -a files srouters
+  override="${override##*/}"          # the staging override - where a router's fix goes
+  mapfile -t files < <(with_project "$@")
+  config="$(STACK=check-staging docker compose --project-directory "$ROOT" --env-file "$ROOT/.env" \
+              "${files[@]}" --profile e2e config 2>/dev/null)" \
+    || { bad "$label: $(printf '%s + ' "${@##*/}" | sed 's/ + $//') do not parse"; return; }
+
+  # ── 6. no published port ──────────────────────────────────────────────────
+  published="$(grep -E '^\s+published: ' <<<"$config" || true)"
+  if [ -n "$published" ]; then
+    bad "$label publishes a port" \
+        "Docker writes its own iptables rules - ufw does not protect it; the edge is the only way in" \
+        "$(head -3 <<<"$published")"
+  else
+    log_ok "$label publishes no port"
+  fi
+
+  # ── 7. every router behind the allowlist ──────────────────────────────────
+  mapfile -t srouters < <(grep -oE 'traefik\.http\.routers\.[A-Za-z0-9_-]+\.rule' <<<"$config" \
+                           | sed -E 's/^traefik\.http\.routers\.//; s/\.rule$//' | sort -u)
+  [ "${#srouters[@]}" -gt 0 ] || { bad "no routers found in $label" "the labels changed shape"; unguarded=1; }
+  for router in "${srouters[@]}"; do
+    grep -E "traefik\.http\.routers\.$router\.middlewares: .*check-staging-allow@file" <<<"$config" >/dev/null \
+      || { bad "$label router $router is not behind the allowlist" \
+               "add it to docker/$override (a project's router: docker/project/$override): \${STACK}-allow@file,noindex@file"; unguarded=1; }
+  done
+  [ "$unguarded" -eq 0 ] && log_ok "every $label router is behind the allowlist (${#srouters[@]})"
+
+  # ── 7b. and gets a public certificate ─────────────────────────────────────
+  # The dev stack gives every router `tls=true` for its local certificates, and a
+  # router's own TLS section replaces the entrypoint's default - certResolver
+  # included. Without its own resolver label a staging router serves Traefik's
+  # self-signed certificate, and Let's Encrypt is never asked.
+  for router in "${srouters[@]}"; do
+    grep -qF "traefik.http.routers.$router.tls.certresolver: letsencrypt" <<<"$config" \
+      || { bad "$label router $router has no certificate resolver" \
+               "add \${STACK}-<service>.tls.certresolver=letsencrypt - the dev stack's tls=true drops the edge's default"; noresolver=1; }
+  done
+  [ "$noresolver" -eq 0 ] && log_ok "every $label router resolves a public certificate (${#srouters[@]})"
+
+  STAGING_CONFIG="$config"
+}
+
+log_step "Staging stack invariants (STAGING_MODE=dev: the dev stack, on a public server)"
 SFILE="$ROOT/docker/compose.staging.yml"
 [ -f "$SFILE" ] || { bad "docker/compose.staging.yml is missing" "staging would run the dev stack unguarded"; }
-mapfile -t STAGING_FILES < <(with_project "$ROOT/docker/compose.dev.yml" "$SFILE")
-SCONFIG="$(STACK=check-staging docker compose --project-directory "$ROOT" --env-file "$ROOT/.env" \
-            "${STAGING_FILES[@]}" --profile e2e config 2>/dev/null)" \
-  || { log_fail "compose.dev.yml + compose.staging.yml do not parse" || true; exit 1; }
+staging_invariants "staging" "$ROOT/docker/compose.dev.yml" "$SFILE"
 
-# ── 6. no published port ────────────────────────────────────────────────────
-published="$(grep -E '^\s+published: ' <<<"$SCONFIG" || true)"
-if [ -n "$published" ]; then
-  bad "the staging stack publishes a port" \
-      "Docker writes its own iptables rules - ufw does not protect it; the edge is the only way in" \
-      "$(head -3 <<<"$published")"
+log_step "Staging stack invariants (STAGING_MODE=images: production's stack, private)"
+IFILE="$ROOT/docker/compose.staging-images.yml"
+if [ -f "$IFILE" ]; then
+  staging_invariants "image staging" "$FILE" "$IFILE"
+  # The production rule, held here too: a project file could still mount source.
+  if grep -E '^\s+source: .*/(backend|frontend|manager|landing|ui-kit)' <<<"$STAGING_CONFIG" | grep -q .; then
+    bad "image staging bind-mounts application source" \
+        "it rehearses production's images - a mount means it runs something production does not"
+  else
+    log_ok "image staging bind-mounts no application source"
+  fi
+  grep -qE '^  mailpit:' <<<"$STAGING_CONFIG" \
+    && log_ok "image staging catches mail in Mailpit" \
+    || bad "image staging has no Mailpit" "a rehearsal must not send mail to real people - keep the mailpit service in compose.staging-images.yml"
 else
-  log_ok "staging publishes no port"
+  bad "docker/compose.staging-images.yml is missing" "STAGING_MODE=images would run production's stack unguarded on staging"
 fi
-
-# ── 7. every router behind the allowlist ────────────────────────────────────
-mapfile -t srouters < <(grep -oE 'traefik\.http\.routers\.[A-Za-z0-9_-]+\.rule' <<<"$SCONFIG" \
-                         | sed -E 's/^traefik\.http\.routers\.//; s/\.rule$//' | sort -u)
-unguarded=0
-[ "${#srouters[@]}" -gt 0 ] || { bad "no routers found in the staging stack" "the labels changed shape"; unguarded=1; }
-for router in "${srouters[@]}"; do
-  grep -E "traefik\.http\.routers\.$router\.middlewares: .*check-staging-allow@file" <<<"$SCONFIG" >/dev/null \
-    || { bad "staging router $router is not behind the allowlist" \
-             "add it to docker/compose.staging.yml (a project's router: docker/project/compose.staging.yml): \${STACK}-allow@file,noindex@file"; unguarded=1; }
-done
-[ "$unguarded" -eq 0 ] && log_ok "every staging router is behind the allowlist (${#srouters[@]})"
-
-# ── 7b. and gets a public certificate ───────────────────────────────────────
-# The dev stack gives every router `tls=true` for its local certificates, and a
-# router's own TLS section replaces the entrypoint's default - certResolver
-# included. Without its own resolver label a staging router serves Traefik's
-# self-signed certificate, and Let's Encrypt is never asked.
-noresolver=0
-for router in "${srouters[@]}"; do
-  grep -qF "traefik.http.routers.$router.tls.certresolver: letsencrypt" <<<"$SCONFIG" \
-    || { bad "staging router $router has no certificate resolver" \
-             "add \${STACK}-<service>.tls.certresolver=letsencrypt in docker/compose.staging.yml - the dev stack's tls=true drops the edge's default"; noresolver=1; }
-done
-[ "$noresolver" -eq 0 ] && log_ok "every staging router resolves a public certificate (${#srouters[@]})"
 
 # ── 8. nothing drops the override ───────────────────────────────────────────
 # Code only: a comment explaining the rule names the pattern too.

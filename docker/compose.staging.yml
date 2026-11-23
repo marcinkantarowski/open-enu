@@ -1,7 +1,9 @@
 # =============================================================================
 #  Staging override - the dev stack, made safe to run on a public server.
 # =============================================================================
-#  Used as: -f compose.dev.yml -f compose.staging.yml  (COMPOSE_FILE in .env)
+#  Used as: -f compose.dev.yml -f compose.staging.yml  (COMPOSE_FILE in .env),
+#  when the staging .env says STAGING_MODE=dev. The other staging, a rehearsal
+#  of production from its images, is compose.staging-images.yml.
 #
 #  Staging is where you vibe code: hot reload, Mailpit, the Symfony profiler,
 #  Vite's dev server. Every one of those is a liability on the internet - the
