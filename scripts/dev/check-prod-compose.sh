@@ -114,6 +114,22 @@ else
   log_ok "every third-party image is pinned"
 fi
 
+# ── 3b. the services that keep data run the same image in dev and prod ──────
+# A staging switches between the dev stack and production's images on the same
+# volumes (STAGING_MODE). A newer Redis or Postgres writes a format an older
+# one refuses to read: dev on redis:8 (8.10) and prod on 8.0 left a staging
+# switched to images with a Redis that crash-looped on "Can't handle RDB format".
+drift=0
+for service in postgres redis mercure; do
+  dev_image="$(sed -n "/^  $service:/,/^  [a-z]/s/^    image: //p" "$ROOT/docker/compose.dev.yml" | head -1)"
+  prod_image="$(sed -n "/^  $service:/,/^  [a-z]/s/^    image: //p" "$FILE" | head -1)"
+  [ "$dev_image" = "$prod_image" ] \
+    || bad "$service runs ${dev_image:-nothing} in dev but ${prod_image:-nothing} in production" \
+           "pin the same tag in docker/compose.dev.yml and docker/compose.prod.yml - a staging switched between them shares the volume" \
+    || drift=1
+done
+[ "$drift" -eq 0 ] && log_ok "postgres, redis and mercure run the same image in dev and production"
+
 # ── 4. everything public terminates TLS with a real resolver ────────────────
 # Routers are DISCOVERED, not listed. They are named <slug>-<service>, and a
 # fixed list of names meets none of them - the check would skip every router
