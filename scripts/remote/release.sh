@@ -40,6 +40,26 @@ rollback_hint() {
 }
 fail() { log_fail "$@" || true; rollback_hint; exit 1; }
 
+# Every release rebuilds images: the previous ones lose their tag and the
+# build cache only grows - one staging deploy added 4 GB to a 40 GB disk.
+# Runs only after the release passed its health check, so a failed one keeps
+# its cache for the retry. A rollback rebuilds from git (rollback_hint), never
+# from an old image, so nothing removed here is needed to go back.
+#
+# The cache is pruned by age, not wiped: what this release just built was used
+# a minute ago and stays, so the next release does not reinstall every
+# dependency from scratch. By age and not by size: on Docker 29 the
+# `--max-used-space` cap reclaimed nothing from a 3 GB cache.
+prune_build_leftovers() {
+  local before after
+  before="$(df -Pm / | awk 'NR==2 {print $4}')"
+  docker image prune -f >/dev/null 2>&1 || log_warn "could not prune unused images"
+  docker builder prune -af --filter until=24h >/dev/null 2>&1 \
+    || log_warn "could not prune the build cache"
+  after="$(df -Pm / | awk 'NR==2 {print $4}')"
+  log_ok "pruned old images and build cache unused for 24h - $(( after - before )) MB freed, $(( after / 1024 )) GB free"
+}
+
 log_step "Releasing $AT to $STACK ($STAGE)"
 
 # Derived files are regenerated from .env, which is preserved. Skipping this is
@@ -85,6 +105,7 @@ case "$STAGE" in
          | grep -q '"status":"ok"'; then
         log_ok "deep health check green"
         log_ok "$DOMAIN is running $AT"
+        prune_build_leftovers
         exit 0
       fi
       sleep 4
@@ -105,6 +126,7 @@ case "$STAGE" in
     # allowlist, and this server's own address is not on it.
     if "${COMPOSE[@]}" exec -T api curl -fsS --max-time 10 http://localhost/health/deep 2>/dev/null | grep -q '"status":"ok"'; then
       log_ok "staging is running $AT - edit, and it reloads"
+      prune_build_leftovers
       exit 0
     fi
     fail "staging did not pass its deep health check" "inspect: make logs-api"
