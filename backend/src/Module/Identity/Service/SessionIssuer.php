@@ -9,9 +9,11 @@ use App\Module\Identity\Entity\RefreshToken;
 use App\Module\Identity\Entity\User;
 use App\Module\Identity\Repository\RefreshTokenRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Psr\Log\LoggerInterface;
 use OpenEnu\Kernel\Attribute\InfrastructureWrite;
+use OpenEnu\Kernel\Health\HealthCheckInterface;
 use OpenEnu\Kernel\Security\TokenAudience;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,8 +27,12 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
  * and a long-lived refresh token it never sees, because it lives in an httpOnly
  * cookie. An XSS in any dependency can then act as the user while the page is
  * open, but cannot steal a credential that outlives the tab.
+ *
+ * It is also the deep health check `jwt`: whatever mints sessions proves it
+ * still can. The first production image baked the key in as root-only while
+ * php-fpm runs as www-data, so every login answered 500 behind a green gate.
  */
-final readonly class SessionIssuer
+final readonly class SessionIssuer implements HealthCheckInterface
 {
     public const string COOKIE = 'open_enu_refresh';
     private const string REFRESH_TTL = 'P30D';
@@ -38,7 +44,19 @@ final readonly class SessionIssuer
         private LoggerInterface $logger,
         private string $cookieDomain,
         private bool $secureCookies,
+        private JWTEncoderInterface $encoder,
     ) {
+    }
+
+    public function name(): string
+    {
+        return 'jwt';
+    }
+
+    /** Signs a throwaway token: the key is there, readable, and the passphrase opens it. */
+    public function check(): void
+    {
+        $this->encoder->encode(['sub' => 'health', 'exp' => time() + 60]);
     }
 
     /**

@@ -99,8 +99,8 @@ COPY backend/ ./
 # here - if that ever changes, this is the line that breaks first.
 # The JWT keypair is generated on the server (provision.sh) as 0600 for the
 # deploy user, and COPY hands it to root with the same mode - unreadable to
-# php-fpm, which runs as www-data and signs every login. Identity's
-# SigningKeyHealthCheck fails /health/deep, and with it the deploy, if not.
+# php-fpm, which runs as www-data and signs every login. The `jwt` deep health
+# check (Identity's SessionIssuer) fails /health/deep, and the deploy, if not.
 RUN composer dump-autoload --no-dev --classmap-authoritative --optimize \
  && mkdir -p var/cache var/log var/storage \
  && chown -R www-data:www-data var \
