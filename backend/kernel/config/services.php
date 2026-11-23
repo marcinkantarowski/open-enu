@@ -115,9 +115,13 @@ return static function (ContainerConfigurator $container): void {
     $services->set(ModuleDiffCommand::class);
 
     // ── http ────────────────────────────────────────────────────────────────
+    // It logs its own 500s: setResponse() stops propagation, and at the same
+    // priority it ran before Symfony's ErrorListener::logKernelException - so
+    // in production a 500 reached the client and nothing reached the log.
     $services->set(ApiExceptionListener::class)
-        ->args([param('kernel.debug')])
-        ->tag('kernel.event_listener', ['event' => 'kernel.exception']);
+        ->args([param('kernel.debug'), service('logger')])
+        ->tag('kernel.event_listener', ['event' => 'kernel.exception'])
+        ->tag('monolog.logger', ['channel' => 'request']);
 
     $services->set(RequestIdListener::class);
     $services->set(FlagListener::class);

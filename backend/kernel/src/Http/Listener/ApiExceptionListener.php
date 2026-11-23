@@ -7,6 +7,7 @@ namespace OpenEnu\Kernel\Http\Listener;
 use OpenEnu\Kernel\Dto\ErrorResponse;
 use OpenEnu\Kernel\Http\Exception\ConflictException;
 use OpenEnu\Kernel\Http\RequestId;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -22,12 +23,19 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
  *    the request id links them. In dev the message is included, because the
  *    alternative is reading container logs for every typo.
  *
+ *  - **It logs what it hides.** Setting the response stops propagation, so
+ *    Symfony's own exception logger never sees what this listener handled. An
+ *    unexpected exception is therefore logged here, with the request id that
+ *    the client was given - or a 500 in production leaves no trace at all.
+ *    Expected outcomes (4xx, conflicts, validation) are answers, not faults,
+ *    and are not logged.
+ *
  *  - **It only touches API responses.** Non-JSON routes fall through to
  *    Symfony's own handling, so the profiler and its stack traces keep working.
  */
 final readonly class ApiExceptionListener
 {
-    public function __construct(private bool $debug)
+    public function __construct(private bool $debug, private LoggerInterface $logger)
     {
     }
 
@@ -75,6 +83,15 @@ final readonly class ApiExceptionListener
                 requestId: $requestId,
             ),
         };
+
+        if ($error->status >= 500) {
+            $this->logger->critical('Uncaught {class}: {message}', [
+                'class' => $throwable::class,
+                'message' => $throwable->getMessage(),
+                'exception' => $throwable,
+                'requestId' => $requestId,
+            ]);
+        }
 
         $response = new JsonResponse($error->jsonSerialize(), $error->status);
         if ($throwable instanceof HttpExceptionInterface) {

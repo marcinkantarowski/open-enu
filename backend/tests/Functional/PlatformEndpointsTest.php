@@ -43,7 +43,7 @@ final class PlatformEndpointsTest extends ApiTestCase
         self::assertSame([], $body['failed']);
         // What the deploy gate trusts: each dependency by name, each verified.
         // An empty list once answered "ok" here having checked nothing at all.
-        foreach (['database', 'redis', 'mercure'] as $name) {
+        foreach (['database', 'redis', 'mercure', 'jwt'] as $name) {
             self::assertTrue($body['checks'][$name]['ok'] ?? false, $name . ' is checked, and usable');
         }
         // Public endpoint: a verdict and a time, never the reason.

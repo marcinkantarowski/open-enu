@@ -234,7 +234,7 @@ on `web` with TLS settings, and lists the plain-HTTP routers it found.
 | Certificates never issue | Port 80 reachable? CAA record naming another CA? Cloudflare proxy on? All three are preflight checks |
 | Health gate red, and `/health/deep` names a check in `failed` | that dependency is down or unreachable from the API; the reason is in the API's log: `ssh $HOST 'cd /opt/<slug>-prod && docker compose logs --tail=80 api \| grep "Health check"'` |
 | Stack up, health gate red | `ssh $HOST 'cd /opt/<slug>-prod && docker compose logs --tail=80 api; docker logs --tail=80 enu-edge'` |
-| Deploy failed mid-migration | Nothing was restarted; the old containers are still serving. The pre-deploy dump is in `/opt/<slug>-prod/backups`; the rollback command is printed |
+| Deploy failed mid-migration | The application containers were not restarted; the old ones are still serving (a database or Redis whose image changed was recreated). The pre-deploy dump is in `/opt/<slug>-prod/backups`; the rollback command is printed |
 | Need the database locally | `make tunnel HOST=… [STAGE=staging]` → `postgres://…@127.0.0.1:15432/…` for one session |
 | Gone after a reboot | `systemctl status <slug>-prod.service` / `<slug>-staging.service` - the reason a kernel update at 4am is not an outage |
 
