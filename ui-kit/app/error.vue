@@ -8,7 +8,10 @@
 const props = defineProps<{ error: { statusCode: number } }>()
 const { t } = useI18n()
 
-const kind = computed(() => (props.error.statusCode === 404 ? 'notFound' : 'failed'))
+// A 403 is not a failure to retry: "try again in a moment" sends someone
+// whose role does not include the page back to the same refusal.
+const KINDS: Record<number, string> = { 403: 'forbidden', 404: 'notFound' }
+const kind = computed(() => KINDS[props.error.statusCode] ?? 'failed')
 useHead({ title: () => t(`errorPage.${kind.value}.title`) })
 
 const home = () => clearError({ redirect: '/' })

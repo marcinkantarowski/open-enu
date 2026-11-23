@@ -22,6 +22,25 @@ const settingsModules = import.meta.glob<{ default: SettingsTab[] }>(
   { eager: true },
 )
 
+/** The settings tabs a session may open, in order - labels still keys. */
+function visibleSettingsTabs(can: (permission: string) => boolean): SettingsTab[] {
+  return Object.values(settingsModules)
+    .flatMap(mod => mod.default ?? [])
+    .filter(tab => !tab.permission || can(tab.permission))
+    .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
+}
+
+/**
+ * Where "Settings" opens for this session: the first tab it may see. The
+ * workspace screen at /settings needs settings.view, and someone without it
+ * still has their profile and whatever else their role reads - the menu's
+ * own entry answering 403 was the alternative.
+ */
+export function settingsHome(): string {
+  const auth = useAuthStore()
+  return visibleSettingsTabs(permission => auth.can(permission))[0]?.to ?? '/settings/profile'
+}
+
 export function useNavigation() {
   const auth = useAuthStore()
   const { t } = useI18n()
@@ -43,11 +62,7 @@ export function useNavigation() {
   )
 
   const settingsTabs = computed<SettingsTab[]>(() =>
-    Object.values(settingsModules)
-      .flatMap(mod => mod.default ?? [])
-      .filter(tab => !tab.permission || auth.can(tab.permission))
-      .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
-      .map(translate),
+    visibleSettingsTabs(permission => auth.can(permission)).map(translate),
   )
 
   return { items, settingsTabs }

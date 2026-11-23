@@ -27,6 +27,8 @@
   "error.notFound": "That no longer exists.",
   "errorPage.notFound.title": "Page not found",
   "errorPage.notFound.hint": "The address may have changed or the page was removed. Check the link or go back to the home page.",
+  "errorPage.forbidden.title": "No access",
+  "errorPage.forbidden.hint": "Your permissions do not include this page. If you need it, ask an administrator for access.",
   "errorPage.failed.title": "Something went wrong",
   "errorPage.failed.hint": "This page could not be shown. Please try again in a moment.",
   "errorPage.home": "Back to the home page",
