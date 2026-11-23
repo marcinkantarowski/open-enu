@@ -97,9 +97,14 @@ COPY backend/ ./
 # `--classmap-authoritative` turns autoloading into an array lookup with no
 # filesystem probing. Correct only because nothing generates classes at runtime
 # here - if that ever changes, this is the line that breaks first.
+# The JWT keypair is generated on the server (provision.sh) as 0600 for the
+# deploy user, and COPY hands it to root with the same mode - unreadable to
+# php-fpm, which runs as www-data and signs every login. The `jwt` deep health
+# check (Identity's SessionIssuer) fails /health/deep, and the deploy, if not.
 RUN composer dump-autoload --no-dev --classmap-authoritative --optimize \
  && mkdir -p var/cache var/log var/storage \
- && chown -R www-data:www-data var
+ && chown -R www-data:www-data var \
+ && if [ -d config/jwt ]; then chown -R www-data:www-data config/jwt; fi
 
 # Deliberately NOT warmed at build time: the cache bakes in environment that is
 # only known on the server (database URL, domains, secrets). entrypoint.sh
