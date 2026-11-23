@@ -161,6 +161,22 @@ grep -q 'dashboard: true' "$ROOT/docker/edge/traefik.server.yml" 2>/dev/null \
   && bad "the Traefik dashboard is enabled on the server edge" "it is an unauthenticated map of every route"
 [ "$fails" -eq 0 ] && log_ok "no development services"
 
+# ── 5b. the edge: Traefik faces the internet, so it holds no Docker socket ──
+EDGE_CONFIG="$(EDGE_HOME=/nonexistent docker compose -f "$ROOT/docker/edge/compose.yml" config 2>/dev/null)" \
+  || { bad "docker/edge/compose.yml does not parse" "run: EDGE_HOME=/tmp docker compose -f docker/edge/compose.yml config"; EDGE_CONFIG=""; }
+edge_socket="$(python3 -c '
+import re, sys
+c = sys.stdin.read()
+block = re.search(r"^  traefik:\n(.*?)(?=^  \S|^\S|\Z)", c, re.S | re.M)
+print("missing" if not block else "socket" if "docker.sock" in block.group(1) else "clean")
+' <<<"$EDGE_CONFIG")"
+case "$edge_socket" in
+  clean)  log_ok "Traefik reaches Docker through the socket proxy, not the socket" ;;
+  socket) bad "the edge's Traefik mounts the Docker socket" \
+              "the socket is root on the host, read-only or not; mount it into socket-proxy only" ;;
+  *)      bad "no traefik service in docker/edge/compose.yml" "the edge changed shape" ;;
+esac
+
 # ═══ staging: the dev stack, on a public server ═════════════════════════════
 log_step "Staging stack invariants"
 SFILE="$ROOT/docker/compose.staging.yml"
