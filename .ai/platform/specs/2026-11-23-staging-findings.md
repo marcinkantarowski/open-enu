@@ -38,6 +38,19 @@ Three strings addressed the reader as "przerwałeś"/"patrzyłeś"/"prosiłeś".
 Rephrased, and `make i18n-check` fails on the 2nd-person past tense in any
 Polish catalogue.
 
+## A role without settings.view (second pass)
+
+- The error page told a 403 "something went wrong, try again in a moment" -
+  advice no retry follows. 403 now has its own words: no access, ask an
+  administrator.
+- Settings was offered only with `settings.view`, the workspace tab - yet every
+  session has its profile and often more tabs. The menu entry has no
+  permission now, and `/settings` without `settings.view` redirects to the
+  first tab the session may open (`settingsHome()`).
+
+`e2e/tests/access.spec.ts`: a role reading one thing opens Settings on its
+profile and gets "no access" on the audit page.
+
 ## Not changed
 
 - Audit action keys stay as keys: translating them is a per-command contract.

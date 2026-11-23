@@ -27,6 +27,8 @@
   "error.notFound": "To już nie istnieje.",
   "errorPage.notFound.title": "Nie ma takiej strony",
   "errorPage.notFound.hint": "Adres mógł się zmienić albo strona została usunięta. Sprawdź link albo wróć na stronę główną.",
+  "errorPage.forbidden.title": "Brak dostępu",
+  "errorPage.forbidden.hint": "Twoje uprawnienia nie obejmują tej strony. Jeśli jest Ci potrzebna, poproś o dostęp administratora.",
   "errorPage.failed.title": "Coś poszło nie tak",
   "errorPage.failed.hint": "Nie udało się wyświetlić tej strony. Spróbuj ponownie za chwilę.",
   "errorPage.home": "Wróć na stronę główną",

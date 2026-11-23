@@ -1,5 +1,12 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'permission', permission: 'settings.view' })
+// The menu's "Settings" lands here for everyone. Without settings.view this
+// screen is not theirs, but other tabs are - the profile at least - so they
+// are sent to the first one rather than shown a 403.
+definePageMeta({
+  middleware: [() => {
+    if (!useAuthStore().can('settings.view')) return navigateTo(settingsHome(), { replace: true })
+  }],
+})
 
 /**
  * The workspace's own settings.
