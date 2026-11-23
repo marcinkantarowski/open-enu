@@ -114,7 +114,7 @@ release_images() {
     log_step "Migrate (staging data is disposable - no dump)"
   fi
   "${COMPOSE[@]}" run --rm -T api php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration >/dev/null \
-    || fail "migrations failed - nothing was restarted, the old containers are still serving" \
+    || fail "migrations failed - the application containers were not restarted (a database or Redis whose image or settings changed was)" \
             "$([ "$STAGE" = production ] && echo "the pre-deploy dump is in $ROOT/backups" || echo "inspect: ${COMPOSE[*]} run --rm api php bin/console doctrine:migrations:status")"
   log_ok "migrated"
 

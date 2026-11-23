@@ -49,7 +49,7 @@ services:
   #  Redis - cache and the `jobs` message transport (never domain events)
   # ───────────────────────────────────────────────────────────────────────────
   redis:
-    image: redis:8-alpine
+    image: redis:8.10-alpine
     container_name: ${STACK:-open-enu}-redis
     restart: unless-stopped
     command: >
