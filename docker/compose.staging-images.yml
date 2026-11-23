@@ -39,7 +39,7 @@ services:
       - traefik.http.routers.${STACK}-landing.middlewares=${STACK}-allow@file,noindex@file
 
   mailpit:
-    image: axllent/mailpit:v1.31.3
+    image: axllent/mailpit:v1.34.0
     container_name: ${STACK}-mailpit
     restart: unless-stopped
     logging:
