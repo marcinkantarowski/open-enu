@@ -18,6 +18,7 @@ interface Setting {
 }
 
 const api = useApi()
+const route = useRoute()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -27,9 +28,12 @@ const { data, pending } = await useAsyncData(
 )
 
 // An override needs a tenant to apply to, so the operator names one first.
-// Deliberately a plain field rather than a picker: it is pasted from the tenant
-// page, and a picker over every tenant on the platform is not a usable control.
-const tenantId = ref('')
+// Deliberately a plain field rather than a picker: a picker over every tenant
+// on the platform is not a usable control. The tenant's page links here with
+// `?tenant=`, so the usual way in arrives filled - and named, so an override
+// is never saved against a UUID nobody recognised.
+const tenantId = ref(String(route.query.tenant ?? ''))
+const tenantName = useTenantName(tenantId)
 const saving = ref<string | null>(null)
 
 async function override(setting: Setting, value: unknown) {
@@ -42,7 +46,7 @@ async function override(setting: Setting, value: unknown) {
 
   try {
     await api.put(`/api/manager/tenants/${tenantId.value}/settings/${setting.identifier}`, { value })
-    toast.success(t('manager.overrideSaved', { tenant: tenantId.value }))
+    toast.success(t('manager.overrideSaved', { tenant: tenantName.value ?? tenantId.value }))
   } catch (error) {
     toast.error((error as Error).message)
   } finally {
@@ -59,7 +63,7 @@ async function override(setting: Setting, value: unknown) {
     </div>
 
     <UiCard :title="t('manager.applyTo')" :description="t('manager.applyToHint')">
-      <UiField v-slot="field" :label="t('manager.tenant')">
+      <UiField v-slot="field" :label="t('manager.tenant')" :hint="tenantName ?? undefined">
         <UiInput
           :id="field.id"
           v-model="tenantId"

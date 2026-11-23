@@ -16,7 +16,7 @@
   "app.impersonate.failed": "Nie udało się otworzyć sesji wsparcia. Poproś operatora o ponowne jej uruchomienie.",
   "app.dashboard.greeting": "Cześć, {name}",
   "app.auth.headline": "Twój obszar roboczy, uporządkowany i pod ręką.",
-  "app.auth.tagline": "Zaloguj się, żeby wrócić do pracy tam, gdzie ją przerwałeś.",
+  "app.auth.tagline": "Zaloguj się i wróć do pracy tam, gdzie została przerwana.",
   "app.auth.backToLogin": "Wróć do logowania",
   "app.login.title": "Zaloguj się",
   "app.login.subtitle": "Podaj adres e-mail i hasło do swojego konta.",

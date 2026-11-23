@@ -90,6 +90,7 @@ services:
       - traefik.http.routers.${STACK:-open-enu}-mercure.rule=Host(`api.${DOMAIN}`) && PathPrefix(`/.well-known/mercure`)
       - traefik.http.routers.${STACK:-open-enu}-mercure.entrypoints=websecure
       - traefik.http.routers.${STACK:-open-enu}-mercure.tls.certresolver=letsencrypt
+      - traefik.http.routers.${STACK:-open-enu}-mercure.middlewares=rate-limit@file
       - traefik.http.services.${STACK:-open-enu}-mercure.loadbalancer.server.port=80
 
   api:
@@ -116,6 +117,7 @@ services:
       - traefik.http.routers.${STACK:-open-enu}-api.rule=Host(`api.${DOMAIN}`)
       - traefik.http.routers.${STACK:-open-enu}-api.entrypoints=websecure
       - traefik.http.routers.${STACK:-open-enu}-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.${STACK:-open-enu}-api.middlewares=rate-limit@file
       - traefik.http.services.${STACK:-open-enu}-api.loadbalancer.server.port=80
       # Traefik polls the SHALLOW check. The deep one touches the database and
       # Redis, and putting that on a 10-second loop turns a slow query into a
@@ -199,6 +201,7 @@ services:
       - traefik.http.routers.${STACK:-open-enu}-frontend.rule=Host(`app.${DOMAIN}`)
       - traefik.http.routers.${STACK:-open-enu}-frontend.entrypoints=websecure
       - traefik.http.routers.${STACK:-open-enu}-frontend.tls.certresolver=letsencrypt
+      - traefik.http.routers.${STACK:-open-enu}-frontend.middlewares=rate-limit@file
       - traefik.http.services.${STACK:-open-enu}-frontend.loadbalancer.server.port=3000
     deploy:
       resources:
@@ -221,6 +224,7 @@ services:
       - traefik.http.routers.${STACK:-open-enu}-manager.rule=Host(`manager.${DOMAIN}`)
       - traefik.http.routers.${STACK:-open-enu}-manager.entrypoints=websecure
       - traefik.http.routers.${STACK:-open-enu}-manager.tls.certresolver=letsencrypt
+      - traefik.http.routers.${STACK:-open-enu}-manager.middlewares=rate-limit@file
       - traefik.http.services.${STACK:-open-enu}-manager.loadbalancer.server.port=3000
     deploy:
       resources:
@@ -243,6 +247,7 @@ services:
       - traefik.http.routers.${STACK:-open-enu}-landing.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)
       - traefik.http.routers.${STACK:-open-enu}-landing.entrypoints=websecure
       - traefik.http.routers.${STACK:-open-enu}-landing.tls.certresolver=letsencrypt
+      - traefik.http.routers.${STACK:-open-enu}-landing.middlewares=rate-limit@file
       - traefik.http.services.${STACK:-open-enu}-landing.loadbalancer.server.port=3000
     deploy:
       resources:

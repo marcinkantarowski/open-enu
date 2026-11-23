@@ -90,15 +90,20 @@ async function viewAs(member: Member) {
         </p>
       </div>
 
-      <UiButton
-        v-if="data && data.status !== 'suspended'"
-        variant="danger"
-        :loading="busy"
-        data-testid="tenant-suspend"
-        @click="suspend"
-      >
-        {{ t('manager.suspend') }}
-      </UiButton>
+      <div class="flex items-center gap-2">
+        <!-- The two screens that ask for a tenant id, opened with this one's. -->
+        <NuxtLink :to="`/flags?tenant=${id}`" class="text-sm text-accent-700 hover:underline" data-testid="tenant-flags">{{ t('manager.flags') }}</NuxtLink>
+        <NuxtLink :to="`/audit?tenant=${id}`" class="text-sm text-accent-700 hover:underline" data-testid="tenant-audit">{{ t('manager.audit') }}</NuxtLink>
+        <UiButton
+          v-if="data && data.status !== 'suspended'"
+          variant="danger"
+          :loading="busy"
+          data-testid="tenant-suspend"
+          @click="suspend"
+        >
+          {{ t('manager.suspend') }}
+        </UiButton>
+      </div>
     </div>
 
     <UiCard :title="t('manager.members')" :description="t('manager.membersHint')">

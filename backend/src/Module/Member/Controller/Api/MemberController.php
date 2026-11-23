@@ -10,6 +10,7 @@ use App\Module\Member\Command\ChangeMemberAccess;
 use App\Module\Member\Command\InviteMember;
 use App\Module\Member\Command\ReactivateMember;
 use App\Module\Member\Command\SuspendMember;
+use App\Module\Member\Service\AccessGuard;
 use OpenEnu\Kernel\Command\CommandBusInterface;
 use OpenEnu\Kernel\Doctrine\ScopeContext;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -38,6 +39,7 @@ final readonly class MemberController
         private MembershipsInterface $memberships,
         private CommandBusInterface $commands,
         private ScopeContext $scope,
+        private AccessGuard $guard,
         #[Target('authLimiter')] private RateLimiterFactoryInterface $authLimiter,
     ) {
     }
@@ -48,7 +50,12 @@ final readonly class MemberController
     {
         $tenantId = $this->scope->tenantId() ?? throw new AccessDeniedHttpException('No tenant in scope.');
 
-        return new JsonResponse(['items' => $this->memberships->inTenant($tenantId)]);
+        // `manageable`: whether this caller may change the row, so the page offers
+        // no control the server would refuse - an admin sees the owner, not a pencil.
+        return new JsonResponse(['items' => array_map(
+            fn (array $member): array => $member + ['manageable' => $this->guard->manageable($tenantId, $member)],
+            $this->memberships->inTenant($tenantId),
+        )]);
     }
 
     #[Route('/api/members', name: 'member_invite', methods: ['POST'])]

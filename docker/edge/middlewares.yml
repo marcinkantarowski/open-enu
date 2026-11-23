@@ -1,7 +1,8 @@
 # =============================================================================
 #  Middleware for every stack on a server's edge. Installed by edge.sh as
-#  ${EDGE_HOME}/dynamic/_shared.yml; security-headers and rate-limit apply to
-#  every request on websecure, noindex is added by compose.staging.yml.
+#  ${EDGE_HOME}/dynamic/_shared.yml. security-headers applies to every request
+#  on websecure; rate-limit is named by each production router, noindex by
+#  each staging one (compose.staging.yml).
 # =============================================================================
 http:
   middlewares:
@@ -29,7 +30,8 @@ http:
     rate-limit:
       # A coarse first layer in front of the application's own limiters, which
       # are per-endpoint and know the difference between a login and a list.
-      # This one only stops a flood from reaching PHP at all.
+      # This one only stops a flood from reaching PHP at all. Production only:
+      # sized for built bundles, it refuses a dev server's module-per-file load.
       rateLimit:
         average: 100
         burst: 200

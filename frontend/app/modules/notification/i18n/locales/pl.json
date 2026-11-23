@@ -1,6 +1,6 @@
 {
   "notification.title": "Powiadomienia",
-  "notification.subtitle": "Rzeczy, które wydarzyły się, gdy nie patrzyłeś.",
+  "notification.subtitle": "Co wydarzyło się pod Twoją nieobecność.",
   "notification.empty": "Nic do przeczytania",
   "notification.emptyHint": "Powiadomienia pojawią się tutaj, gdy coś będzie wymagać twojej uwagi.",
   "notification.markRead": "Oznacz jako przeczytane",
