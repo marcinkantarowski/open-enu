@@ -24,9 +24,20 @@ interface AuditEntry {
 }
 
 const api = useApi()
+const auth = useAuthStore()
 const { t } = useI18n()
+const dateTime = useDateTime()
 
 const { data, pending } = await useAsyncData('audit', () => api.get<{ items: AuditEntry[] }>('/api/audit'))
+
+// Who, by name: the trail stores a user id, and a column of UUIDs answers
+// "who did this" for nobody. Without member.view the id is all there is.
+const { data: people } = await useAsyncData('audit-people', () =>
+  auth.can('member.view')
+    ? api.get<{ items: { userId: string, email: string, displayName: string | null }[] }>('/api/members')
+    : Promise.resolve({ items: [] }),
+)
+const names = computed(() => new Map((people.value?.items ?? []).map(m => [m.userId, m.displayName ?? m.email])))
 
 // Shown in a drawer beside the list: under a table of fifty rows the
 // snapshots would land below the fold, far from the row that asked for them.
@@ -57,6 +68,8 @@ const detailsOpen = computed({
         :loading="pending"
         :empty-title="t('audit.empty')"
       >
+        <template #cell-recordedAt="{ row }">{{ dateTime(row.recordedAt) }}</template>
+
         <template #cell-action="{ row }">
           <span class="font-mono text-xs">{{ row.action }}</span>
         </template>
@@ -64,7 +77,8 @@ const detailsOpen = computed({
         <template #cell-actorId="{ row }">
           <!-- Both identities when one is acting for another: an impersonated
                change must never read as the customer's own (ADR-0008). -->
-          <span class="font-mono text-xs">{{ row.actorId ?? '-' }}</span>
+          <span v-if="row.actorId && names.has(row.actorId)" data-testid="audit-actor">{{ names.get(row.actorId) }}</span>
+          <span v-else class="font-mono text-xs">{{ row.actorId ?? '-' }}</span>
           <span v-if="row.onBehalfOfId" class="ml-1 text-xs text-warn">
             {{ t('audit.onBehalfOf') }}
           </span>
@@ -84,7 +98,7 @@ const detailsOpen = computed({
       </UiTable>
     </UiCard>
 
-    <UiDrawer v-model:open="detailsOpen" :title="selected?.action ?? ''" :description="selected?.recordedAt" width="lg">
+    <UiDrawer v-model:open="detailsOpen" :title="selected?.action ?? ''" :description="dateTime(selected?.recordedAt)" width="lg">
       <div v-if="selected" class="flex flex-col gap-4" data-testid="audit-snapshot">
         <p v-if="selected.failureReason" class="text-sm text-crit">{{ selected.failureReason }}</p>
         <div v-for="side in ['before', 'after'] as const" :key="side">

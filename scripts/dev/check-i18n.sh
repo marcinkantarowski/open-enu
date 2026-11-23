@@ -145,6 +145,20 @@ done
 [ "$unlabelled" -eq 0 ] && log_ok "every declared permission has a label"
 fails=$((fails + unlabelled))
 
+# Polish speaks to the reader in a gendered past tense ("przerwałeś",
+# "prosiłaś"), and a product guessing which one shows half its users the wrong
+# form. Write around it - "pod Twoją nieobecność", "nie pochodzi od Ciebie".
+gendered="$(find "$ROOT" \( -name node_modules -o -name .nuxt -o -name .output -o -name vendor \) -prune -o \
+              \( -name 'pl.json' -o -name '*.pl.json' \) -print0 2>/dev/null \
+            | xargs -0 grep -nHoE '[[:alpha:]]+(łeś|łaś|łbyś|łabyś)\b' 2>/dev/null | sed "s|^$ROOT/||" || true)"
+if [ -n "$gendered" ]; then
+  log_fail "a Polish string guesses the reader's gender" "rephrase without the 2nd-person past tense" || true
+  sed 's/^/      /' <<<"$gendered" >&2
+  fails=$((fails + 1))
+else
+  log_ok "no Polish string guesses the reader's gender"
+fi
+
 echo
 if [ "$fails" -eq 0 ]; then
   log_ok "every locale file has the same keys as its counterparts"

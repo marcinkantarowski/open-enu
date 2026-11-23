@@ -19,9 +19,13 @@ interface AuditEntry {
 }
 
 const api = useApi()
+const route = useRoute()
 const { t } = useI18n()
+const dateTime = useDateTime()
 
-const tenantId = ref('')
+// Filled when arriving from a tenant's page (`?tenant=`), and named either way.
+const tenantId = ref(String(route.query.tenant ?? ''))
+const tenantName = useTenantName(tenantId)
 
 const { data, pending, refresh } = await useAsyncData(
   'manager-audit',
@@ -40,7 +44,7 @@ const { data, pending, refresh } = await useAsyncData(
       </div>
 
       <form class="flex items-end gap-2" @submit.prevent="refresh()">
-        <UiField v-slot="field" :label="t('manager.filterTenant')">
+        <UiField v-slot="field" :label="t('manager.filterTenant')" :hint="tenantName ?? undefined">
           <UiInput :id="field.id" v-model="tenantId" placeholder="UUID" :described-by="field.describedBy" />
         </UiField>
         <UiButton type="submit">{{ t('common.search') }}</UiButton>
@@ -61,6 +65,15 @@ const { data, pending, refresh } = await useAsyncData(
         :loading="pending"
         :empty-title="t('manager.noAudit')"
       >
+        <template #cell-recordedAt="{ row }">{{ dateTime(row.recordedAt) }}</template>
+
+        <template #cell-tenantId="{ row }">
+          <NuxtLink v-if="row.tenantId" :to="`/tenants/${row.tenantId}`" class="font-mono text-xs text-accent-700 hover:underline" :title="row.tenantId">
+            {{ row.tenantId.slice(0, 8) }}
+          </NuxtLink>
+          <span v-else>-</span>
+        </template>
+
         <template #cell-action="{ row }">
           <span class="font-mono text-xs">{{ row.action }}</span>
         </template>

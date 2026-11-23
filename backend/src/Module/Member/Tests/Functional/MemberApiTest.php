@@ -150,6 +150,9 @@ final class MemberApiTest extends ApiTestCase
         $this->makeUser('plain@example.test', Membership::ROLE_MEMBER);
         $this->givenIAmSignedIn(Membership::ROLE_ADMIN, 'admin@example.test');
         $members = $this->members();
+        // The list says so before anyone tries, so the page shows no pencil it would refuse.
+        self::assertFalse($members['boss@example.test']['manageable']);
+        self::assertTrue($members['plain@example.test']['manageable']);
 
         $this->post('/api/members', ['email' => 'pal@example.test', 'role' => 'owner']);
         self::assertResponseStatusCodeSame(403);
@@ -224,6 +227,7 @@ final class MemberApiTest extends ApiTestCase
         $this->givenATenant();
         $this->givenIAmSignedIn(Membership::ROLE_MEMBER, 'member@example.test');
         $me = $this->members()['member@example.test'];
+        self::assertFalse($me['manageable']);
 
         $this->post('/api/members', ['email' => 'x@example.test', 'role' => 'member']);
         self::assertResponseStatusCodeSame(403);

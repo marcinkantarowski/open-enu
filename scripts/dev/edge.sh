@@ -13,8 +13,9 @@
 #
 #    local                 mkcert certificates, dashboard at traefik.${DOMAIN},
 #                          state in ~/.local/share/enu-edge
-#    staging | production  Let's Encrypt, security headers and a rate limit on
-#                          every request, no dashboard, state in /opt/enu-edge.
+#    staging | production  Let's Encrypt and security headers on every request
+#                          (the rate limit each production router names), no
+#                          dashboard, state in /opt/enu-edge.
 #                          A staging stack also registers its IP allowlist -
 #                          refusing to start without one, because it is the dev
 #                          stack and must not be public.

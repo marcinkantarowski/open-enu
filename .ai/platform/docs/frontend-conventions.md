@@ -150,6 +150,7 @@ Such a page is `definePageMeta({ layout: 'blank', public: true })`, calls only
 | A long job | `useProgress(id)` or drop in `<JobProgress :job-id>` |
 | Uploading a file | `useUpload()` or `<UploadField :owner>` |
 | Telling the user something | `useToast()` - errors stay until dismissed |
+| A moment the API sent (ISO 8601) | `useDateTime()` - the reader's locale and time zone, never the raw string |
 | A feature flag | `useFlags()` - advisory; the server still 404s a disabled route |
 
 ## Components, tokens and the theme

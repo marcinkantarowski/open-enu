@@ -186,8 +186,10 @@ test('an operator can switch the archive flag on, and the job then reports progr
   // Navigated by clicking, never by `goto`. An operator session has no refresh
   // cookie by design (ADR-0008), so a full page load signs them out - which is
   // the correct behaviour and a trap for anyone writing a test against it.
-  await operator.getByRole('link', { name: /flags/i }).click()
-  await operator.getByTestId('flag-tenant').fill(tenantId)
+  // From the tenant's own page the field arrives filled, and says whose it is.
+  await operator.getByTestId('tenant-flags').click()
+  await expect(operator.getByTestId('flag-tenant')).toHaveValue(tenantId)
+  await expect(operator.getByText(PRIMARY_TENANT.name, { exact: true })).toBeVisible()
   await Promise.all([
     operator.waitForResponse(r => r.url().includes('/settings/example.archive') && r.request().method() === 'PUT'),
     operator.getByTestId('flag-on-example.archive').click(),

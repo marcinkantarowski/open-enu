@@ -55,9 +55,13 @@ entryPoints:
         # routers (`tls=true`, no resolver - mkcert locally) get Let's Encrypt
         # certificates on a staging server with no label changed.
         certResolver: letsencrypt
+      # The rate limit is NOT here: every production router names it itself
+      # (`make prod-check`). On the entrypoint it also held staging - the dev
+      # stack, whose first page load is several hundred Vite modules, from one
+      # VPN address shared by the whole team - and answered 429 to part of
+      # them: a blank page after every deploy. Staging is behind its allowlist.
       middlewares:
         - security-headers@file
-        - rate-limit@file
 
 providers:
   docker:

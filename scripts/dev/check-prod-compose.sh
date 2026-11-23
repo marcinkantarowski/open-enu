@@ -113,6 +113,7 @@ mapfile -t routers < <(grep -oE 'traefik\.http\.routers\.[A-Za-z0-9_-]+\.rule' <
                         | sed -E 's/^traefik\.http\.routers\.//; s/\.rule$//' | sort -u)
 missing=0
 plain=()
+secure=()
 if [ "${#routers[@]}" -eq 0 ]; then
   bad "no Traefik routers found in the production stack" "nothing is public, or the labels changed shape"
   missing=1
@@ -121,6 +122,7 @@ for router in "${routers[@]}"; do
   entrypoints="$(grep -oE "traefik\.http\.routers\.$router\.entrypoints: .*" <<<"$CONFIG" | sed -E 's/^[^:]+: //' || true)"
   case "$entrypoints" in
     websecure)
+      secure+=("$router")
       grep -qF "traefik.http.routers.$router.tls.certresolver" <<<"$CONFIG" \
         || { bad "router $router has no certificate resolver" "it would answer on 443 with the wrong certificate"; missing=1; } ;;
     web)
@@ -137,6 +139,18 @@ for router in "${routers[@]}"; do
 done
 [ "$missing" -eq 0 ] && log_ok "every public router resolves a certificate (${#routers[@]})"
 [ "${#plain[@]}" -eq 0 ] || log_info "plain HTTP on purpose: ${plain[*]}"
+
+# ── 4b. and is behind the rate limit ────────────────────────────────────────
+# Named by each router, not by the entrypoint: the edge is shared with staging,
+# whose dev server sends a first page load as several hundred requests from
+# one VPN address - an entrypoint limit answered part of them 429.
+unlimited=0
+for router in "${secure[@]}"; do
+  grep -qE "traefik\.http\.routers\.$router\.middlewares: .*rate-limit@file" <<<"$CONFIG" \
+    || { bad "router $router is not behind the rate limit" \
+             "add traefik.http.routers.$router.middlewares=rate-limit@file - the edge no longer applies it to every request"; unlimited=1; }
+done
+[ "$unlimited" -eq 0 ] && log_ok "every public router is behind the rate limit (${#secure[@]})"
 
 # ── 5. no dev-only services leaked in ───────────────────────────────────────
 for service in mailpit webhook-echo e2e; do

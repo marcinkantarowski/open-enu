@@ -28,7 +28,7 @@
   "manager.flags": "Flags",
   "manager.flagsHint": "Platform defaults, and the per-tenant overrides that sit on top of them.",
   "manager.applyTo": "Apply overrides to",
-  "manager.applyToHint": "Paste a tenant id from its page. An override needs a workspace to apply to.",
+  "manager.applyToHint": "Paste a tenant id, or open Flags from the tenant's page. An override needs a workspace to apply to.",
   "manager.pickTenantFirst": "Name a tenant first - an override has to apply to one.",
   "manager.overrideSaved": "Override saved for {tenant}.",
   "manager.setting": "Setting",

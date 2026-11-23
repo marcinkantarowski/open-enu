@@ -411,6 +411,10 @@ fails_when "tokens-check catches a link styled with active-class" \
 
 # The character is built from bytes here too, or this file would fail the check
 # it is proving.
+fails_when "i18n-check catches a gendered Polish string" \
+  "$WORK/scripts/dev/check-i18n.sh" \
+  "sed_inplace 's|nie pochodzi od Ciebie|nie Ty prosiłeś|' '$WORK/backend/src/Module/Identity/i18n/messages.pl.json'"
+
 fails_when "typography-check catches a long dash" \
   "$WORK/scripts/dev/check-typography.sh" \
   "printf 'one \\342\\200\\224 two\\n' >> '$WORK/AGENTS.md'"
@@ -428,6 +432,10 @@ fails_when "prod-check catches an unpinned image" \
 fails_when "prod-check catches a router with no certificate resolver" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "awk '!d && /tls.certresolver=letsencrypt/ {d=1; next} {print}' '$WORK/docker/compose.prod.yml' > '$WORK/prod.tmp' && mv '$WORK/prod.tmp' '$WORK/docker/compose.prod.yml'"
+
+fails_when "prod-check catches a production router outside the rate limit" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "sed_inplace '/-api.middlewares=rate-limit@file/d' '$WORK/docker/compose.prod.yml'"
 
 fails_when "prod-check catches a staging stack that publishes the database port" \
   "$WORK/scripts/dev/check-prod-compose.sh" \

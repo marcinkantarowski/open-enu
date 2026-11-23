@@ -28,7 +28,7 @@
   "manager.flags": "Flagi",
   "manager.flagsHint": "Domyślne ustawienia platformy i nadpisania dla poszczególnych obszarów roboczych.",
   "manager.applyTo": "Zastosuj nadpisania do",
-  "manager.applyToHint": "Wklej identyfikator obszaru roboczego z jego strony. Nadpisanie musi dotyczyć konkretnego obszaru roboczego.",
+  "manager.applyToHint": "Wklej identyfikator obszaru roboczego albo otwórz Flagi ze strony obszaru. Nadpisanie musi dotyczyć konkretnego obszaru roboczego.",
   "manager.pickTenantFirst": "Najpierw wskaż obszar roboczy - nadpisanie musi czegoś dotyczyć.",
   "manager.overrideSaved": "Nadpisanie zapisane dla {tenant}.",
   "manager.setting": "Ustawienie",

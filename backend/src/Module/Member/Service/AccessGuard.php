@@ -83,28 +83,56 @@ final readonly class AccessGuard
         }
     }
 
+    /**
+     * Whether the caller may change this person at all - what the list offers
+     * controls for. The same rule `assertManageable()` enforces, so a pencil
+     * is never shown on a row whose save would be refused.
+     *
+     * @param array{role: string, unitIds: list<string>|null} $member
+     */
+    public function manageable(string $tenantId, array $member): bool
+    {
+        return $this->auth->isGranted('member.manage')
+            && $this->beyondCaller($tenantId, $member['role'], $member['unitIds']) === null;
+    }
+
     /** @param list<string>|null $unitIds */
     private function assertWithinCaller(string $tenantId, string $role, ?array $unitIds): void
     {
+        $refusal = $this->beyondCaller($tenantId, $role, $unitIds);
+        if ($refusal !== null) {
+            throw new AccessDeniedHttpException($refusal);
+        }
+    }
+
+    /**
+     * Why this role and reach exceed the caller's, or null when they do not.
+     *
+     * @param list<string>|null $unitIds
+     */
+    private function beyondCaller(string $tenantId, string $role, ?array $unitIds): ?string
+    {
         foreach ($this->permissions->forRole($tenantId, $role) as $permission) {
             if (!$this->auth->isGranted($permission)) {
-                throw new AccessDeniedHttpException(sprintf('That role can "%s", and you cannot.', $permission));
+                return sprintf('That role can "%s", and you cannot.', $permission);
             }
         }
 
         // null: the caller reaches the whole tenant, so anything goes.
         if ($this->scope->units() === null) {
-            return;
+            return null;
         }
 
         if ($unitIds === null) {
-            throw new AccessDeniedHttpException('You reach only some units, so you cannot give the whole tenant.');
+            return 'You reach only some units, so you cannot give the whole tenant.';
         }
 
         foreach ($unitIds as $unitId) {
             if (!$this->scope->allowsUnit($unitId)) {
-                throw new AccessDeniedHttpException('That unit is outside the ones you reach.');
+                return 'That unit is outside the ones you reach.';
             }
         }
+
+        return null;
     }
 }

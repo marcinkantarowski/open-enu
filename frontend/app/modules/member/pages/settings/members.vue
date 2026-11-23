@@ -17,6 +17,8 @@ interface Member {
   unitIds: string[] | null
   status: 'active' | 'invited' | 'suspended'
   version: number
+  /** The server's answer to "may I change this one?" - an admin may not touch an owner. */
+  manageable: boolean
 }
 
 const api = useApi()
@@ -25,7 +27,6 @@ const toast = useToast()
 const { t } = useI18n()
 
 const canInvite = computed(() => auth.can('member.invite'))
-const canManage = computed(() => auth.can('member.manage'))
 
 const { data, refresh } = await useAsyncData('members', () => api.get<{ items: Member[] }>('/api/members'))
 const members = computed(() => data.value?.items ?? [])
@@ -144,7 +145,7 @@ function nameOf(member: Member): string {
         </template>
 
         <template #cell-actions="{ row }">
-          <div v-if="canManage" class="flex justify-end gap-1">
+          <div v-if="row.manageable" class="flex justify-end gap-1" data-testid="member-actions">
             <UiTooltip :content="t('member.edit')">
               <UiButton variant="ghost" size="sm" :icon="Pencil" :aria-label="t('member.editNamed', { name: nameOf(row) })" @click="open(row)" />
             </UiTooltip>
