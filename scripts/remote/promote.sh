@@ -12,6 +12,8 @@
 #    1. staging is clean        uncommitted work is not a release; commit it
 #    2. staging is pushed       the commit reaches GitHub (staging's key writes)
 #    3. the gate, on staging    arch + tests + typecheck, against that commit
+#                               (image staging has no test tooling: there the
+#                               gate runs on this machine, at that commit)
 #    4. production moves        fetch that SHA from GitHub, release.sh:
 #                               build → back up → migrate → restart → health
 #    5. a tag                   prod-<timestamp>, so "what was live when" is git
@@ -98,10 +100,28 @@ fi
 SHA="$(S "git rev-parse HEAD")"
 log_ok "staging runs $(S "git log -1 --format='%h %s'")"
 
-# ── 3. the gate, on staging, against this commit ────────────────────────────
-if [ "${SKIP_GATE:-0}" = 1 ]; then
-  log_warn "SKIP_GATE=1 - promoting without the gate"
-else
+# ── 3. the gate, against this commit ────────────────────────────────────────
+# Where the tools are. A dev staging has them; an image staging runs
+# production's images, with no dev dependencies, so its gate runs here - and
+# only on a clean checkout of the very commit staging runs, or the gate would
+# vouch for code that is not the code being promoted.
+gate_here() {
+  [ "$STAGING" != local ] || die "staging runs production's images (STAGING_MODE=images) - it has no test tooling for the gate" \
+    "promote from your machine instead, at the same commit: git checkout ${SHA:0:7} && make promote"
+  [ -z "$(git -C "$ROOT" status --porcelain)" ] || die "this checkout has uncommitted changes - the gate would test them, not ${SHA:0:7}" \
+    "commit or stash them, then make promote"
+  [ "$(git -C "$ROOT" rev-parse HEAD)" = "$SHA" ] || die "this checkout is at $(git -C "$ROOT" rev-parse --short HEAD), staging at ${SHA:0:7}" \
+    "the gate must test what ships: git checkout ${SHA:0:7} (or pull), then make promote"
+  log_step "Gate here, at ${SHA:0:7}: make promote-gate"
+  if ! (cd "$ROOT" && make --no-print-directory promote-gate > "/tmp/$SLUG-promote-gate.log" 2>&1); then
+    log_fail "the gate is red - production was not touched" || true
+    tail -40 "/tmp/$SLUG-promote-gate.log" | sed 's/^/      /' >&2
+    log_info "full log: /tmp/$SLUG-promote-gate.log"
+    exit 1
+  fi
+}
+
+gate_on_staging() {
   log_step "Gate on staging: make promote-gate"
   if ! S "make --no-print-directory promote-gate > /tmp/$SLUG-promote-gate.log 2>&1"; then
     log_fail "the gate is red - production was not touched" || true
@@ -109,6 +129,12 @@ else
     log_info "full log on staging: /tmp/$SLUG-promote-gate.log"
     exit 1
   fi
+}
+
+if [ "${SKIP_GATE:-0}" = 1 ]; then
+  log_warn "SKIP_GATE=1 - promoting without the gate"
+else
+  if [ "$(S "sed -n 's/^STAGING_MODE=//p' .env | head -1")" = images ]; then gate_here; else gate_on_staging; fi
   log_ok "gate green"
 fi
 

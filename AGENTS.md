@@ -311,6 +311,7 @@ This table grows with each phase - a row appears when the thing it routes to exi
 | Logs, error tracking, traces, "is anything stuck?" | [`.ai/platform/docs/observability.md`](.ai/platform/docs/observability.md) |
 | **Deploying anything, anywhere** | [`.ai/platform/docs/deployment.md`](.ai/platform/docs/deployment.md) |
 | Staging and production (one server or two); vibe coding on staging; `make promote` | `.ai/platform/docs/deployment.md` → *The loop* + `scripts/lib/stage.sh` |
+| Staging as the dev stack or as production's images (`STAGING_MODE`) | `.ai/platform/docs/deployment.md` → *Which staging* + `docker/compose.staging-images.yml` |
 | DNS, certificates, deploy keys, "it will not provision" | `scripts/remote/preflight.sh` - the failure message names the fix |
 | What the production stack may and may not contain | `scripts/dev/check-prod-compose.sh` |
 | A mistake that has been made before | `.ai/platform/lessons/` (the platform's) + `.ai/lessons/` (this project's) - read the index, never bulk-read the files |

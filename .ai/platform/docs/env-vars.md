@@ -83,12 +83,14 @@ first run". Use it for anything secret; never ship a real default.
 | `DEFAULT_LOCALE` | the language before anyone has chosen: the three apps' default and the fallback for an email (`en`, `pl`). A browser asking for another shipped language still gets it; a user's saved choice wins |
 | `APP_ENV` | Symfony's environment: only `dev`, `prod` or `test` |
 | `APP_STAGE` | *which* prod-like deployment this is: `local`, `staging`, `prod` |
+| `STAGING_MODE` | what a staging server runs: `dev` (the dev stack, for coding on the server) or `images` (production's images, a rehearsal). `release.sh` derives `COMPOSE_FILE`, `APP_ENV` and `APP_DEBUG` from it - see [deployment](deployment.md) → *Which staging* |
 | `APP_SECRET` | sessions and signed URLs. Rotating it logs everyone out |
 | `APP_ENCRYPTION_KEY` | the root of every derived per-tenant key. **Losing it loses the data** |
 | `BACKUP_REMOTE` | an rclone target. Production refuses to finish provisioning without one |
 
-`APP_ENV` and `APP_STAGE` are separate on purpose: staging runs `APP_ENV=prod` so Symfony's
-`when@prod` configuration keeps applying, while `APP_STAGE=staging` drives `noindex`
+`APP_ENV` and `APP_STAGE` are separate on purpose: an image staging runs `APP_ENV=prod` so
+Symfony's `when@prod` configuration keeps applying (a dev staging runs `APP_ENV=dev`, and so
+does not rehearse it), while `APP_STAGE=staging` drives `noindex`
 headers, demo seeding and the Sentry environment tag. See
 [ADR-0011](../adr/0011-app-stage-not-app-env.md).
 

@@ -1,6 +1,7 @@
 # =============================================================================
-#  Production stack - immutable images. Staging is NOT this file: staging is the
-#  dev stack plus compose.staging.yml, because staging is where you vibe code.
+#  Production stack - immutable images. Staging runs it too when its .env says
+#  STAGING_MODE=images (plus compose.staging-images.yml); otherwise staging is
+#  the dev stack plus compose.staging.yml, for vibe coding on the server.
 # =============================================================================
 #  What is deliberately ABSENT compared with compose.dev.yml, and why:
 #

@@ -10,6 +10,8 @@
 #
 #      stage        stack               checkout                 compose files
 #      staging      <slug>-staging      /opt/<slug>-staging      dev + staging override
+#                                                                (STAGING_MODE=images:
+#                                                                prod + staging-images)
 #      production   <slug>-prod         /opt/<slug>-prod         prod
 #
 #  Also here: `on HOST cmd`, which runs a command on a host over ssh - or right
@@ -36,13 +38,19 @@ project_slug() {
 stage_stack() { echo "$1-$(stage_short "$2")"; }            # <slug> <stage>
 stage_dir()   { echo "/opt/$(stage_stack "$1" "$2")"; }      # <slug> <stage>
 
+# stage_compose_files <stage> [staging mode]
 stage_compose_files() {
   if [ "$1" = production ]; then
     echo "docker/compose.prod.yml"
+  elif [ "${2:-dev}" = images ]; then
+    echo "docker/compose.prod.yml:docker/compose.staging-images.yml"
   else
     echo "docker/compose.dev.yml:docker/compose.staging.yml"
   fi
 }
+
+# staging_mode_valid <mode> → succeeds for a mode this platform knows
+staging_mode_valid() { case "${1:-}" in dev|images) return 0 ;; *) return 1 ;; esac; }
 
 # The SSH host name git uses for GitHub. Staging has its own alias because its
 # deploy key can WRITE - it is where vibe-coded commits are pushed from - and

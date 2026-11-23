@@ -1,0 +1,62 @@
+# =============================================================================
+#  Staging from images - production's stack, made into a private rehearsal.
+# =============================================================================
+#  Used as: -f compose.prod.yml -f compose.staging-images.yml, when the staging
+#  checkout's .env says STAGING_MODE=images (scripts/lib/stage.sh). The other
+#  staging, STAGING_MODE=dev, is compose.dev.yml + compose.staging.yml.
+#
+#  Everything production runs, runs here unchanged: the same images, the same
+#  APP_ENV=prod, the same memory limits. That is the point - a failure that
+#  exists only in a production build shows up here first. This file adds only
+#  what makes it staging, and `make prod-check` fails if either is undone:
+#
+#    1. every router behind ${STACK}-allow, the IP allowlist the edge builds
+#       from STAGING_ALLOW_FROM, and marked noindex. In place of production's
+#       rate limit: the allowlist is the access control, and a team behind one
+#       VPN address is a single client to a per-IP limit.
+#    2. Mailpit, so no mail from a rehearsal reaches a real person. MAILER_DSN
+#       keeps its smtp://mailpit:1025 default in the staging .env.
+#
+#  A project's own routers on image staging go in
+#  docker/project/compose.staging-images.yml, behind the same middlewares.
+# =============================================================================
+
+services:
+  mercure:
+    labels:
+      - traefik.http.routers.${STACK}-mercure.middlewares=${STACK}-allow@file,noindex@file
+  api:
+    labels:
+      - traefik.http.routers.${STACK}-api.middlewares=${STACK}-allow@file,noindex@file
+  frontend:
+    labels:
+      - traefik.http.routers.${STACK}-frontend.middlewares=${STACK}-allow@file,noindex@file
+  manager:
+    labels:
+      - traefik.http.routers.${STACK}-manager.middlewares=${STACK}-allow@file,noindex@file
+  landing:
+    labels:
+      - traefik.http.routers.${STACK}-landing.middlewares=${STACK}-allow@file,noindex@file
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    container_name: ${STACK}-mailpit
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    networks: [net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${STACK}-net
+      - traefik.http.routers.${STACK}-mailpit.rule=Host(`mail.${DOMAIN}`)
+      - traefik.http.routers.${STACK}-mailpit.entrypoints=websecure
+      - traefik.http.routers.${STACK}-mailpit.tls.certresolver=letsencrypt
+      - traefik.http.routers.${STACK}-mailpit.middlewares=${STACK}-allow@file,noindex@file
+      - traefik.http.services.${STACK}-mailpit.loadbalancer.server.port=8025
+    deploy:
+      resources:
+        limits: { memory: 128m }

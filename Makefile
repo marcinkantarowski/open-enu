@@ -241,7 +241,7 @@ deploy-key: ## Give a stage access to the repo (production read-only, STAGE=stag
 target_domain = $(if $(filter command line,$(origin DOMAIN)),$(DOMAIN),$(if $(HOST),,$(1)))
 
 .PHONY: buildstaging
-buildstaging: ## Bare server → staging (the dev stack, for vibe coding): make buildstaging HOST=deploy@ip DOMAIN=stg.x.com REPO=org/x EMAIL=you@x.com [ALLOW=ip,cidr]
+buildstaging: ## Bare server → staging (dev stack, or production's images with STAGING_MODE=images): make buildstaging HOST=deploy@ip DOMAIN=stg.x.com REPO=org/x EMAIL=you@x.com [ALLOW=ip,cidr] [STAGING_MODE=images]
 	@$(REMOTE)/provision.sh "$(HOST)" "$(DOMAIN)" staging "$(REPO)" "$(or $(REF),main)"
 
 .PHONY: buildprod
