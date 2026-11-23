@@ -102,8 +102,8 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --optimize \
  && chown -R www-data:www-data var
 
 # Deliberately NOT warmed at build time: the cache bakes in environment that is
-# only known on the server (database URL, domains, secrets). `provision.sh`
-# warms it after the .env exists.
+# only known on the server (database URL, domains, secrets). entrypoint.sh
+# warms it when the container starts, then switches opcache preload on.
 
 EXPOSE 80
 ENTRYPOINT ["/usr/local/bin/entrypoint"]

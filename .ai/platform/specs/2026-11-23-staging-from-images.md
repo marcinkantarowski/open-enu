@@ -67,3 +67,16 @@ no bind-mounted source - which, unlike dev staging, it now can promise.
   `make deploystaging`). The database volume is the same (`<stack>_pgdata`). Uploaded files are
   not: dev keeps them in `apivar`, production in `storage` - copy them if they matter.
 - `make promote` from image staging needs the local dev stack for its gate.
+
+## Found on the first run
+
+The first image staging was the first time the production API image was ever built, and it
+did not build: `php.prod.ini` named `opcache.preload` from the Symfony cache, which does not
+exist until the server warms it - and PHP with a missing preload file does not start, so
+`composer install` in the Dockerfile failed. Behind it, the cache lived on the `apivar`
+volume, shared by every release: production never checks a compiled container is current,
+so a second release would have booted on the first one's.
+
+Now each container warms its own cache in `entrypoint.sh` and switches preload on once the
+file exists; production mounts only `/app/var/storage`. `prod-check` fails on `/app/var` or
+its cache on a volume.

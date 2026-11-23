@@ -51,4 +51,25 @@ if [ -f /etc/open-enu/certs/rootCA.pem ] && [ -w /usr/local/share/ca-certificate
   update-ca-certificates >/dev/null 2>&1 || true
 fi
 
+# Production: every container warms its own cache from the code in its image.
+# Never a shared volume - prod never checks a compiled container is current, so
+# a cache kept across releases boots the next release on the previous one's
+# container. Not at build time either: it bakes in the server's environment.
+#
+# Then preload, which needs that cache: switched on only once the file exists,
+# because PHP refuses to start at all when opcache.preload names a missing file.
+# A failed warm-up is said and survived - the first request builds the cache.
+if [ "${APP_ENV:-}" = prod ]; then
+  if php bin/console cache:warmup --no-interaction >/dev/null; then
+    chown -R www-data:www-data /app/var/cache 2>/dev/null || true
+    preload=/app/var/cache/prod/App_KernelProdContainer.preload.php
+    if [ -f "$preload" ] && [ -w /usr/local/etc/php/conf.d ]; then
+      printf 'opcache.preload = %s\nopcache.preload_user = www-data\n' "$preload" \
+        > /usr/local/etc/php/conf.d/zz-preload.ini
+    fi
+  else
+    echo "[entrypoint] cache:warmup failed - starting without preload; the first request builds the cache" >&2
+  fi
+fi
+
 exec "$@"

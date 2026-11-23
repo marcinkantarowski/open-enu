@@ -104,9 +104,10 @@ services:
     <<: [*restart, *logging]
     env_file: [./backend/.env.local]
     volumes:
-      # The only writable paths. Everything else in the image is immutable,
-      # which is what makes opcache.validate_timestamps=0 safe.
-      - apivar:/app/var
+      # The only persistent path: uploaded files. The cache in /app/var stays in
+      # the container, warmed by docker/api/entrypoint.sh from this image's code
+      # - on a volume, the next release would boot on this one's compiled
+      # container, and with opcache.validate_timestamps=0 nothing notices.
       - storage:/app/var/storage
     depends_on:
       postgres: { condition: service_healthy }
@@ -145,7 +146,7 @@ services:
     # --time-limit recycles the process so a slow leak cannot grow unbounded;
     # `restart: unless-stopped` brings it straight back.
     command: php bin/console messenger:consume outbox --time-limit=3600 --memory-limit=192M
-    volumes: [apivar:/app/var, storage:/app/var/storage]
+    volumes: [storage:/app/var/storage]
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -161,7 +162,7 @@ services:
     <<: [*restart, *logging]
     env_file: [./backend/.env.local]
     command: php bin/console messenger:consume jobs --time-limit=3600 --memory-limit=192M
-    volumes: [apivar:/app/var, storage:/app/var/storage]
+    volumes: [storage:/app/var/storage]
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -179,7 +180,6 @@ services:
     command: sh /scheduler.sh
     volumes:
       - ./docker/api/scheduler.sh:/scheduler.sh:ro
-      - apivar:/app/var
       - storage:/app/var/storage
     depends_on:
       postgres: { condition: service_healthy }
@@ -264,5 +264,4 @@ networks:
 volumes:
   pgdata:
   redisdata:
-  apivar:
   storage:
