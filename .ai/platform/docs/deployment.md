@@ -16,7 +16,9 @@ to do, and what to reach for when something is wrong.
 
 Both can live on one server or on one each. On one server they share exactly one thing: the
 **edge** (`enu-edge`, `docker/edge/`), a single Traefik that owns ports 80/443 and Let's
-Encrypt for every stack on the box. Nothing else is shared - not a directory, a network, a
+Encrypt for every stack on the box, with `enu-edge-socket-proxy` beside it - the only
+container that mounts the Docker socket, answering Traefik's read-only container listing
+and refusing the rest of the API. Nothing else is shared - not a directory, a network, a
 database or a systemd unit.
 
 ## The first time
