@@ -423,6 +423,10 @@ fails_when "prod-check catches a published database port" \
   "$WORK/scripts/dev/check-prod-compose.sh" \
   "sed_inplace 's|^  postgres:|  postgres:\\n    ports: [\"5432:5432\"]|' '$WORK/docker/compose.prod.yml'"
 
+fails_when "prod-check catches a production cache kept on a volume" \
+  "$WORK/scripts/dev/check-prod-compose.sh" \
+  "sed_inplace 's|      - storage:/app/var/storage|      - cache:/app/var|' '$WORK/docker/compose.prod.yml' && printf '  cache:\\n' >> '$WORK/docker/compose.prod.yml'"
+
 # Whatever tag is pinned today: Dependabot moves it, and a fixture that names
 # the version stops matching on the next bump.
 fails_when "prod-check catches an unpinned image" \

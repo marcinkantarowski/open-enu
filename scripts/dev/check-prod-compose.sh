@@ -67,6 +67,18 @@ else
   log_ok "no application source is bind-mounted"
 fi
 
+# ── 1b. the Symfony cache is not kept across releases ───────────────────────
+# Production never checks that a compiled container is current. On a volume,
+# /app/var (or its cache) outlives the image that wrote it, and the next
+# release boots on the previous one's container - opcache.validate_timestamps=0
+# makes sure nothing notices. Each container warms its own (entrypoint.sh).
+if grep -qE '^\s+target: /app/var(/cache)?$' <<<"$CONFIG"; then
+  bad "the production stack keeps /app/var on a volume" \
+      "the cache would survive into the next release - mount only /app/var/storage"
+else
+  log_ok "the Symfony cache lives and dies with its image"
+fi
+
 # ── 2. no published database or cache port ──────────────────────────────────
 published_ports() { # <service> -> prints its published ports, if any
   SERVICE="$1" python3 -c '

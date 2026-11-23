@@ -122,7 +122,8 @@ release_images() {
   log_step "Restarting (brief downtime)"
   "${COMPOSE[@]}" up -d --remove-orphans || fail "restart failed"
   bash scripts/dev/edge.sh attach || fail "could not attach the edge"
-  "${COMPOSE[@]}" exec -T api sh -c 'php bin/console cache:warmup && php bin/console app:flags:sync' >/dev/null 2>&1 || true
+  # The cache is warmed by each container's entrypoint, from its own image.
+  "${COMPOSE[@]}" exec -T api php bin/console app:flags:sync >/dev/null 2>&1 || true
 
   if [ "$STAGE" = production ]; then
     # Through the edge, with the certificate: the question is whether the
